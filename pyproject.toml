@@ -1,0 +1,141 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "roqcipath"
+version = "1.1.0"
+description = "A Python library for whole-slide image (WSI) processing and analysis in computational pathology."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "All Rights Reserved" }
+authors = [
+    { name = "Darshil Gajjar" },
+]
+keywords = [
+    "whole-slide-imaging",
+    "computational-pathology",
+    "histopathology",
+    "image-registration",
+    "stain-normalization",
+    "digital-pathology",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "License :: Other/Proprietary License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Image Processing",
+    "Topic :: Scientific/Engineering :: Medical Science Apps.",
+]
+
+# ---------------------------------------------------------------------------
+# Core dependencies — logging and magnification/output utilities.
+# ---------------------------------------------------------------------------
+dependencies = [
+    "numpy>=1.23",
+    "rich>=13.0",
+    "loguru>=0.7",
+]
+
+[project.optional-dependencies]
+# `pip install roqcipath[extraction]`
+# TMA core extraction + whole-slide tissue extraction pipelines.
+extraction = [
+    "opencv-python-headless>=4.7",
+    "pyvips>=2.2",
+    "openslide-python>=1.3",
+    "pillow>=10.0",
+    "tqdm>=4.65",
+]
+
+# `pip install roqcipath[valis]`
+# Low-level registration engine (WSIRegistrar / ValisConfig) and the
+# alignment pipeline built on top of it.
+valis = [
+    "opencv-python-headless>=4.7",
+    "pyvips>=2.2",
+    "openslide-python>=1.3",
+    "pillow>=10.0",
+    "tqdm>=4.65",
+    "valis-wsi>=1.0",
+    "matplotlib>=3.7",
+]
+
+# `pip install roqcipath[wsi]`
+# Alias of `valis` kept for backward-compatible install hints referenced
+# elsewhere in the codebase (e.g. `pip install roqcipath[wsi,valis]`).
+wsi = ["opencv-python-headless>=4.7", "pyvips>=2.2", "openslide-python>=1.3", "pillow>=10.0", "tqdm>=4.65", "valis-wsi>=1.0", "matplotlib>=3.7"]
+
+# `pip install roqcipath[stain]`
+# Stain normalization (Reinhard / Macenko / Vahadane).
+stain = [
+    "opencv-python-headless>=4.7",
+    "tiatoolbox>=1.5",
+]
+
+# `pip install roqcipath[cellcount]`
+# DAB / IHC positive-cell counting utilities (any biomarker).
+cellcount = [
+    "opencv-python-headless>=4.7",
+    "openslide-python>=1.3",
+    "scikit-image>=0.21",
+    "tqdm>=4.65",
+    "pillow>=10.0",
+    "matplotlib>=3.7",
+    "openpyxl>=3.1",
+]
+
+# `pip install roqcipath[viz]`
+# Grid-map / patch-pair visualisation and WSI comparison figures.
+viz = [
+    "opencv-python-headless>=4.7",
+    "matplotlib>=3.7",
+    "pillow>=10.0",
+]
+
+# `pip install roqcipath[all]`
+# Every optional pipeline and engine.
+all = [
+    "opencv-python-headless>=4.7", "pyvips>=2.2", "openslide-python>=1.3",
+    "pillow>=10.0", "tqdm>=4.65", "valis-wsi>=1.0", "tiatoolbox>=1.5",
+    "scikit-image>=0.21", "matplotlib>=3.7", "openpyxl>=3.1",
+]
+
+# `pip install roqcipath[dev]`
+# Testing, linting, and formatting tools for contributors.
+dev = [
+    "pytest>=7.4",
+    "pytest-cov>=4.1",
+    "ruff>=0.4",
+    "mypy>=1.8",
+]
+
+[project.scripts]
+roqcipath = "roqcipath.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+roqcipath = ["py.typed"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra -q"
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+
+[tool.ruff.lint]
+# Compact single-line branches are retained in older pipeline implementations.
+ignore = ["E701", "E702"]
+
+[tool.mypy]
+python_version = "3.9"
+ignore_missing_imports = true
