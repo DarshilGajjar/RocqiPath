@@ -25,8 +25,9 @@ The package uses physical objective magnification throughout. The default is
 
 ## Installation
 
-Python 3.9 or newer is required. System libraries required by OpenSlide,
-libvips, or VALIS must also be installed for the corresponding extras.
+RocqiPath is tested with 64-bit Python 3.9–3.12. For Windows installations,
+Python 3.12 (64-bit) is recommended, particularly when using VALIS, OpenSlide,
+and libvips.
 
 ```bash
 git clone https://github.com/DarshilGajjar/RocqiPath.git
