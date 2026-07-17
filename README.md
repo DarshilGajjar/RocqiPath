@@ -29,7 +29,7 @@ Python 3.9 or newer is required. System libraries required by OpenSlide,
 libvips, or VALIS must also be installed for the corresponding extras.
 
 ```bash
-git clone https://github.com/<your-username>/RocqiPath.git
+git clone https://github.com/DarshilGajjar/RocqiPath.git
 cd RocqiPath
 
 # Editable development environment with every pipeline
