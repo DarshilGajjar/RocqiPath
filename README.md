@@ -25,9 +25,9 @@ The package uses physical objective magnification throughout. The default is
 
 ## Installation
 
-RocqiPath is tested with 64-bit Python 3.9–3.12. For Windows installations,
-Python 3.12 (64-bit) is recommended, particularly when using VALIS, OpenSlide,
-and libvips.
+RocqiPath is tested with 64-bit Python 3.9–3.11. Python 3.11 (64-bit) is
+recommended for the complete installation because the current TIAToolbox/Numba
+dependency stack does not support Python 3.12 or newer.
 
 ```bash
 git clone https://github.com/DarshilGajjar/RocqiPath.git
