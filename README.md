@@ -42,6 +42,22 @@ python -m pip install -e ".[stain]"
 python -m pip install -e ".[cellcount]"
 ```
 
+### Additional VALIS prerequisite: libvips
+
+RocqiPath’s alignment and pyramidal-image workflows use `pyvips`, which requires the native **libvips** runtime. Installing `valis-wsi` with `pip` installs the Python packages, but does not install libvips on Windows.
+
+#### Windows installation
+
+1. Download the 64-bit Windows libvips binary from the [official libvips installation page](https://www.libvips.org/install.html).
+2. Extract it to a permanent location, for example `C:\tools\vips`.
+3. Add the extracted `bin` directory (for example, `C:\tools\vips\bin`) to your Windows **User PATH** environment variable.
+4. Close and reopen PowerShell, then activate your RocqiPath environment:
+
+   ```powershell
+   .\.venv\Scripts\Activate.ps1
+   python -m pip install -e ".[valis]"
+   ```
+
 ## Standard output layout
 
 Every main pipeline receives one general output root and writes to:
@@ -268,3 +284,33 @@ tests requiring scanner files and native WSI libraries should be marked and run
 in an environment that provides those assets.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) before adding a module or public API.
+
+## Software citations
+
+When RocqiPath contributes to published research, cite RocqiPath and cite the underlying software components that were materially used in the reported analysis. You do not need to cite every utility dependency for every project.
+
+- **VALIS** — cite when using WSI registration or alignment:
+
+  Gatenbee, C. D., Baker, A.-M., Prabhakaran, S., Robertson-Tessi, M., Graham, T. A., & Anderson, A. R. A. (2023). _Virtual alignment of pathology image series for multi-gigapixel whole slide images_. Nature Communications, 14, 4062. https://doi.org/10.1038/s41467-023-40218-9
+
+- **TIAToolbox** — cite when using TIAToolbox-based stain normalization or tissue-image analysis:
+
+  Pocock, J., Graham, S., Vu, Q. D., et al. (2022). _TIAToolbox as an end-to-end library for advanced tissue image analytics_. Communications Medicine, 2, 120. https://doi.org/10.1038/s43856-022-00186-5
+
+- **scikit-image** — cite when using tissue masking, segmentation, morphology, or related image-processing operations:
+
+  van der Walt, S., Schönberger, J. L., Nunez-Iglesias, J., et al. (2014). _scikit-image: Image processing in Python_. PeerJ, 2, e453. https://doi.org/10.7717/peerj.453
+
+- **NumPy** — cite when numerical array processing is a substantive part of the analysis:
+
+  Harris, C. R., Millman, K. J., van der Walt, S. J., et al. (2020). _Array programming with NumPy_. Nature, 585, 357–362. https://doi.org/10.1038/s41586-020-2649-2
+
+- **OpenSlide** — acknowledge when it is used to read whole-slide image formats:
+
+  Goode, A., Gilbert, B., Harkes, J., Jukic, D., & Satyanarayanan, M. (2013). _OpenSlide: A vendor-neutral software foundation for digital pathology_. Journal of Pathology Informatics, 4, 27. https://doi.org/10.4103/2153-3539.119005
+
+- **libvips / pyvips** — cite when using libvips-backed image I/O, resizing, or pyramidal TIFF generation:
+
+  Cupitt, J., Martinez, K., Fuller, L., & Wolthuizen, K. A. (2025). _The libvips image processing library_. Proceedings of Electronic Imaging 2025, Burlingame. See the [official libvips citation guidance](https://github.com/libvips/libvips/blob/master/doc/cite.md).
+
+Please also cite the specific RocqiPath release used in your work, including its version number and repository URL.
