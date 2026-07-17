@@ -11,18 +11,6 @@ The package uses physical objective magnification throughout. The default is
 
 > Status: private research software. See [LICENSE](LICENSE).
 
-## Why this structure
-
-- `src/` layout prevents accidental imports from the repository root.
-- Related scripts are grouped into `registration`, `extraction`, `stain`,
-  `analysis`, and `visualization` subpackages.
-- Shared slide reading, magnification, output naming, exceptions, and logging
-  live in one place instead of being reimplemented by every pipeline.
-- Public functions and classes use detailed NumPy-style docstrings.
-- Optional dependency groups keep unrelated heavy WSI tools out of small
-  installations.
-- Unit tests and GitHub Actions validate the scanner-independent core.
-
 ## Installation
 
 RocqiPath is tested with 64-bit Python 3.9–3.11. Python 3.11 (64-bit) is
