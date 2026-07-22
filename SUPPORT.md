@@ -9,27 +9,27 @@ tests, and best-effort maintenance; it does not imply clinical validation.
 
 ## Runtime matrix
 
-| Area | Supported |
-|---|---|
-| Python | 64-bit CPython 3.10 and 3.11 |
-| Operating systems | Windows and Linux; macOS is best effort |
-| Base install | CLI, logging, configuration, discovery, and dry-run pairing |
-| WSI input | Formats supported by the installed OpenSlide build |
-| Output | TIFF/OME-TIFF, PNG/JPEG previews, and JSON manifests as documented |
+| Area              | Supported                                                          |
+| ----------------- | ------------------------------------------------------------------ |
+| Python            | 64-bit CPython 3.10 and 3.11                                       |
+| Operating systems | Windows                                                            |
+| Base install      | CLI, logging, configuration, discovery, and dry-run pairing        |
+| WSI input         | Formats supported by the installed OpenSlide build                 |
+| Output            | TIFF/OME-TIFF, PNG/JPEG previews, and JSON manifests as documented |
 
 Python 3.12 or newer is not supported in the 1.0 line because parts of the
 scientific stack used by optional features do not yet share that support range.
 
 ## Feature installations
 
-| Extra | Capability | Native requirement |
-|---|---|---|
-| `extraction` | Tissue, TMA/core, and paired-patch extraction | OpenSlide, libvips |
-| `orb` | ORB registration and streamed aligned OME-TIFF export | OpenSlide, libvips |
-| `valis` | VALIS rigid/non-rigid registration | OpenSlide, libvips, VALIS requirements |
-| `stain` | Stain normalization | None beyond its Python stack |
-| `cellcount` | DAB-positive cell counting | OpenSlide for scanner WSIs |
-| `viz` | Grid maps and image comparison | None beyond its Python stack |
+| Extra        | Capability                                            | Native requirement                     |
+| ------------ | ----------------------------------------------------- | -------------------------------------- |
+| `extraction` | Tissue, TMA/core, and paired-patch extraction         | OpenSlide, libvips                     |
+| `orb`        | ORB registration and streamed aligned OME-TIFF export | OpenSlide, libvips                     |
+| `valis`      | VALIS rigid/non-rigid registration                    | OpenSlide, libvips, VALIS requirements |
+| `stain`      | Stain normalization                                   | None beyond its Python stack           |
+| `cellcount`  | DAB-positive cell counting                            | OpenSlide for scanner WSIs             |
+| `viz`        | Grid maps and image comparison                        | None beyond its Python stack           |
 
 Install only the extras used by a workflow. Test and lint tools are deliberately
 not exposed as a package extra.
