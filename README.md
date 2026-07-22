@@ -57,16 +57,16 @@ Every main pipeline receives one general output root and writes to:
 
 ```text
 <output_root>/
-â”œâ”€â”€ alignment/
-â”‚   â””â”€â”€ <case_name>/
-â”œâ”€â”€ tissue_extraction/
-â”‚   â””â”€â”€ <input_slide_name>/
-â”œâ”€â”€ patch_extraction/
-â”‚   â””â”€â”€ <case_name>/
-â”œâ”€â”€ stain_normalization/
-â”‚   â””â”€â”€ <input_file_name>/
-â””â”€â”€ cell_counting/
-    â””â”€â”€ <input_or_pair_name>/
+├── alignment/
+│   └── <case_name>/
+├── tissue_extraction/
+│   └── <input_slide_name>/
+├── patch_extraction/
+│   └── <case_name>/
+├── stain_normalization/
+│   └── <input_file_name>/
+└── cell_counting/
+    └── <input_or_pair_name>/
 ```
 
 All outputs for one slide or case are stored together. Region, stain, grid,
@@ -131,10 +131,10 @@ Output example:
 
 ```text
 results/tissue_extraction/slide_01/
-â”œâ”€â”€ region_001.tif
-â”œâ”€â”€ region_001_preview.jpg
-â”œâ”€â”€ region_001_manifest.json
-â””â”€â”€ slide_01_manifest.json
+├── region_001.tif
+├── region_001_preview.jpg
+├── region_001_manifest.json
+└── slide_01_manifest.json
 ```
 
 ### 80x TMA/core slides
@@ -238,16 +238,16 @@ counter.count_slide("./data/cd8.svs", label="CD8")
 
 ```text
 src/rocqipath/
-â”œâ”€â”€ magnification.py       # objective metadata and pyramid-level plans
-â”œâ”€â”€ slide.py               # shared OpenSlide/PIL reader
-â”œâ”€â”€ output.py              # <root>/<module>/<item> layout
-â”œâ”€â”€ exceptions.py          # common exception hierarchy
-â”œâ”€â”€ logger.py              # Rich/loguru output helpers
-â”œâ”€â”€ registration/          # VALIS/ORB alignment
-â”œâ”€â”€ extraction/            # WSI, TMA/core, and paired patches
-â”œâ”€â”€ stain/                 # Reinhard, Macenko, Vahadane
-â”œâ”€â”€ analysis/              # positive-cell counting
-â””â”€â”€ visualization/         # grids, paired QC, IHC overlays, comparisons
+├── magnification.py       # objective metadata and pyramid-level plans
+├── slide.py               # shared OpenSlide/PIL reader
+├── output.py              # <root>/<module>/<item> layout
+├── exceptions.py          # common exception hierarchy
+├── logger.py              # Rich/loguru output helpers
+├── registration/          # VALIS/ORB alignment
+├── extraction/            # WSI, TMA/core, and paired patches
+├── stain/                 # Reinhard, Macenko, Vahadane
+├── analysis/              # positive-cell counting
+└── visualization/         # grids, paired QC, IHC overlays, comparisons
 ```
 
 Primary symbols are re-exported from each subpackage. Import private helpers
@@ -285,27 +285,17 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) before adding a module or public API.
 
 When RocqiPath contributes to published research, cite RocqiPath and cite the underlying software components that were materially used in the reported analysis. You do not need to cite every utility dependency for every project.
 
-- **VALIS** â€” cite when using WSI registration or alignment:
+- **VALIS** - For WSI registration or alignment.
 
   Gatenbee, C. D., Baker, A.-M., Prabhakaran, S., Robertson-Tessi, M., Graham, T. A., & Anderson, A. R. A. (2023). _Virtual alignment of pathology image series for multi-gigapixel whole slide images_. Nature Communications, 14, 4062. https://doi.org/10.1038/s41467-023-40218-9
 
-- **TIAToolbox** â€” cite when using TIAToolbox-based stain normalization or tissue-image analysis:
+- **TIAToolbox** - For TIAToolbox-based stain normalization or tissue-image analysis.
 
   Pocock, J., Graham, S., Vu, Q. D., et al. (2022). _TIAToolbox as an end-to-end library for advanced tissue image analytics_. Communications Medicine, 2, 120. https://doi.org/10.1038/s43856-022-00186-5
 
-- **scikit-image** â€” cite when using tissue masking, segmentation, morphology, or related image-processing operations:
-
-  van der Walt, S., SchÃ¶nberger, J. L., Nunez-Iglesias, J., et al. (2014). _scikit-image: Image processing in Python_. PeerJ, 2, e453. https://doi.org/10.7717/peerj.453
-
-- **NumPy** â€” cite when numerical array processing is a substantive part of the analysis:
-
   Harris, C. R., Millman, K. J., van der Walt, S. J., et al. (2020). _Array programming with NumPy_. Nature, 585, 357â€“362. https://doi.org/10.1038/s41586-020-2649-2
 
-- **OpenSlide** â€” acknowledge when it is used to read whole-slide image formats:
-
-  Goode, A., Gilbert, B., Harkes, J., Jukic, D., & Satyanarayanan, M. (2013). _OpenSlide: A vendor-neutral software foundation for digital pathology_. Journal of Pathology Informatics, 4, 27. https://doi.org/10.4103/2153-3539.119005
-
-- **libvips / pyvips** â€” cite when using libvips-backed image I/O, resizing, or pyramidal TIFF generation:
+- **libvips / pyvips**  - For libvips-backed image I/O, resizing, or pyramidal TIFF generation.
 
   Cupitt, J., Martinez, K., Fuller, L., & Wolthuizen, K. A. (2025). _The libvips image processing library_. Proceedings of Electronic Imaging 2025, Burlingame. See the [official libvips citation guidance](https://github.com/libvips/libvips/blob/master/doc/cite.md).
 
