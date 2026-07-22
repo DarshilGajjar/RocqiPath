@@ -8,13 +8,8 @@ from .magnification import (
     MagnificationPlan as MagnificationPlan,
 )
 from .output import OutputLayout as OutputLayout
-from .paths import (
-    ROCQIPATH_PREPROCESSED as ROCQIPATH_PREPROCESSED,
-    ROCQIPATH_RAW as ROCQIPATH_RAW,
-    ROCQIPATH_RESULTS as ROCQIPATH_RESULTS,
-)
 
-__version__ = "1.2.0"
+__version__ = "1.1.0"
 
 # Optional pipelines are imported independently so a lightweight install can
 # still use configuration and utility modules without every WSI backend.
