@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "rocqipath"
-dynamic = ["version"]
+version = "1.0.0"
 description = "A Python library for whole-slide image (WSI) processing and analysis in computational pathology."
 readme = "README.md"
 requires-python = ">=3.10,<3.12"
@@ -103,9 +103,6 @@ where = ["src"]
 
 [tool.setuptools.package-data]
 rocqipath = ["py.typed"]
-
-[tool.setuptools.dynamic]
-version = { attr = "rocqipath.__version__" }
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
