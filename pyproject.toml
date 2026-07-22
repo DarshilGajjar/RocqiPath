@@ -95,6 +95,13 @@ viz = [
     "pillow>=10.0",
 ]
 
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4",
+    "ruff>=0.4",
+    "pillow>=10.0",
+]
+
 [project.scripts]
 rocqipath = "rocqipath.cli:main"
 
