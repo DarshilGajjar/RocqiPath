@@ -9,7 +9,7 @@ from .magnification import (
 )
 from .output import OutputLayout as OutputLayout
 
-__version__ = "1.1.0"
+__version__ = "1.0.0"
 
 # Optional pipelines are imported independently so a lightweight install can
 # still use configuration and utility modules without every WSI backend.

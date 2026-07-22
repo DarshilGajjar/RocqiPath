@@ -13,7 +13,7 @@ The package uses physical objective magnification throughout. The default is
 
 ## Installation
 
-RocqiPath is tested with 64-bit Python 3.9–3.11. Python 3.11 (64-bit) is
+RocqiPath is tested with 64-bit Python 3.10â€“3.11. Python 3.11 (64-bit) is
 recommended for the complete installation because the current TIAToolbox/Numba
 dependency stack does not support Python 3.12 or newer.
 
@@ -21,19 +21,23 @@ dependency stack does not support Python 3.12 or newer.
 git clone https://github.com/DarshilGajjar/RocqiPath.git
 cd RocqiPath
 
-# Editable development environment with every pipeline
-python -m pip install -e ".[all]"
+# Lightweight installation: CLI, logging, and shared utilities
+python -m pip install -e .
 
-# Or install only selected capabilities
+# Install only the capabilities required by your workflow
 python -m pip install -e ".[extraction]"
 python -m pip install -e ".[valis]"
 python -m pip install -e ".[stain]"
 python -m pip install -e ".[cellcount]"
+python -m pip install -e ".[viz]"
 ```
+
+Extras can be combined, for example
+`python -m pip install -e ".[extraction,cellcount,viz]"`.
 
 ### Additional VALIS prerequisite: libvips
 
-RocqiPath’s alignment and pyramidal-image workflows use `pyvips`, which requires the native **libvips** runtime. Installing `valis-wsi` with `pip` installs the Python packages, but does not install libvips on Windows.
+RocqiPathâ€™s alignment and pyramidal-image workflows use `pyvips`, which requires the native **libvips** runtime. Installing `valis-wsi` with `pip` installs the Python packages, but does not install libvips on Windows.
 
 #### Windows installation
 
@@ -53,16 +57,16 @@ Every main pipeline receives one general output root and writes to:
 
 ```text
 <output_root>/
-├── alignment/
-│   └── <case_name>/
-├── tissue_extraction/
-│   └── <input_slide_name>/
-├── patch_extraction/
-│   └── <case_name>/
-├── stain_normalization/
-│   └── <input_file_name>/
-└── cell_counting/
-    └── <input_or_pair_name>/
+â”œâ”€â”€ alignment/
+â”‚   â””â”€â”€ <case_name>/
+â”œâ”€â”€ tissue_extraction/
+â”‚   â””â”€â”€ <input_slide_name>/
+â”œâ”€â”€ patch_extraction/
+â”‚   â””â”€â”€ <case_name>/
+â”œâ”€â”€ stain_normalization/
+â”‚   â””â”€â”€ <input_file_name>/
+â””â”€â”€ cell_counting/
+    â””â”€â”€ <input_or_pair_name>/
 ```
 
 All outputs for one slide or case are stored together. Region, stain, grid,
@@ -108,7 +112,7 @@ logging, and output rules.
 ### Ordinary WSI sections
 
 ```python
-from roqcipath.extraction import TissueExtractionConfig, run_tissue_pipeline
+from rocqipath.extraction import TissueExtractionConfig, run_tissue_pipeline
 
 cfg = TissueExtractionConfig(
     target_magnification=20.0,
@@ -127,16 +131,16 @@ Output example:
 
 ```text
 results/tissue_extraction/slide_01/
-├── region_001.tif
-├── region_001_preview.jpg
-├── region_001_manifest.json
-└── slide_01_manifest.json
+â”œâ”€â”€ region_001.tif
+â”œâ”€â”€ region_001_preview.jpg
+â”œâ”€â”€ region_001_manifest.json
+â””â”€â”€ slide_01_manifest.json
 ```
 
 ### 80x TMA/core slides
 
 ```python
-from roqcipath.extraction import CoreExtractionConfig, run_core_extraction_pipeline
+from rocqipath.extraction import CoreExtractionConfig, run_core_extraction_pipeline
 
 cfg = CoreExtractionConfig(
     target_magnification=20.0,
@@ -162,7 +166,7 @@ built-in convenience keyword list.
 ## Paired patch extraction
 
 ```python
-from roqcipath.extraction import PatchExtractionConfig, run_patch_extraction
+from rocqipath.extraction import PatchExtractionConfig, run_patch_extraction
 
 summary = run_patch_extraction(PatchExtractionConfig(
     he_dir="./data/reference",
@@ -187,7 +191,7 @@ magnification and native read level for each slide in the case manifest.
 ## Alignment
 
 ```python
-from roqcipath.registration import AlignmentConfig, run_alignment
+from rocqipath.registration import AlignmentConfig, run_alignment
 
 results = run_alignment(AlignmentConfig(
     input_dir="./data/pairs",
@@ -208,7 +212,7 @@ data/pairs/<biomarker>/ihc/<sample>_<biomarker>.<ext>
 ## Stain normalization and cell counting
 
 ```python
-from roqcipath.stain import (
+from rocqipath.stain import (
     StainNormalizationConfig,
     run_stain_normalization_apply,
     run_stain_normalization_train,
@@ -220,7 +224,7 @@ run_stain_normalization_apply("./patches", "./results", cfg)
 ```
 
 ```python
-from roqcipath.analysis import PositiveCellCounter
+from rocqipath.analysis import PositiveCellCounter
 
 counter = PositiveCellCounter({
     "output_dir": "./results",
@@ -233,17 +237,17 @@ counter.count_slide("./data/cd8.svs", label="CD8")
 ## Public package layout
 
 ```text
-src/roqcipath/
-├── magnification.py       # objective metadata and pyramid-level plans
-├── slide.py               # shared OpenSlide/PIL reader
-├── output.py              # <root>/<module>/<item> layout
-├── exceptions.py          # common exception hierarchy
-├── logger.py              # Rich/loguru output helpers
-├── registration/          # VALIS/ORB alignment
-├── extraction/            # WSI, TMA/core, and paired patches
-├── stain/                 # Reinhard, Macenko, Vahadane
-├── analysis/              # positive-cell counting
-└── visualization/         # grids, paired QC, IHC overlays, comparisons
+src/rocqipath/
+â”œâ”€â”€ magnification.py       # objective metadata and pyramid-level plans
+â”œâ”€â”€ slide.py               # shared OpenSlide/PIL reader
+â”œâ”€â”€ output.py              # <root>/<module>/<item> layout
+â”œâ”€â”€ exceptions.py          # common exception hierarchy
+â”œâ”€â”€ logger.py              # Rich/loguru output helpers
+â”œâ”€â”€ registration/          # VALIS/ORB alignment
+â”œâ”€â”€ extraction/            # WSI, TMA/core, and paired patches
+â”œâ”€â”€ stain/                 # Reinhard, Macenko, Vahadane
+â”œâ”€â”€ analysis/              # positive-cell counting
+â””â”€â”€ visualization/         # grids, paired QC, IHC overlays, comparisons
 ```
 
 Primary symbols are re-exported from each subpackage. Import private helpers
@@ -252,7 +256,7 @@ whose names start with `_` only when extending RocqiPath itself.
 ## CLI
 
 ```bash
-roqcipath
+rocqipath
 ```
 
 The menu separates ordinary WSI tissue extraction from TMA/core extraction and
@@ -262,13 +266,16 @@ the typed Python APIs are preferred because configurations can be versioned.
 ## Development
 
 ```bash
-python -m pip install -e ".[all,dev]"
+python -m pip install -e .
+python -m pip install "pillow>=10.0" "pytest>=7.4" "ruff>=0.4"
 python -m pytest
 python -m ruff check src tests
 python -m ruff format --check src tests
 ```
 
-GitHub Actions runs the lightweight unit suite on Python 3.9-3.12. Integration
+Development tools are intentionally installed separately and are not package
+runtime dependencies. GitHub Actions runs the lightweight unit suite on Python
+3.10 and 3.11. Integration
 tests requiring scanner files and native WSI libraries should be marked and run
 in an environment that provides those assets.
 
@@ -278,27 +285,27 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) before adding a module or public API.
 
 When RocqiPath contributes to published research, cite RocqiPath and cite the underlying software components that were materially used in the reported analysis. You do not need to cite every utility dependency for every project.
 
-- **VALIS** — cite when using WSI registration or alignment:
+- **VALIS** â€” cite when using WSI registration or alignment:
 
   Gatenbee, C. D., Baker, A.-M., Prabhakaran, S., Robertson-Tessi, M., Graham, T. A., & Anderson, A. R. A. (2023). _Virtual alignment of pathology image series for multi-gigapixel whole slide images_. Nature Communications, 14, 4062. https://doi.org/10.1038/s41467-023-40218-9
 
-- **TIAToolbox** — cite when using TIAToolbox-based stain normalization or tissue-image analysis:
+- **TIAToolbox** â€” cite when using TIAToolbox-based stain normalization or tissue-image analysis:
 
   Pocock, J., Graham, S., Vu, Q. D., et al. (2022). _TIAToolbox as an end-to-end library for advanced tissue image analytics_. Communications Medicine, 2, 120. https://doi.org/10.1038/s43856-022-00186-5
 
-- **scikit-image** — cite when using tissue masking, segmentation, morphology, or related image-processing operations:
+- **scikit-image** â€” cite when using tissue masking, segmentation, morphology, or related image-processing operations:
 
-  van der Walt, S., Schönberger, J. L., Nunez-Iglesias, J., et al. (2014). _scikit-image: Image processing in Python_. PeerJ, 2, e453. https://doi.org/10.7717/peerj.453
+  van der Walt, S., SchÃ¶nberger, J. L., Nunez-Iglesias, J., et al. (2014). _scikit-image: Image processing in Python_. PeerJ, 2, e453. https://doi.org/10.7717/peerj.453
 
-- **NumPy** — cite when numerical array processing is a substantive part of the analysis:
+- **NumPy** â€” cite when numerical array processing is a substantive part of the analysis:
 
-  Harris, C. R., Millman, K. J., van der Walt, S. J., et al. (2020). _Array programming with NumPy_. Nature, 585, 357–362. https://doi.org/10.1038/s41586-020-2649-2
+  Harris, C. R., Millman, K. J., van der Walt, S. J., et al. (2020). _Array programming with NumPy_. Nature, 585, 357â€“362. https://doi.org/10.1038/s41586-020-2649-2
 
-- **OpenSlide** — acknowledge when it is used to read whole-slide image formats:
+- **OpenSlide** â€” acknowledge when it is used to read whole-slide image formats:
 
   Goode, A., Gilbert, B., Harkes, J., Jukic, D., & Satyanarayanan, M. (2013). _OpenSlide: A vendor-neutral software foundation for digital pathology_. Journal of Pathology Informatics, 4, 27. https://doi.org/10.4103/2153-3539.119005
 
-- **libvips / pyvips** — cite when using libvips-backed image I/O, resizing, or pyramidal TIFF generation:
+- **libvips / pyvips** â€” cite when using libvips-backed image I/O, resizing, or pyramidal TIFF generation:
 
   Cupitt, J., Martinez, K., Fuller, L., & Wolthuizen, K. A. (2025). _The libvips image processing library_. Proceedings of Electronic Imaging 2025, Burlingame. See the [official libvips citation guidance](https://github.com/libvips/libvips/blob/master/doc/cite.md).
 

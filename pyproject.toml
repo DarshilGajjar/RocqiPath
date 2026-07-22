@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "rocqipath"
-version = "1.2.0"
+dynamic = ["version"]
 description = "A Python library for whole-slide image (WSI) processing and analysis in computational pathology."
 readme = "README.md"
 requires-python = ">=3.10,<3.12"
@@ -32,10 +32,9 @@ classifiers = [
 ]
 
 # ---------------------------------------------------------------------------
-# Core dependencies — logging and magnification/output utilities.
+# Core dependencies — required by the installed CLI and shared logger.
 # ---------------------------------------------------------------------------
 dependencies = [
-    "numpy>=1.23",
     "rich>=13.0",
     "loguru>=0.7",
 ]
@@ -44,6 +43,7 @@ dependencies = [
 # `pip install rocqipath[extraction]`
 # TMA core extraction + whole-slide tissue extraction pipelines.
 extraction = [
+    "numpy>=1.23",
     "opencv-python-headless>=4.7",
     "pyvips>=2.2",
     "openslide-python>=1.3",
@@ -55,23 +55,20 @@ extraction = [
 # Low-level registration engine (WSIRegistrar / ValisConfig) and the
 # alignment pipeline built on top of it.
 valis = [
+    "numpy>=1.23",
     "opencv-python-headless>=4.7",
     "pyvips>=2.2",
     "openslide-python>=1.3",
     "pillow>=10.0",
     "tqdm>=4.65",
-    "valis-wsi==1.2.0",
+    "valis-wsi>=1.2",
     "matplotlib>=3.7",
 ]
-
-# `pip install rocqipath[wsi]`
-# Alias of `valis` kept for backward-compatible install hints referenced
-# elsewhere in the codebase (e.g. `pip install rocqipath[wsi,valis]`).
-wsi = ["opencv-python-headless>=4.7", "pyvips>=2.2", "openslide-python>=1.3", "pillow>=10.0", "tqdm>=4.65", "valis-wsi==1.2.0", "matplotlib>=3.7"]
 
 # `pip install rocqipath[stain]`
 # Stain normalization (Reinhard / Macenko / Vahadane).
 stain = [
+    "numpy>=1.23",
     "opencv-python-headless>=4.7",
     "tiatoolbox>=1.5",
 ]
@@ -79,6 +76,7 @@ stain = [
 # `pip install rocqipath[cellcount]`
 # DAB / IHC positive-cell counting utilities (any biomarker).
 cellcount = [
+    "numpy>=1.23",
     "opencv-python-headless>=4.7",
     "openslide-python>=1.3",
     "scikit-image>=0.21",
@@ -91,44 +89,23 @@ cellcount = [
 # `pip install rocqipath[viz]`
 # Grid-map / patch-pair visualisation and WSI comparison figures.
 viz = [
+    "numpy>=1.23",
     "opencv-python-headless>=4.7",
     "matplotlib>=3.7",
     "pillow>=10.0",
 ]
 
-# `pip install rocqipath[all]`
-# Every optional pipeline and engine.
-all = [
-    "opencv-python-headless>=4.7", "pyvips>=2.2", "openslide-python>=1.3",
-    "pillow>=10.0", "tqdm>=4.65", "valis-wsi==1.2.0", "tiatoolbox>=1.5",
-    "scikit-image>=0.21", "matplotlib>=3.7", "openpyxl>=3.1",
-]
-
-# `pip install rocqipath[dev]`
-# Testing, linting, and formatting tools for contributors.
-dev = [
-    "pillow>=10.0",
-    "pytest>=7.4",
-    "pytest-cov>=4.1",
-    "ruff>=0.4",
-    "mypy>=1.8",
-    "pre-commit>=3.7",
-]
-
 [project.scripts]
 rocqipath = "rocqipath.cli:main"
-RocqiPath_create_dataset = "rocqipath.planning.entrypoints:create_dataset_entry"
-RocqiPath_verify_dataset = "rocqipath.planning.entrypoints:verify_dataset_entry"
-RocqiPath_extract_fingerprint = "rocqipath.planning.entrypoints:extract_fingerprint_entry"
-RocqiPath_plan_experiment = "rocqipath.planning.entrypoints:plan_experiment_entry"
-RocqiPath_preprocess = "rocqipath.planning.entrypoints:preprocess_entry"
-RocqiPath_plan_and_preprocess = "rocqipath.planning.entrypoints:plan_and_preprocess_entry"
 
 [tool.setuptools.packages.find]
 where = ["src"]
 
 [tool.setuptools.package-data]
 rocqipath = ["py.typed"]
+
+[tool.setuptools.dynamic]
+version = { attr = "rocqipath.__version__" }
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

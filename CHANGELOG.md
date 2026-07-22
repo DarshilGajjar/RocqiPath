@@ -1,20 +1,31 @@
 # Changelog
 
-## 1.1.0
+All notable changes to RocqiPath will be documented in this file from the
+1.0.0 maintenance baseline forward.
 
-- Reorganized the flat script collection into a professional `src/` package.
-- Separated WSI tissue extraction from TMA/core extraction while retaining
-  shared extraction primitives.
-- Replaced ambiguous pyramid-index settings with physical magnification; 20x
-  is now the default across extraction, registration patches, and cell counts.
-- Added correct 80x-to-20x TMA downsampling and independently resolved
-  reference/moving slide plans.
-- Added a shared OpenSlide/PIL reader and automatic magnification recovery from
-  RocqiPath region manifests.
-- Standardized outputs as `<root>/<module>/<individual_item>` and flattened
-  region/patch channel subfolders.
-- Fixed H&E alias matching, arbitrary target-stain discovery, target-stain
-  selection, target-resolution MPP area calculations, resource cleanup, and
-  unused imports.
-- Added package exports, unit tests, CI, contributor guidance, and updated
-  installation metadata.
+## [Unreleased]
+
+No unreleased changes yet.
+
+## [1.0.0] - 2026-07-22
+
+### Changed
+
+- Established `rocqipath` as the canonical distribution, import, module, and
+  command namespace.
+- Removed the abandoned nnU-Net-inspired planning console entry points.
+- Made `src/rocqipath/__init__.py` the single source of the package version.
+- Simplified the base installation to the dependencies required by the shared
+  CLI and logger.
+- Kept scientific and WSI dependencies in explicit feature extras:
+  `extraction`, `valis`, `stain`, `cellcount`, and `viz`.
+- Removed the temporary `wsi`, `all`, and `dev` extras. Development tools are
+  installed directly by CI and are not part of the package metadata.
+
+### Included
+
+- Physical-magnification-aware slide reading and output planning.
+- VALIS and ORB registration workflows.
+- WSI tissue, TMA/core, and paired-patch extraction workflows.
+- Reinhard, Macenko, and Vahadane stain normalization.
+- DAB-positive cell counting and visual quality-control utilities.
