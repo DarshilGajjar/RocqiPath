@@ -13,7 +13,7 @@ The package uses physical objective magnification throughout. The default is
 
 ## Installation
 
-RocqiPath is tested with 64-bit Python 3.10â€“3.11. Python 3.11 (64-bit) is
+RocqiPath is tested with 64-bit Python 3.10–3.11. Python 3.11 (64-bit) is
 recommended for the complete installation because the current TIAToolbox/Numba
 dependency stack does not support Python 3.12 or newer.
 
@@ -26,18 +26,24 @@ python -m pip install -e .
 
 # Install only the capabilities required by your workflow
 python -m pip install -e ".[extraction]"
+python -m pip install -e ".[orb]"
 python -m pip install -e ".[valis]"
 python -m pip install -e ".[stain]"
 python -m pip install -e ".[cellcount]"
 python -m pip install -e ".[viz]"
 ```
 
-Extras can be combined, for example
+Use `orb` for contour/ORB registration and streamed aligned-WSI export without
+installing VALIS. Use `valis` for rigid/non-rigid VALIS registration. Extras can
+be combined, for example
 `python -m pip install -e ".[extraction,cellcount,viz]"`.
 
-### Additional VALIS prerequisite: libvips
+### Native WSI prerequisites
 
-RocqiPathâ€™s alignment and pyramidal-image workflows use `pyvips`, which requires the native **libvips** runtime. Installing `valis-wsi` with `pip` installs the Python packages, but does not install libvips on Windows.
+RocqiPath’s ORB/VALIS aligned-WSI export and pyramidal-image workflows use
+`pyvips`, which requires the native **libvips** runtime. WSI reading also
+requires the native **OpenSlide** runtime. Python packages installed by `pip`
+do not install these native libraries on every platform.
 
 #### Windows installation
 
@@ -48,7 +54,7 @@ RocqiPathâ€™s alignment and pyramidal-image workflows use `pyvips`, which r
 
    ```powershell
    .\.venv\Scripts\Activate.ps1
-   python -m pip install -e ".[valis]"
+   python -m pip install -e ".[orb]"   # or .[valis]
    ```
 
 ## Standard output layout
@@ -202,6 +208,11 @@ results = run_alignment(AlignmentConfig(
 ))
 ```
 
+ORB export is tiled and disk-backed: it never allocates a level-sized NumPy
+canvas, and it writes pyramidal OME-TIFF through libvips without importing
+VALIS. Set `dry_run=True` to validate discovery and pairing with only the base
+installation.
+
 Expected input:
 
 ```text
@@ -233,6 +244,10 @@ counter = PositiveCellCounter({
 })
 counter.count_slide("./data/cd8.svs", label="CD8")
 ```
+
+Cell-density tissue area is measured from the same per-pixel tissue mask used
+for patch acceptance. Background pixels inside an accepted tile are excluded
+from the area denominator.
 
 ## Public package layout
 
@@ -266,20 +281,21 @@ the typed Python APIs are preferred because configurations can be versioned.
 ## Development
 
 ```bash
-python -m pip install -e .
-python -m pip install "pillow>=10.0" "pytest>=7.4" "ruff>=0.4"
+python -m pip install -e ".[orb,cellcount,viz]"
+python -m pip install "pytest>=7.4" "ruff>=0.4"
 python -m pytest
 python -m ruff check src tests
 python -m ruff format --check src tests
 ```
 
 Development tools are intentionally installed separately and are not package
-runtime dependencies. GitHub Actions runs the lightweight unit suite on Python
-3.10 and 3.11. Integration
-tests requiring scanner files and native WSI libraries should be marked and run
-in an environment that provides those assets.
+runtime dependencies. GitHub Actions runs unit and scanner-free synthetic
+integration tests on Python 3.10 and 3.11. Tests with real scanner files remain
+local and must use non-identifiable data.
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) before adding a module or public API.
+See [CONTRIBUTING.md](CONTRIBUTING.md) before adding a module or public API and
+[SUPPORT.md](SUPPORT.md) for the supported Python, dependency, and maintenance
+policy.
 
 ## Software citations
 
@@ -293,7 +309,9 @@ When RocqiPath contributes to published research, cite RocqiPath and cite the un
 
   Pocock, J., Graham, S., Vu, Q. D., et al. (2022). _TIAToolbox as an end-to-end library for advanced tissue image analytics_. Communications Medicine, 2, 120. https://doi.org/10.1038/s43856-022-00186-5
 
-  Harris, C. R., Millman, K. J., van der Walt, S. J., et al. (2020). _Array programming with NumPy_. Nature, 585, 357â€“362. https://doi.org/10.1038/s41586-020-2649-2
+- **NumPy** - When numerical array processing is substantive to the analysis.
+
+  Harris, C. R., Millman, K. J., van der Walt, S. J., et al. (2020). _Array programming with NumPy_. Nature, 585, 357–362. https://doi.org/10.1038/s41586-020-2649-2
 
 - **libvips / pyvips**  - For libvips-backed image I/O, resizing, or pyramidal TIFF generation.
 

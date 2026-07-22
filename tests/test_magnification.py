@@ -7,11 +7,11 @@ from pathlib import Path
 
 from PIL import Image
 
-from roqcipath.magnification import (
+from rocqipath.magnification import (
     build_magnification_plan,
     objective_magnification_from_properties,
 )
-from roqcipath.slide import SlideReader
+from rocqipath.slide import SlideReader
 
 
 class MagnificationPlanTests(unittest.TestCase):
@@ -39,9 +39,7 @@ class MagnificationPlanTests(unittest.TestCase):
 
     def test_metadata_and_explicit_fallback(self):
         self.assertEqual(
-            objective_magnification_from_properties(
-                {"openslide.objective-power": "80"}
-            ),
+            objective_magnification_from_properties({"openslide.objective-power": "80"}),
             (80.0, "openslide.objective-power"),
         )
         self.assertEqual(

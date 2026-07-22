@@ -4,7 +4,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from roqcipath.utils import detect_wsi_format, find_hne_ihc_pairs_by_suffix, list_wsi_files
+from rocqipath.utils import detect_wsi_format, find_hne_ihc_pairs_by_suffix, list_wsi_files
 
 
 class UtilityTests(unittest.TestCase):

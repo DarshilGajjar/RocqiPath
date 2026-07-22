@@ -4,7 +4,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from roqcipath.output import OutputLayout, safe_name
+from rocqipath.output import OutputLayout, safe_name
 
 
 class OutputLayoutTests(unittest.TestCase):

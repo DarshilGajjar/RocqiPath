@@ -16,6 +16,10 @@
    class, including private helpers with non-obvious behavior.
 7. Preserve public names when practical. Add a deprecation path when removing
    a public symbol.
+8. Put shared filesystem discovery in `rocqipath.utils`; do not add another
+   recursive scanner to a feature module.
+9. Use `rocqipath.logger` for library status output. Do not add `print()`-based
+   progress protocols or configure independent logging sinks.
 
 ## Adding a feature
 
@@ -29,6 +33,8 @@
 ## Checks
 
 ```bash
+python -m pip install -e ".[orb,cellcount,viz]"
+python -m pip install "pytest>=7.4" "ruff>=0.4"
 python -m compileall -q src tests
 python -m pytest
 python -m ruff check src tests
@@ -37,3 +43,14 @@ python -m ruff format --check src tests
 
 Use a small, non-identifiable test slide for local integration testing. Do not
 commit patient data, model weights, generated output, or scanner exports.
+
+## Release checklist
+
+1. Confirm `pyproject.toml` contains the intended static version.
+2. Run the full check sequence on Python 3.10 and 3.11 with OpenSlide and
+   libvips available.
+3. Build a wheel and verify the `rocqipath` import and console entry point from
+   an isolated environment.
+4. Move user-visible changes from `Unreleased` into the dated changelog entry.
+5. Commit the exact verified tree, then create the annotated `v<version>` tag.
+6. Push the commit and tag only after reviewing the remote branch for new work.
