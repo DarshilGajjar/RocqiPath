@@ -22,7 +22,7 @@ git clone https://github.com/DarshilGajjar/RocqiPath.git
 cd RocqiPath
 
 # Editable development environment with every pipeline
-python -m pip install -e ".[all,dev]"
+python -m pip install -e ".[all]"
 
 # Or install only selected capabilities
 python -m pip install -e ".[extraction]"
