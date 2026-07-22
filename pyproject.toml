@@ -7,7 +7,7 @@ name = "roqcipath"
 version = "1.1.0"
 description = "A Python library for whole-slide image (WSI) processing and analysis in computational pathology."
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 license = { text = "All Rights Reserved" }
 authors = [
     { name = "Darshil Gajjar" },
@@ -25,10 +25,8 @@ classifiers = [
     "Intended Audience :: Science/Research",
     "License :: Other/Proprietary License",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
     "Topic :: Scientific/Engineering :: Image Processing",
     "Topic :: Scientific/Engineering :: Medical Science Apps.",
 ]
