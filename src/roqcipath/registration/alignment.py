@@ -167,11 +167,6 @@ except ImportError:
     WSIRegistrar = None      # type: ignore[assignment,misc]
     ValisConfig  = None      # type: ignore[assignment,misc]
     WSI_PROCESSING_AVAILABLE = False
-    warnings.warn(
-        "roqcipath.registration.core not found. "
-        "Set dry_run=True to test slide pairing without running registration.",
-        stacklevel=2,
-    )
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -1094,6 +1089,11 @@ def run_alignment(config: AlignmentConfig) -> List[AlignedCaseResult]:
     -------
     List[AlignedCaseResult]
     """
-    from roqcipath.logger import print_banner
-    print_banner()
-    return AlignmentProcessor(config).run()
+    if not WSI_PROCESSING_AVAILABLE:
+        raise ImportError(
+            "roqcipath.registration.core not failed. Install valis-wsi or set dry_run=True."
+        )
+    else:
+        from roqcipath.logger import print_banner
+        print_banner()
+        return AlignmentProcessor(config).run()
