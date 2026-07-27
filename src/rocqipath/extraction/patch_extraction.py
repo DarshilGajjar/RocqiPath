@@ -1,11 +1,13 @@
 """
 rocqipath.extraction.patch_extraction
 =======================================
-One config-driven extraction engine lives in this module:
+Two patch-extraction APIs live in this module:
 
-``ReversiblePatchExtractor`` (compatibility adapter)
-    Preserves the original constructor and reconstruction method, while
-    delegating discovery and extraction to the config-driven engine below.
+``ReversiblePatchExtractor`` (original)
+    Sliding-window extraction pairing H&E slides with their aligned IHC
+    counterparts under a fixed ``Sample_NNNN_he.tif`` naming convention,
+    plus re-assembling extracted H&E patches back into a full pyramidal
+    OME-TIFF (a "reversible" round trip — hence the class name).
 
 ``PatchExtractionConfig`` / ``run_patch_extraction`` (current)
     A generalized, config-driven sliding-window extractor: the reference
@@ -14,7 +16,12 @@ One config-driven extraction engine lives in this module:
     configurable (not fixed to "he"/"ihc"), and case processing can run
     in parallel via ``max_workers``. Prefer this API for new code.
 
-All status output uses :mod:`rocqipath.logger`.
+Unlike most other modules in this package, this one predates the unified
+:mod:`rocqipath.logger` system and communicates progress via plain
+``print()`` statements (prefixed ``[INFO]``, ``[WARN]``, ``[ERROR]``,
+``[DEBUG]``, ``[OK]``, ``[SKIP]``, ``[DONE]``) and :mod:`tqdm` progress
+bars rather than the Rich-based logging used elsewhere. It has not (yet)
+been migrated to the shared logger.
 
 Patch extraction module with reversible patch extraction (sliding-window only)
 
@@ -37,11 +44,11 @@ Expected data structure — ``PatchExtractionConfig`` / ``run_patch_extraction``
 ::
 
     he_dir/                                  (searched recursively)
-      <sample_id>_<anything>.tif             (matched against he_filename_pattern)
+      <sample_id>_<anything>.tif             (matched against reference_pattern)
 
     aligned_dir/
       <biomarker>/
-        <sample_id>_<he_channel_name>/
+        <sample_id>_<reference_name>/
             aligned_target.ome.tiff
 
 Quickstart
@@ -68,9 +75,9 @@ Current, config-driven API::
         aligned_dir         = "./organized_dataset/pdgfrb/pdgfrb",
         output_dir          = "./organized_dataset/pdgfrb/extracted_patches",
         biomarker_folders   = ["pdgfrb"],
-        he_filename_pattern = r"^(?P<sample_id>[a-zA-Z0-9]+)_cd31_region\\d+\\.tiff?$",
-        he_channel_name     = "cd31",
-        ihc_channel_name    = "pdgfrb",
+        reference_pattern   = r"^(?P<sample_id>[a-zA-Z0-9]+)_cd31_region\\d+\\.tiff?$",
+        reference_name      = "cd31",
+        moving_name         = "pdgfrb",
         patch_size          = 2048,
         stride              = 2048,
         tissue_threshold    = 0.5,
@@ -87,19 +94,13 @@ import re
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple
 
-import numpy as np
-from PIL import Image, PngImagePlugin
-from tqdm.auto import tqdm
-from rocqipath.logger import logger
-from rocqipath.magnification import DEFAULT_TARGET_MAGNIFICATION
-from rocqipath.output import OutputLayout
-from rocqipath.slide import SlideReader as _SlideReader
-from rocqipath.utils import discover_matching_files, find_aligned_wsi
-
-try:
-    import pyvips
-except (ImportError, OSError):
-    pyvips = None  # type: ignore[assignment]
+import numpy as np # type: ignore
+import pyvips # type: ignore
+from PIL import Image, PngImagePlugin # type: ignore
+from tqdm.auto import tqdm # type: ignore
+from rocqipath.magnification import DEFAULT_TARGET_MAGNIFICATION # type: ignore
+from rocqipath.output import OutputLayout # type: ignore
+from rocqipath.slide import SlideReader as _SlideReader # type: ignore
 
 __all__ = [
     "ReversiblePatchExtractor",
@@ -112,7 +113,6 @@ PngImagePlugin.MAX_TEXT_CHUNK = 64 * 1024 * 1024
 
 
 # ── Slide reader with PIL fallback ───────────────────────────────────────────
-
 
 # ── Main class ────────────────────────────────────────────────────────────────
 class ReversiblePatchExtractor:
@@ -188,13 +188,13 @@ class ReversiblePatchExtractor:
         found on disk (useful for catching path/naming mismatches before
         a long batch run starts).
         """
-        self.cfg = cfg
+        self.cfg        = cfg
         self.patch_size = int(cfg.get("patch_size", 256))
-        self.stride = int(cfg.get("stride", self.patch_size))
+        self.stride     = int(cfg.get("stride", self.patch_size))
 
-        self.output_dir = os.path.abspath(cfg.get("output_dir", "./output"))
-        self.he_root = os.path.abspath(cfg["he_root"])
-        self.aligned_root = os.path.abspath(cfg["aligned_root"])
+        self.output_dir       = os.path.abspath(cfg.get("output_dir", "./output"))
+        self.he_root          = os.path.abspath(cfg["he_root"])
+        self.aligned_root     = os.path.abspath(cfg["aligned_root"])
         # ``magnification`` historically meant a pyramid index. It now means
         # physical objective magnification; use ``target_magnification`` in new code.
         self.target_magnification = float(
@@ -212,19 +212,14 @@ class ReversiblePatchExtractor:
         self.biomarker_folders = cfg["biomarker_folders"]
 
         os.makedirs(self.output_dir, exist_ok=True)
-        logger.warning(
-            "ReversiblePatchExtractor is a compatibility adapter; "
-            "prefer PatchExtractionConfig and run_patch_extraction()."
-        )
-        logger.info(
-            "Patch extraction: reference={} aligned={} output={} patch={} stride={} zoom={}x",
-            self.he_root,
-            self.aligned_root,
-            self.output_dir,
-            self.patch_size,
-            self.stride,
-            self.target_magnification,
-        )
+        print("[INFO] Initialized Patch Extraction Module...")
+        print(f"       HE root          : {self.he_root}")
+        print(f"       Aligned root     : {self.aligned_root}")
+        print(f"       Output           : {self.output_dir}")
+        print(f"       Patch Size       : {self.patch_size}")
+        print(f"       Stride           : {self.stride}")
+        print(f"       Magnification    : {self.target_magnification:g}x")
+        print(f"       Tissue Threshold : {int(self.tissue_threshold * 100)}%")
         self._debug_folders()
 
     # ── Debug ─────────────────────────────────────────────────────────────────
@@ -239,23 +234,11 @@ class ReversiblePatchExtractor:
         at startup rather than discovered later as "0 cases found".
         """
         if os.path.isdir(self.he_root):
-            logger.debug(
-                "Reference biomarker folders: {}",
-                [
-                    d
-                    for d in os.listdir(self.he_root)
-                    if os.path.isdir(os.path.join(self.he_root, d))
-                ],
-            )
+            print(f"[DEBUG] HE biomarker folders: "
+                  f"{[d for d in os.listdir(self.he_root) if os.path.isdir(os.path.join(self.he_root, d))]}")
         if os.path.isdir(self.aligned_root):
-            logger.debug(
-                "Aligned biomarker folders: {}",
-                [
-                    d
-                    for d in os.listdir(self.aligned_root)
-                    if os.path.isdir(os.path.join(self.aligned_root, d))
-                ],
-            )
+            print(f"[DEBUG] Aligned biomarker folders: "
+                  f"{[d for d in os.listdir(self.aligned_root) if os.path.isdir(os.path.join(self.aligned_root, d))]}")
 
     # ── Tissue detection ──────────────────────────────────────────────────────
     def _is_tissue(self, image_pil) -> bool:
@@ -280,7 +263,7 @@ class ReversiblePatchExtractor:
             otherwise, meaning the patch is mostly blank slide
             background and should be skipped.
         """
-        return _patch_is_tissue(image_pil, self.tissue_threshold)
+        return float(np.mean(np.array(image_pil.convert("L")) < 235)) >= self.tissue_threshold
 
     # ── File discovery ─────────────────────────────────────────────────────────
     # Matches Sample_0001_he.tif AND Sample_0001_he.tiff (case-insensitive)
@@ -313,13 +296,13 @@ class ReversiblePatchExtractor:
         for biomarker in self.biomarker_folders:
             bio_he_dir = os.path.join(self.he_root, biomarker, "he")
             if not os.path.isdir(bio_he_dir):
-                logger.warning("Reference subfolder missing: {}", bio_he_dir)
+                print(f"[WARN] HE subfolder missing: {bio_he_dir}")
                 continue
-            pattern = re.compile(r"^(?P<sample_id>Sample_\d{4})_he\.tiff?$", re.IGNORECASE)
-            out.extend(
-                (sample_id, biomarker.upper(), path)
-                for sample_id, path in discover_matching_files(bio_he_dir, pattern)
-            )
+            for fn in os.listdir(bio_he_dir):
+                m = self._HE_PAT.match(fn)
+                if m:
+                    out.append((m.group(1), biomarker.upper(),
+                                os.path.join(bio_he_dir, fn)))
         return sorted(out, key=lambda x: (x[1], x[0]))
 
     def _find_aligned_ihc(self, sample_id: str, biomarker: str) -> Optional[str]:
@@ -357,37 +340,93 @@ class ReversiblePatchExtractor:
         via :func:`sorted`) is used as a last resort rather than failing
         the whole run.
         """
-        return find_aligned_wsi(self.aligned_root, biomarker, sample_id, "he")
+        case_dir = os.path.join(self.aligned_root, biomarker,
+                                f"{sample_id}_he")
+        if not os.path.isdir(case_dir):
+            print(f"[DEBUG] Case folder not found: {case_dir}")
+            return None
+        hits = sorted(glob.glob(os.path.join(case_dir, "*.ome.tif*")))
+        if not hits:
+            print(f"[DEBUG] No .ome.tif* in: {case_dir}  |  contents: {os.listdir(case_dir)}")
+            return None
+        if len(hits) == 1:
+            return hits[0]
+        for kw in [biomarker.lower(), "ihc", "aligned"]:
+            preferred = [h for h in hits if kw in os.path.basename(h).lower()]
+            if len(preferred) == 1:
+                return preferred[0]
+        print(f"[WARN] Multiple OME-TIFFs; using: {os.path.basename(hits[0])}")
+        return hits[0]
 
     # ── Patch extraction ───────────────────────────────────────────────────────
-    def extract_from_case(
-        self, case_id: str, hne_path: str, marker_files: Dict[str, str]
-    ) -> Dict[str, Any]:
-        """Delegate one compatibility case to the config-driven engine."""
-        if len(marker_files) != 1:
-            raise ValueError("Exactly one aligned target is supported per extraction case")
-        target_channel, target_path = next(iter(marker_files.items()))
-        sample_id = case_id.rsplit("_", 1)[0]
-        cfg = PatchExtractionConfig(
-            he_dir=os.path.dirname(hne_path),
-            aligned_dir=self.aligned_root,
-            output_dir=self.output_dir,
-            biomarker_folders=[target_channel],
-            he_filename_pattern=(rf"^(?P<sample_id>{re.escape(sample_id)})_he\.tiff?$"),
-            he_channel_name="he",
-            ihc_channel_name=target_channel.lower(),
-            patch_size=self.patch_size,
-            stride=self.stride,
-            tissue_threshold=self.tissue_threshold,
-            target_magnification=self.target_magnification,
-            reference_source_magnification=self.reference_source_magnification,
-            target_source_magnification=self.target_source_magnification,
+    def extract_from_case(self, case_id: str, hne_path: str,
+                          marker_files: Dict[str, str]):
+        """Sliding-window extraction across the whole slide."""
+        os_hne     = _SlideReader(hne_path)
+        os_markers = {m: _SlideReader(p) for m, p in marker_files.items()}
+        os_hne.configure_magnification(
+            self.target_magnification, self.reference_source_magnification
         )
-        return _extract_case_patches(case_id, hne_path, target_path, target_channel, cfg)
+        for reader in os_markers.values():
+            reader.configure_magnification(
+                self.target_magnification, self.target_source_magnification
+            )
+        w, h = os_hne.target_dimensions
+        biomarker  = next(iter(marker_files)).upper()
 
-    def reconstruct_wsi(
-        self, case_id: str, biomarker: str, output_path: str, mode: str = "he", split: str = "test"
-    ) -> dict:
+        case_dir = OutputLayout(self.output_dir).item_dir("patch_extraction", case_id)
+
+        metadata = {
+            "case_id": case_id, "dimensions": (w, h),
+            "patch_size": self.patch_size, "stride": self.stride,
+            "target_magnification": self.target_magnification,
+            "extraction_mode": "sliding", "patches": [],
+        }
+        idx = 1
+        tiles_x = (w + self.stride - 1) // self.stride
+        tiles_y = (h + self.stride - 1) // self.stride
+
+        with tqdm(total=tiles_x * tiles_y, desc=f"   -> {case_id}",
+                  leave=False, unit="patch") as pbar:
+            for y in range(0, h, self.stride):
+                for x in range(0, w, self.stride):
+                    tw = min(self.patch_size, w - x)
+                    th = min(self.patch_size, h - y)
+                    hne_p = os_hne.read_at_magnification((x, y), (tw, th)).convert("RGB")
+
+                    if self._is_tissue(hne_p):
+                        pid  = f"{idx:06d}"
+                        hp = case_dir / f"{case_id}_he_patch_{pid}.png"
+                        hne_p.save(hp, compression=None)
+                        info = {"id": pid,
+                                "coordinates": (int(x), int(y)),
+                                "size": (int(tw), int(th)),
+                                "he_path": str(hp)}
+                        for mn, os_m in os_markers.items():
+                            mp = os_m.read_at_magnification((x, y), (tw, th)).convert("RGB")
+                            mp_path = case_dir / f"{case_id}_{mn}_patch_{pid}.png"
+                            mp.save(mp_path, compression=None)
+                            mp.close()
+                            info[f"{mn}_path"] = str(mp_path)
+                        metadata["patches"].append(info)
+                        idx += 1
+
+                    hne_p.close()
+                    pbar.update(1)
+
+        os_hne.close()
+        for os_m in os_markers.values():
+            os_m.close()
+
+        meta_path = case_dir / f"{case_id}_metadata.json"
+        with open(meta_path, "w") as f:
+            json.dump(metadata, f, indent=2)
+        tqdm.write(f"  [OK] {case_id}: {idx - 1} patches saved")
+
+    # ── WSI reconstruction (single method, pyvips pyramidal output) ───────────
+    def reconstruct_wsi(self, case_id: str, biomarker: str,
+                        output_path: str, mode: str = "he",
+                        split: str = "test") -> dict:
         """
         Reconstruct a whole-slide image from extracted patches and save as
         a pyramidal TIFF using pyvips.
@@ -406,31 +445,24 @@ class ReversiblePatchExtractor:
         """
         save_dir = os.path.join(output_path, "reconstructed_wsi")
         os.makedirs(save_dir, exist_ok=True)
-        final_save_path = os.path.join(save_dir, f"{case_id}_{mode}_pyramid.tif")
+        final_save_path = os.path.join(save_dir,
+                                       f"{case_id}_{mode}_pyramid.tif")
 
         # ── Load metadata ─────────────────────────────────────────────────────
         meta_path = os.path.join(
-            self.output_dir,
-            "patch_extraction",
-            case_id,
-            f"{case_id}_metadata.json",
+            self.output_dir, "patch_extraction", case_id, f"{case_id}_metadata.json",
         )
         with open(meta_path, "r") as f:
             metadata = json.load(f)
 
-        w, h = metadata.get("dimensions", (0, 0))
-        patches = metadata.get("patches", [])
-        stride = metadata.get("stride", self.patch_size)
+        w, h     = metadata.get("dimensions", (0, 0))
+        patches  = metadata.get("patches", [])
+        stride   = metadata.get("stride", self.patch_size)
         is_overlapping = stride < self.patch_size
 
-        logger.info(
-            "Reconstructing {}x{} canvas: stride={} overlap={} patches={}",
-            w,
-            h,
-            stride,
-            is_overlapping,
-            len(patches),
-        )
+        print(f"[INFO] Canvas     : {w} × {h} px")
+        print(f"[INFO] Stride     : {stride}  |  Overlap: {is_overlapping}")
+        print(f"[INFO] Patches    : {len(patches)}")
 
         # ── Resolve patch directory ───────────────────────────────────────────
         base_folder = os.path.join(self.output_dir, "patch_extraction", case_id)
@@ -440,18 +472,21 @@ class ReversiblePatchExtractor:
             full_patch_dir = base_folder
 
         if not os.path.isdir(full_patch_dir):
-            logger.error("Patch directory not found: {}", full_patch_dir)
+            print(f"[ERROR] Patch directory not found: {full_patch_dir}")
             return {"placed": 0, "missing": len(patches)}
 
         # ── Build filename index: 6-digit patch id → [file paths] ────────────
         file_index: Dict[str, List[str]] = {}
         for fname in os.listdir(full_patch_dir):
-            if not fname.lower().endswith((".png", ".tif", ".tiff", ".jpg", ".jpeg")):
+            if not fname.lower().endswith(
+                    (".png", ".tif", ".tiff", ".jpg", ".jpeg")):
                 continue
             for pid0 in re.findall(r"(\d{6})", fname):
-                file_index.setdefault(pid0, []).append(os.path.join(full_patch_dir, fname))
+                file_index.setdefault(pid0, []).append(
+                    os.path.join(full_patch_dir, fname))
 
-        tag = "he" if mode.lower() in ("he", "predicted_ihc") else biomarker.lower()
+        tag = ("he" if mode.lower() in ("he", "predicted_ihc")
+               else biomarker.lower())
 
         # ── Allocate canvas ───────────────────────────────────────────────────
         if is_overlapping:
@@ -465,7 +500,7 @@ class ReversiblePatchExtractor:
         # ── Fill canvas ───────────────────────────────────────────────────────
         for p in tqdm(patches, desc=f"Assembling [{mode}]"):
             coords = p.get("coordinates")
-            pid = p.get("id")
+            pid    = p.get("id")
             if coords is None or pid is None:
                 continue
             x, y = int(coords[0]), int(coords[1])
@@ -473,12 +508,13 @@ class ReversiblePatchExtractor:
             candidates = file_index.get(pid, [])
             if not candidates:
                 candidates = sorted(
-                    g
-                    for g in glob.glob(os.path.join(full_patch_dir, f"*{pid}*"))
-                    if g.lower().endswith((".png", ".tif", ".tiff", ".jpg", ".jpeg"))
+                    g for g in glob.glob(
+                        os.path.join(full_patch_dir, f"*{pid}*"))
+                    if g.lower().endswith(
+                        (".png", ".tif", ".tiff", ".jpg", ".jpeg"))
                 )
             if not candidates:
-                logger.warning("Missing patch {}", pid)
+                tqdm.write(f"[WARN] Missing patch {pid}")
                 missing += 1
                 continue
 
@@ -486,12 +522,9 @@ class ReversiblePatchExtractor:
                 chosen = candidates[0]
             else:
                 chosen = next(
-                    (
-                        c
-                        for c in candidates
-                        if case_id.lower() in os.path.basename(c).lower()
-                        or tag in os.path.basename(c).lower()
-                    ),
+                    (c for c in candidates
+                     if case_id.lower() in os.path.basename(c).lower()
+                     or tag in os.path.basename(c).lower()),
                     candidates[0],
                 )
 
@@ -500,13 +533,13 @@ class ReversiblePatchExtractor:
                     arr = np.array(img.convert("RGB"))
                 ph, pw = arr.shape[:2]
                 if is_overlapping:
-                    canvas[y : y + ph, x : x + pw] += arr.astype(np.float32)
-                    counts[y : y + ph, x : x + pw] += 1.0
+                    canvas[y:y+ph, x:x+pw] += arr.astype(np.float32)
+                    counts [y:y+ph, x:x+pw] += 1.0
                 else:
-                    canvas[y : y + ph, x : x + pw] = arr
+                    canvas[y:y+ph, x:x+pw] = arr
                 placed += 1
             except Exception as e:
-                logger.warning("Cannot open {}: {}", chosen, e)
+                tqdm.write(f"[WARN] Cannot open {chosen}: {e}")
                 missing += 1
 
         # ── Finalise array ────────────────────────────────────────────────────
@@ -519,51 +552,77 @@ class ReversiblePatchExtractor:
         # ── Pyramidal TIFF via pyvips ─────────────────────────────────────────
         # pyvips.Image.new_from_memory wraps the numpy buffer with zero-copy.
         # tiffsave with pyramid=True writes all zoom levels in one pass.
-        if pyvips is None:
-            raise ImportError(
-                "WSI reconstruction requires pyvips/libvips. Install 'rocqipath[extraction]'."
-            )
-        logger.info("Writing pyramidal TIFF → {}", final_save_path)
+        print(f"[INFO] Writing pyramidal TIFF → {final_save_path}")
         h_out, w_out = final_arr.shape[:2]
-        vips_img = pyvips.Image.new_from_memory(final_arr.tobytes(), w_out, h_out, 3, "uchar")
+        vips_img = pyvips.Image.new_from_memory(
+            final_arr.tobytes(), w_out, h_out, 3, "uchar"
+        )
         vips_img.tiffsave(
             final_save_path,
-            tile=True,
-            tile_width=512,
-            tile_height=512,
-            pyramid=True,
-            compression="lzw",
-            Q=99,
+            tile        = True,
+            tile_width  = 512,
+            tile_height = 512,
+            pyramid     = True,
+            compression = "lzw",
+            Q           = 99,
             # bigtiff   = True,   # uncomment for output files > 4 GB
         )
 
-        logger.success("Saved {} (placed={}, missing={})", final_save_path, placed, missing)
+        print(f"[OK] Saved: {final_save_path}  "
+              f"(placed={placed}, missing={missing})")
         return {"placed": placed, "missing": missing}
 
     # ── Batch run ──────────────────────────────────────────────────────────────
-    def run(self) -> Dict[str, Any]:
-        """Run the compatibility configuration through the shared engine."""
-        combined: List[Dict[str, Any]] = []
-        for biomarker in self.biomarker_folders:
-            cfg = PatchExtractionConfig(
-                he_dir=os.path.join(self.he_root, biomarker, "he"),
-                aligned_dir=self.aligned_root,
-                output_dir=self.output_dir,
-                biomarker_folders=[biomarker],
-                he_filename_pattern=r"^(?P<sample_id>Sample_\d{4})_he\.tiff?$",
-                he_channel_name="he",
-                ihc_channel_name=biomarker.lower(),
-                patch_size=self.patch_size,
-                stride=self.stride,
-                tissue_threshold=self.tissue_threshold,
-                target_magnification=self.target_magnification,
-                reference_source_magnification=self.reference_source_magnification,
-                target_source_magnification=self.target_source_magnification,
+    def run(self):
+        """Extract patches for every H&E/IHC case found under the configured roots.
+
+        The main batch entry point. For each H&E slide discovered by
+        :meth:`_scan_he_cases`, attempts to locate its matching aligned
+        IHC slide via :meth:`_find_aligned_ihc`; cases without a match
+        are skipped (not treated as fatal errors, since a partially
+        processed/aligned dataset is common). For each matched pair,
+        delegates the actual patch extraction to
+        :meth:`extract_from_case`.
+
+        Returns
+        -------
+        None
+            Progress and a final summary line
+            (``processed``/``skipped`` counts) are printed; nothing is
+            returned. If :meth:`_scan_he_cases` finds no H&E files at
+            all, an error is printed and the method returns immediately
+            without attempting any extraction.
+
+        Notes
+        -----
+        Iterates cases with a :mod:`tqdm` progress bar
+        (``desc="Processing Cases"``). Per-case status (skip/info
+        messages) is written via ``tqdm.write`` rather than plain
+        ``print`` so it doesn't corrupt the progress bar's rendering.
+        """
+        he_cases = self._scan_he_cases()
+        if not he_cases:
+            print("[ERROR] No HE files found. Check he_root and biomarker_folders.")
+            return
+        print(f"[INFO] Found {len(he_cases)} HE case(s) across {self.biomarker_folders}\n")
+        skipped = processed = 0
+        for sample_id, biomarker, he_path in tqdm(he_cases,
+                                                   desc="Processing Cases",
+                                                   unit="case"):
+            aligned_ihc = self._find_aligned_ihc(sample_id, biomarker)
+            case_id     = f"{sample_id}_{biomarker}"
+            if aligned_ihc is None:
+                tqdm.write(f"[SKIP] {case_id}: aligned IHC not found")
+                skipped += 1
+                continue
+            tqdm.write(f"[INFO] {case_id}: IHC → {os.path.basename(aligned_ihc)}")
+            self.extract_from_case(
+                case_id      = case_id,
+                hne_path     = he_path,
+                marker_files = {biomarker.lower(): aligned_ihc},
             )
-            combined.extend(run_patch_extraction(cfg)["cases"])
-        processed = sum(case["status"] == "processed" for case in combined)
-        skipped = len(combined) - processed
-        return {"processed": processed, "skipped": skipped, "cases": combined}
+            processed += 1
+        print(f"\n[DONE] Processed: {processed}  |  Skipped: {skipped}")
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -572,12 +631,11 @@ class ReversiblePatchExtractor:
 
 #: Default regex for matching reference-channel filenames when
 #: :class:`PatchExtractionConfig` is constructed without an explicit
-#: ``he_filename_pattern``. Matches ``Sample_0001_he.tif``/``.tiff`` style
+#: ``reference_pattern``. Matches ``Sample_0001_he.tif``/``.tiff`` style
 #: names, mirroring :class:`ReversiblePatchExtractor`'s hardcoded convention
 #: — but here it's only the *default*, and any regex defining a
 #: ``sample_id`` named group can be substituted.
-DEFAULT_REFERENCE_FILENAME_PATTERN: str = r"^(?P<sample_id>.+?)_he\.tiff?$"
-
+DEFAULT_REFERENCE_FILENAME_PATTERN: str = r"^(?P<sample_id>[A-Za-z0-9]+)_he\.tiff?$"
 
 @dataclass
 class PatchExtractionConfig:
@@ -597,16 +655,16 @@ class PatchExtractionConfig:
     he_dir : str
         Root directory to search **recursively** for reference-channel
         whole-slide files. Every file whose name matches
-        ``he_filename_pattern`` anywhere under this tree is treated as
+        ``reference_pattern`` anywhere under this tree is treated as
         one case's reference channel, regardless of which subdirectory
         it's actually in.
     aligned_dir : str
         Root directory containing aligned target-channel files, expected
         to be organised as
-        ``aligned_dir/<biomarker>/<sample_id>_<he_channel_name>/*.ome.tif*``
+        ``aligned_dir/<biomarker>/<sample_id>_<reference_name>/*.ome.tif*``
         for each biomarker in ``biomarker_folders`` — the same directory
         convention :class:`ReversiblePatchExtractor` uses, just
-        parameterised by ``he_channel_name`` instead of a hardcoded
+        parameterised by ``reference_name`` instead of a hardcoded
         ``"he"``.
     output_dir : str
         Root directory patches and per-case JSON metadata are written
@@ -616,7 +674,7 @@ class PatchExtractionConfig:
         aligned target-channel match in, for every discovered reference
         file. Must be non-empty — there is deliberately no default list,
         so no specific biomarkers are assumed.
-    he_filename_pattern : str, optional
+    reference_pattern : str, optional
         Regular expression used to identify reference-channel files and
         extract each one's sample identifier. Must define a named group
         called ``sample_id``. Defaults to
@@ -625,18 +683,18 @@ class PatchExtractionConfig:
         path) via :func:`re.match` (i.e. anchored at the start of the
         filename; use ``$`` in your pattern to anchor the end too, as
         the default does).
-    he_channel_name : str, optional
+    reference_name : str, optional
         Label for the reference channel, used both to build the expected
         aligned-target subdirectory name
-        (``<sample_id>_<he_channel_name>/``) and as the filename/metadata
+        (``<sample_id>_<reference_name>/``) and as the filename/metadata
         key for saved reference patches. Defaults to ``"he"``. Despite
         the field name (kept for continuity with
         ``ReversiblePatchExtractor``), this does not have to be H&E —
         it's whatever channel your slides were registered against.
-    ihc_channel_name : str, optional
+    moving_name : str, optional
         Label for the target channel, used as the filename/metadata key
         for saved target patches. Defaults to ``"ihc"``. Like
-        ``he_channel_name``, this can be any channel/biomarker label.
+        ``reference_name``, this can be any channel/biomarker label.
     patch_size : int, optional
         Edge length, in pixels, of each square patch. Defaults to
         ``256``.
@@ -661,18 +719,17 @@ class PatchExtractionConfig:
         Raised by :meth:`__post_init__` if any field fails validation —
         see that method for the exact checks.
     """
-
-    he_dir: str
-    aligned_dir: str
-    output_dir: str
-    biomarker_folders: List[str]
-    he_filename_pattern: str = DEFAULT_REFERENCE_FILENAME_PATTERN
-    he_channel_name: str = "he"
-    ihc_channel_name: str = "ihc"
-    patch_size: int = 256
-    stride: Optional[int] = None
-    tissue_threshold: float = 0.9
-    max_workers: int = 1
+    he_dir:               str
+    aligned_dir:          str
+    output_dir:           str
+    biomarker_folders:    List[str]
+    reference_pattern:    str = DEFAULT_REFERENCE_FILENAME_PATTERN
+    reference_name:       str = "he"
+    moving_name:          str = "ihc"
+    patch_size:           int = 256
+    stride:               Optional[int] = None
+    tissue_threshold:     float = 0.9
+    max_workers:          int = 1
     target_magnification: float = DEFAULT_TARGET_MAGNIFICATION
     reference_source_magnification: Optional[float] = None
     target_source_magnification: Optional[float] = None
@@ -687,7 +744,7 @@ class PatchExtractionConfig:
             If ``biomarker_folders`` is empty; if ``patch_size`` or the
             (possibly-defaulted) ``stride`` is not strictly positive; if
             ``tissue_threshold`` is outside ``[0, 1]``; if
-            ``max_workers`` is less than 1; or if ``he_filename_pattern``
+            ``max_workers`` is less than 1; or if ``reference_pattern``
             is not a valid regex or does not define a ``sample_id``
             named group.
 
@@ -721,19 +778,95 @@ class PatchExtractionConfig:
         if not (0.0 <= self.dimension_tolerance <= 1.0):
             raise ValueError("dimension_tolerance must be in [0, 1]")
         try:
-            compiled = re.compile(self.he_filename_pattern, re.IGNORECASE)
+            compiled = re.compile(self.reference_pattern, re.IGNORECASE)
         except re.error as e:
-            raise ValueError(f"he_filename_pattern is not a valid regex: {e}") from e
+            raise ValueError(f"reference_pattern is not a valid regex: {e}") from e
         if "sample_id" not in compiled.groupindex:
             raise ValueError(
-                f"he_filename_pattern must define named group 'sample_id'. "
-                f"Pattern: {self.he_filename_pattern!r}"
+                f"reference_pattern must define named group 'sample_id'. "
+                f"Pattern: {self.reference_pattern!r}"
             )
 
 
-# Compatibility aliases; discovery has one implementation in rocqipath.utils.
-_discover_reference_files = discover_matching_files
-_find_aligned_target = find_aligned_wsi
+def _discover_reference_files(he_dir: str, pattern: "re.Pattern") -> List[Tuple[str, str]]:
+    """Recursively find reference-channel files matching ``pattern`` under ``he_dir``.
+
+    Parameters
+    ----------
+    he_dir : str
+        Root directory to walk recursively via :func:`os.walk`.
+    pattern : re.Pattern
+        Compiled regex (case-insensitive) defining a ``sample_id`` named
+        group, matched against each filename via :meth:`re.Pattern.match`
+        (basename only, not the full path).
+
+    Returns
+    -------
+    list of tuple of (str, str)
+        One ``(sample_id, full_path)`` tuple per matched file, sorted by
+        ``sample_id``. Empty if ``he_dir`` doesn't exist or contains no
+        matches.
+    """
+    out: List[Tuple[str, str]] = []
+    for root, _dirs, files in os.walk(he_dir):
+        for fn in files:
+            m = pattern.match(fn)
+            if m:
+                out.append((m.group("sample_id"), os.path.join(root, fn)))
+    return sorted(out, key=lambda x: x[0])
+
+
+def _find_aligned_target(aligned_dir: str, biomarker: str,
+                         sample_id: str, reference_name: str) -> Optional[str]:
+    """Locate the aligned target-channel OME-TIFF for a sample and biomarker.
+
+    Parameterised counterpart of
+    :meth:`ReversiblePatchExtractor._find_aligned_ihc` — identical
+    directory-search and disambiguation logic, just with
+    ``reference_name`` substituted for the hardcoded ``"he"`` suffix
+    used there.
+
+    Parameters
+    ----------
+    aligned_dir : str
+        Root directory containing aligned target-channel files.
+    biomarker : str
+        Biomarker subfolder name under ``aligned_dir``.
+    sample_id : str
+        Sample identifier, as extracted by
+        :func:`_discover_reference_files`.
+    reference_name : str
+        Reference-channel label used to build the expected case
+        directory name, ``<sample_id>_<reference_name>``.
+
+    Returns
+    -------
+    str or None
+        Full path to the resolved aligned target file, or ``None`` if
+        the expected case directory doesn't exist or contains no
+        ``*.ome.tif*`` files.
+
+    Notes
+    -----
+    If multiple ``*.ome.tif*`` files exist in the case directory,
+    disambiguation is attempted by preferring a filename containing (in
+    order) the lowercased biomarker name, then ``"ihc"``, then
+    ``"aligned"``. If ambiguity remains, the first match alphabetically
+    is used as a last resort rather than failing the whole run.
+    """
+    case_dir = os.path.join(aligned_dir, biomarker, f"{sample_id}_{reference_name}")
+    if not os.path.isdir(case_dir):
+        return None
+    hits = sorted(glob.glob(os.path.join(case_dir, "*.ome.tif*")))
+    if not hits:
+        return None
+    if len(hits) == 1:
+        return hits[0]
+    for kw in [biomarker.lower(), "ihc", "aligned"]:
+        preferred = [h for h in hits if kw in os.path.basename(h).lower()]
+        if len(preferred) == 1:
+            return preferred[0]
+    return hits[0]
 
 
 def _patch_is_tissue(image_pil: "Image.Image", tissue_threshold: float) -> bool:
@@ -763,9 +896,8 @@ def _patch_is_tissue(image_pil: "Image.Image", tissue_threshold: float) -> bool:
     return float(np.mean(np.array(image_pil.convert("L")) < 235)) >= tissue_threshold
 
 
-def _extract_case_patches(
-    case_id: str, reference_path: str, target_path: str, biomarker: str, cfg: PatchExtractionConfig
-) -> Dict[str, Any]:
+def _extract_case_patches(case_id: str, reference_path: str, target_path: str,
+                          biomarker: str, cfg: PatchExtractionConfig) -> Dict[str, Any]:
     """Run sliding-window extraction for a single reference/target case.
 
     Parameters
@@ -782,7 +914,7 @@ def _extract_case_patches(
         directory path.
     cfg : PatchExtractionConfig
         Supplies ``patch_size``, ``stride``, ``tissue_threshold``,
-        ``he_channel_name``, ``ihc_channel_name``, and ``output_dir``.
+        ``reference_name``, ``moving_name``, and ``output_dir``.
 
     Returns
     -------
@@ -793,7 +925,7 @@ def _extract_case_patches(
     -----
     Mirrors :meth:`ReversiblePatchExtractor.extract_from_case`'s sliding
     window / tissue-gate / save-and-record-metadata logic, generalized
-    to use ``cfg.he_channel_name``/``cfg.ihc_channel_name`` as both the
+    to use ``cfg.reference_name``/``cfg.moving_name`` as both the
     output subdirectory names and the metadata keys, instead of the
     hardcoded ``"he"``/``"ihc"``. Reads patches at pyramid level 0 (full
     resolution). Writes one PNG per kept patch for each of the two
@@ -837,8 +969,8 @@ def _extract_case_patches(
             "reference_read_level": ref_plan.level,
             "target_base_magnification": target_plan.base_magnification,
             "target_read_level": target_plan.level,
-            "reference_channel": cfg.he_channel_name,
-            "target_channel": cfg.ihc_channel_name,
+            "reference_channel": cfg.reference_name,
+            "target_channel": cfg.moving_name,
             "extraction_mode": "sliding",
             "patches": [],
         }
@@ -851,23 +983,21 @@ def _extract_case_patches(
 
                 if _patch_is_tissue(ref_p, cfg.tissue_threshold):
                     pid = f"{idx:06d}"
-                    rp = case_dir / f"{case_id}_{cfg.he_channel_name}_patch_{pid}.png"
+                    rp = case_dir / f"{case_id}_{cfg.reference_name}_patch_{pid}.png"
                     ref_p.save(rp, compression=None)
 
                     tgt_p = target_reader.read_at_magnification((x, y), (tw, th)).convert("RGB")
-                    tp = case_dir / f"{case_id}_{cfg.ihc_channel_name}_patch_{pid}.png"
+                    tp = case_dir / f"{case_id}_{cfg.moving_name}_patch_{pid}.png"
                     tgt_p.save(tp, compression=None)
                     tgt_p.close()
 
-                    metadata["patches"].append(
-                        {
-                            "id": pid,
-                            "coordinates": (int(x), int(y)),
-                            "size": (int(tw), int(th)),
-                            f"{cfg.he_channel_name}_path": str(rp),
-                            f"{cfg.ihc_channel_name}_path": str(tp),
-                        }
-                    )
+                    metadata["patches"].append({
+                        "id": pid,
+                        "coordinates": (int(x), int(y)),
+                        "size": (int(tw), int(th)),
+                        f"{cfg.reference_name}_path": str(rp),
+                        f"{cfg.moving_name}_path": str(tp),
+                    })
                     idx += 1
 
                 ref_p.close()
@@ -886,7 +1016,7 @@ def run_patch_extraction(cfg: PatchExtractionConfig) -> Dict[str, Any]:
     """Run the generalized, config-driven sliding-window patch extraction pipeline.
 
     For every reference-channel file discovered under ``cfg.he_dir``
-    (matching ``cfg.he_filename_pattern``), and for every biomarker in
+    (matching ``cfg.reference_pattern``), and for every biomarker in
     ``cfg.biomarker_folders``, attempts to locate the corresponding
     aligned target-channel file under ``cfg.aligned_dir``. Cases without
     a match are recorded as skipped rather than treated as fatal errors,
@@ -923,25 +1053,21 @@ def run_patch_extraction(cfg: PatchExtractionConfig) -> Dict[str, Any]:
     a few workers due to the GIL — profile before setting
     ``max_workers`` very high.
 
-    The parallel path logs case completion through the shared logger so worker
-    output remains attributable and does not corrupt progress rendering.
+    **No global progress bar** is shown for the parallel path (individual
+    cases still log their own completion via ``print()``) — this keeps
+    the output readable when multiple cases interleave, at the cost of
+    the single unified :mod:`tqdm` bar the sequential path provides.
     """
-    pattern = re.compile(cfg.he_filename_pattern, re.IGNORECASE)
+    pattern = re.compile(cfg.reference_pattern, re.IGNORECASE)
     reference_files = _discover_reference_files(cfg.he_dir, pattern)
 
     if not reference_files:
-        logger.error(
-            "No reference-channel files found under {} matching pattern: {}",
-            cfg.he_dir,
-            cfg.he_filename_pattern,
-        )
+        print(f"[ERROR] No reference-channel files found under {cfg.he_dir} "
+              f"matching pattern: {cfg.reference_pattern}")
         return {"processed": 0, "skipped": 0, "cases": []}
 
-    logger.info(
-        "Found {} reference file(s); checking {} biomarker(s) each",
-        len(reference_files),
-        len(cfg.biomarker_folders),
-    )
+    print(f"[INFO] Found {len(reference_files)} reference file(s); "
+          f"checking {len(cfg.biomarker_folders)} biomarker(s) each.\n")
 
     to_process: List[Tuple[str, str, str, str]] = []
     results: List[Dict[str, Any]] = []
@@ -950,32 +1076,30 @@ def run_patch_extraction(cfg: PatchExtractionConfig) -> Dict[str, Any]:
         for biomarker in cfg.biomarker_folders:
             case_id = f"{sample_id}_{biomarker}"
             target_path = _find_aligned_target(
-                cfg.aligned_dir, biomarker, sample_id, cfg.he_channel_name
+                cfg.aligned_dir, biomarker, sample_id, cfg.reference_name
             )
             if target_path is None:
-                logger.warning("{}: aligned target not found", case_id)
-                results.append(
-                    {"case_id": case_id, "status": "skipped", "reason": "aligned target not found"}
-                )
+                print(f"[SKIP] {case_id}: aligned target not found")
+                results.append({"case_id": case_id, "status": "skipped",
+                                "reason": "aligned target not found"})
                 continue
             to_process.append((case_id, ref_path, target_path, biomarker))
 
     if cfg.max_workers > 1 and len(to_process) > 1:
         with concurrent.futures.ThreadPoolExecutor(max_workers=cfg.max_workers) as pool:
             futures = {
-                pool.submit(
-                    _extract_case_patches, case_id, ref_path, target_path, biomarker, cfg
-                ): case_id
+                pool.submit(_extract_case_patches, case_id, ref_path, target_path,
+                           biomarker, cfg): case_id
                 for case_id, ref_path, target_path, biomarker in to_process
             }
             for future in concurrent.futures.as_completed(futures):
                 case_id = futures[future]
                 try:
                     result = future.result()
-                    logger.success("{}: {} patches saved", result["case_id"], result["n_patches"])
+                    print(f"[OK] {result['case_id']}: {result['n_patches']} patches saved")
                     results.append(result)
                 except Exception as e:
-                    logger.error("{}: {}", case_id, e)
+                    print(f"[ERROR] {case_id}: {e}")
                     results.append({"case_id": case_id, "status": "failed", "reason": str(e)})
     else:
         for case_id, ref_path, target_path, biomarker in tqdm(
@@ -983,14 +1107,14 @@ def run_patch_extraction(cfg: PatchExtractionConfig) -> Dict[str, Any]:
         ):
             try:
                 result = _extract_case_patches(case_id, ref_path, target_path, biomarker, cfg)
-                logger.success("{}: {} patches saved", result["case_id"], result["n_patches"])
+                tqdm.write(f"[OK] {result['case_id']}: {result['n_patches']} patches saved")
                 results.append(result)
             except Exception as e:
-                logger.error("{}: {}", case_id, e)
+                tqdm.write(f"[ERROR] {case_id}: {e}")
                 results.append({"case_id": case_id, "status": "failed", "reason": str(e)})
 
     processed = sum(1 for r in results if r["status"] == "processed")
-    skipped = sum(1 for r in results if r["status"] in ("skipped", "failed"))
-    logger.info("Patch extraction complete: processed={} skipped/failed={}", processed, skipped)
+    skipped   = sum(1 for r in results if r["status"] in ("skipped", "failed"))
+    print(f"\n[DONE] Processed: {processed}  |  Skipped/Failed: {skipped}")
 
     return {"processed": processed, "skipped": skipped, "cases": results}
