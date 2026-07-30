@@ -62,7 +62,7 @@ def build_matcher(
         return None
 
     builders = {
-        "disk": ("DiskFD", False),
+        "disk": ("DiskFD", True),
         "dedode": ("DeDoDeFD", True),
         "superpoint": ("SuperPointFD", False),
     }
