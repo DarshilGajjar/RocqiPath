@@ -8,8 +8,8 @@ from types import SimpleNamespace
 import numpy as np
 from PIL import Image
 
-import rocqipath.registration.core as core
-from rocqipath.registration.core import WSIRegistrar
+import rocqipath.registration.export as export
+from rocqipath.registration.registrar import WSIRegistrar
 
 
 class _FakeSlide:
@@ -77,8 +77,8 @@ def test_orb_save_streams_tiles_without_full_canvas(tmp_path: Path, monkeypatch)
         Image=FakeVipsImage,
         GValue=SimpleNamespace(gstr_type="gstr"),
     )
-    monkeypatch.setattr(core, "pyvips", fake_pyvips)
-    monkeypatch.setattr(core, "HAS_PYVIPS", True)
+    monkeypatch.setattr(export, "pyvips", fake_pyvips)
+    monkeypatch.setattr(export, "HAS_PYVIPS", True)
 
     output = tmp_path / "aligned.ome.tiff"
     result = _registrar_for_stream_test()._save_orb_streamed(0, str(output))

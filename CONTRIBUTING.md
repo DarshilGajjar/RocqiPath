@@ -2,8 +2,8 @@
 
 ## Design rules
 
-1. Put new behavior in the closest existing subpackage. Create a new top-level
-   module only for genuinely shared infrastructure.
+1. Place new behavior using the decision procedure below. Do not create another
+   flat top-level implementation module.
 2. Express zoom as physical `target_magnification`; do not expose a pyramid
    index as magnification.
 3. Use `OutputLayout` so a main pipeline writes to
@@ -16,10 +16,34 @@
    class, including private helpers with non-obvious behavior.
 7. Preserve public names when practical. Add a deprecation path when removing
    a public symbol.
-8. Put shared filesystem discovery in `rocqipath.utils`; do not add another
-   recursive scanner to a feature module.
+8. Put shared filesystem discovery in `rocqipath.utils.discovery`; do not add
+   another recursive scanner to a feature module.
 9. Use `rocqipath.logger` for library status output. Do not add `print()`-based
    progress protocols or configure independent logging sinks.
+10. Keep dependencies pointing `core` → `utils` → `config` → feature packages
+    → `cli`. A layer may import only layers to its left. Feature packages must
+    not import implementations from one another.
+
+## Placement decision procedure
+
+Use the first matching rule:
+
+1. A configuration dataclass or shared configuration validator belongs in
+   `rocqipath.config`.
+2. A stateful domain primitive or behavior needed by two or more feature
+   packages belongs in `rocqipath.core`.
+3. A stateless helper that accepts and returns generic values belongs in the
+   relevant `rocqipath.utils` module.
+4. Code that understands one scientific workflow or backend stays in its
+   feature package: `registration`, `extraction`, `stain`, `analysis`, or
+   `visualization`.
+5. Parsers, prompts, and workflow dispatch belong in `rocqipath.cli`.
+
+If moving a helper out of one feature package would break a different feature
+package, move the shared behavior downward to `core` or `utils`; never solve the
+dependency by importing across feature packages. See
+[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for examples and package
+responsibilities.
 
 ## Adding a feature
 

@@ -5,6 +5,7 @@ from pathlib import Path
 from PIL import Image
 
 import rocqipath.api as api
+import rocqipath.visualization.grids as grids
 
 
 def test_grid_map_rejects_unknown_extension_without_subscripting_format(tmp_path: Path):
@@ -35,10 +36,10 @@ def test_grid_map_success_contract_and_cleanup(tmp_path: Path, monkeypatch):
         assert show is False
         Path(output_path).write_bytes(b"png")
 
-    monkeypatch.setattr(api, "_HAS_CORE", True)
-    monkeypatch.setattr(api, "_HAS_VISUALIZATION", True)
-    monkeypatch.setattr(api, "WSIRegistrar", FakeRegistrar)
-    monkeypatch.setattr(api, "plot_selector_map", fake_plot)
+    monkeypatch.setattr(grids, "_HAS_REGISTRATION", True)
+    monkeypatch.setattr(grids, "_HAS_GRID_PLOTTING", True)
+    monkeypatch.setattr(grids, "WSIRegistrar", FakeRegistrar)
+    monkeypatch.setattr(grids, "plot_selector_map", fake_plot)
 
     success, map_path, reason = api.generate_single_grid_map_for_slide(
         str(source), str(tmp_path / "maps"), {"grid_density": 2}

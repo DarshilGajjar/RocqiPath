@@ -1,7 +1,8 @@
 """Visual quality-control and publication figure helpers."""
 
-from .ihc_overlay import IHCOverlayConfig, MarkerProfile, OverlayCombo, process_ihc_overlay
-from .visualization import plot_selector_map, view_pairs
+from .grids import plot_selector_map
+from .overlays import IHCOverlayConfig, MarkerProfile, OverlayCombo, process_ihc_overlay
+from .pairs import view_pairs
 
 __all__ = [
     "IHCOverlayConfig",

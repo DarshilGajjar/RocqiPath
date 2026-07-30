@@ -5,7 +5,7 @@ on:
   pull_request:
 
 jobs:
-  lightweight-tests:
+  tests:
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -18,14 +18,18 @@ jobs:
           cache: pip
       - run: sudo apt-get update && sudo apt-get install -y libopenslide0 libvips-tools
       - run: python -m pip install --upgrade pip
-      - run: python -m pip install -e ".[orb,cellcount,viz]"
       - run: python -m pip install "pytest>=7.4" "ruff>=0.4"
+      - name: Verify base-only installation
+        run: |
+          python -m pip install -e .
+          python -c "import rocqipath, rocqipath.core, rocqipath.utils; print(rocqipath.__version__)"
       - name: Verify package metadata and console entry point
         run: |
           python -c "from importlib.metadata import version; import rocqipath; assert rocqipath.__version__ == version('rocqipath')"
           python -c "from importlib.metadata import distribution; ep = next(item for item in distribution('rocqipath').entry_points if item.name == 'rocqipath'); assert ep.value == 'rocqipath.cli:main'; assert callable(ep.load())"
+      - run: python -m pip install -e ".[orb,cellcount,viz]"
       - run: python -m pip wheel . --no-deps --wheel-dir wheelhouse
       - run: python -m compileall -q src tests
-      # - run: python -m pytest
-      # - run: python -m ruff check src tests
-      # - run: python -m ruff format --check src tests
+      - run: python -m pytest
+      - run: python -m ruff check src tests
+      - run: python -m ruff format --check src tests

@@ -1,7 +1,4 @@
-"""
-rocqipath.extraction.core_extraction
-=====================================
-Multi-region (core) isolation pipeline.
+"""Extract circular tissue regions from multi-region or TMA slides.
 
 Detects circular tissue regions ("cores") on paired H&E + IHC whole-slide
 images and extracts each one as a tiled pyramidal TIFF with a JPEG preview
@@ -14,7 +11,7 @@ Use this module when a slide contains multiple circular tissue regions.
 For a slide containing a single contiguous tissue section, use
 rocqipath.extraction.tissue_extraction instead.
 
-Core-specific parameters in CoreExtractionConfig
+TMA-specific parameters in TMAExtractionConfig
 --------------------------------------------------
 - only_circles / min_circularity   — filter out non-circular blobs
 - per_stain_detection              — run Otsu independently per stain
@@ -28,12 +25,12 @@ Quickstart
 ----------
 ::
 
-    from rocqipath.extraction import CoreExtractionConfig, run_core_extraction_pipeline
+    from rocqipath.extraction import TMAExtractionConfig, run_tma_extraction_pipeline
 
-    run_core_extraction_pipeline(
+    run_tma_extraction_pipeline(
         input_dir     = "./data/cores",
         output_root   = "./data/cores/extracted",
-        cfg           = CoreExtractionConfig(
+        cfg           = TMAExtractionConfig(
             only_circles    = True,
             min_circularity = 0.60,
             ihc_enhance     = True,
@@ -45,6 +42,8 @@ Quickstart
 from __future__ import annotations
 
 __all__ = [
+    "TMAExtractionConfig",
+    "run_tma_extraction_pipeline",
     "CoreExtractionConfig",
     "discover_pairs",
     "get_reference_boxes",
@@ -55,31 +54,31 @@ __all__ = [
 
 import os
 import re
-from dataclasses import asdict, dataclass, field
+import warnings
+from dataclasses import asdict
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 import cv2
 import numpy as np
-from rich.panel import Panel
-from rich.table import Table
 
-from rocqipath.extraction._extraction_engine import (
+from rocqipath.config import CoreExtractionConfig, TMAExtractionConfig
+from rocqipath.extraction.detection import _detect_regions, _load_thumbnail
+from rocqipath.extraction.engine import (
     SUPPORTED_EXTENSIONS,
-    _BaseExtractionConfig,
-    _detect_regions,
-    _load_thumbnail,
-    _region_outputs_exist,
-    _resample_region,
     _resolve_vips_magnification,
-    _save_preview,
-    _save_tif,
-    _write_region_manifest,
-    _write_slide_manifest,
     configure_logging,
-    logger,
 )
-from rocqipath.output import OutputLayout
+from rocqipath.core.logging import get_logger, logger
+from rocqipath.core.output import OutputLayout
+from rocqipath.utils.imageio import save_preview as _save_preview
+from rocqipath.utils.imageio import save_tif as _save_tif
+from rocqipath.utils.manifest import region_outputs_exist as _region_outputs_exist
+from rocqipath.utils.manifest import write_region_manifest as _write_region_manifest
+from rocqipath.utils.manifest import write_slide_manifest as _write_slide_manifest
+from rocqipath.utils.naming import extract_sample_id as _extract_sample_id
+from rocqipath.utils.reporting import print_config_panel
+from rocqipath.utils.vips import resample_region as _resample_region
 
 try:
     import pyvips
@@ -88,8 +87,6 @@ try:
 except (ImportError, OSError):
     pyvips = None
     _PYVIPS_AVAILABLE = False  # type: ignore[assignment]
-
-from rocqipath.logger import console, get_logger
 
 _log = get_logger("core_extraction")
 
@@ -109,86 +106,11 @@ _IHC_KEYWORDS: Tuple[str, ...] = (
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# CoreExtractionConfig
-# ══════════════════════════════════════════════════════════════════════════════
-
-
-@dataclass
-class CoreExtractionConfig(_BaseExtractionConfig):
-    """Configuration for multi-region (core) extraction.
-
-    Inherits from _BaseExtractionConfig: detection_level, preview_scale,
-    min_area_fraction, tif_* output options, skip_existing.
-
-    Core-specific parameters
-    -----------------------
-    only_circles : bool
-        Reject contours that fail the circularity test.  Should be True
-        for genuine multi-core slides.
-    min_circularity : float
-        Minimum circularity 4pi*area/perimeter^2 in [0, 1].
-        Values 0.5-0.7 work well for most tissue cores.
-    per_stain_detection : bool
-        Run Otsu detection independently on each IHC thumbnail.
-    fallback_to_he : bool
-        When per-stain Otsu finds a different core count than H&E,
-        fall back to H&E boxes to keep counts consistent across stains.
-    box_scale : float
-        Expand each bounding box symmetrically.  1.0 = exact fit,
-        1.3 adds ~15% margin on each side.
-    ihc_enhance : bool
-        Apply CLAHE + DAB saturation boost before Otsu detection.
-        Strongly recommended for DAB-stained IHC slides.
-    clahe_clip_limit : float
-        CLAHE clip limit.  Typical range 2-10.
-    clahe_tile_size : tuple[int, int]
-        CLAHE tile grid size.  (8, 8) is a good default.
-    """
-
-    # Core-specific
-    only_circles: bool = True
-    min_circularity: float = 0.70
-
-    # Multi-stain registration awareness
-    per_stain_detection: bool = True
-    fallback_to_he: bool = True
-    box_scale: float = 1.0
-
-    # IHC contrast enhancement
-    ihc_enhance: bool = True
-    clahe_clip_limit: float = 3.0
-    clahe_tile_size: Tuple[int, int] = field(default_factory=lambda: (8, 8))
-
-    def __post_init__(self) -> None:
-        """Validate core-specific fields on top of the shared base validation.
-
-        Calls ``super().__post_init__()`` first (validating
-        ``min_area_fraction``, ``preview_scale``, ``tif_quality`` from
-        :class:`_BaseExtractionConfig`), then checks the three fields
-        specific to core extraction.
-
-        Raises
-        ------
-        ValueError
-            If ``min_circularity`` is outside ``[0.0, 1.0]``, if
-            ``box_scale`` is not strictly positive, or if
-            ``clahe_clip_limit`` is not strictly positive.
-        """
-        super().__post_init__()
-        if not (0.0 <= self.min_circularity <= 1.0):
-            raise ValueError(f"min_circularity must be in [0, 1]; got {self.min_circularity}")
-        if self.box_scale <= 0:
-            raise ValueError(f"box_scale must be > 0; got {self.box_scale}")
-        if self.clahe_clip_limit <= 0:
-            raise ValueError(f"clahe_clip_limit must be > 0; got {self.clahe_clip_limit}")
-
-
-# ══════════════════════════════════════════════════════════════════════════════
 # IHC contrast enhancement  (core-specific)
 # ══════════════════════════════════════════════════════════════════════════════
 
 
-def enhance_ihc_thumbnail(rgb: np.ndarray, cfg: CoreExtractionConfig) -> np.ndarray:
+def enhance_ihc_thumbnail(rgb: np.ndarray, cfg: TMAExtractionConfig) -> np.ndarray:
     """CLAHE + DAB saturation boost to improve IHC core/background separation.
 
     1. Convert RGB → LAB, apply CLAHE to L*, convert back.
@@ -197,7 +119,7 @@ def enhance_ihc_thumbnail(rgb: np.ndarray, cfg: CoreExtractionConfig) -> np.ndar
     Parameters
     ----------
     rgb : np.ndarray   uint8 RGB, shape (H, W, 3)
-    cfg : CoreExtractionConfig
+    cfg : TMAExtractionConfig
 
     Returns
     -------
@@ -259,42 +181,6 @@ def _classify_stain(filename: str) -> Optional[Tuple[str, str]]:
         if kw in norm:
             return ("HE", "HnE")
     return None
-
-
-def _extract_sample_id(filename: str, extra_keywords: Tuple[str, ...] = ()) -> str:
-    """Strip known H&E/IHC stain keywords out of a filename to recover the sample ID.
-
-    Parameters
-    ----------
-    filename : str
-        The filename to process (only its stem, via
-        :meth:`pathlib.Path.stem`, is used — the extension is discarded
-        and directory components are ignored).
-
-    Returns
-    -------
-    str
-        The filename stem with every occurrence of a known stain keyword
-        (from :data:`_HE_KEYWORDS` and :data:`_IHC_KEYWORDS`, matched
-        case-insensitively, longest first) removed, along with its
-        surrounding ``-``/``_`` delimiters. Runs of consecutive
-        underscores left behind by the removal are collapsed to a single
-        underscore, and leading/trailing underscores are stripped.
-
-    Notes
-    -----
-    Example: ``"Sample_0001_CD8.tif"`` → stem ``"Sample_0001_CD8"`` →
-    keyword ``"cd8"`` removed → ``"Sample_0001"``. Like
-    :func:`_classify_stain`, this relies on the fixed keyword lists
-    :data:`_HE_KEYWORDS` and :data:`_IHC_KEYWORDS`, so a biomarker token
-    not in either list will remain in the returned sample ID rather than
-    being stripped out.
-    """
-    stem = Path(filename).stem
-    all_kws = sorted(_HE_KEYWORDS + _IHC_KEYWORDS + extra_keywords, key=len, reverse=True)
-    pattern = "|".join(re.escape(kw) for kw in all_kws)
-    cleaned = re.sub(rf"[-_]?(?:{pattern})[-_]?", "_", stem, flags=re.IGNORECASE)
-    return re.sub(r"_+", "_", cleaned).strip("_")
 
 
 def discover_pairs(
@@ -360,7 +246,7 @@ def discover_pairs(
 
 
 def get_reference_boxes(
-    he_path: Path, cfg: CoreExtractionConfig
+    he_path: Path, cfg: TMAExtractionConfig
 ) -> Tuple[List[Dict[str, float]], np.ndarray]:
     """Detect tissue cores on the H&E reference slide.
 
@@ -391,7 +277,7 @@ def extract_stain_cores(
     sample_id: str,
     he_rel_boxes: List[Dict[str, float]],
     stain_out_dir: str,
-    cfg: CoreExtractionConfig,
+    cfg: TMAExtractionConfig,
     cached_rgb: Optional[np.ndarray] = None,
 ) -> Tuple[int, int, List[Dict[str, Any]]]:
     """Extract and save every core from one stain slide.
@@ -401,7 +287,7 @@ def extract_stain_cores(
     wsi_path, stain_label, sample_id : identifiers
     he_rel_boxes : reference boxes from H&E detection
     stain_out_dir : root output dir for this stain
-    cfg : CoreExtractionConfig
+    cfg : TMAExtractionConfig
     cached_rgb : pre-loaded H&E thumbnail (pass for H&E slides, None for IHC)
 
     Returns
@@ -526,16 +412,16 @@ def extract_stain_cores(
     return saved, skipped, manifests
 
 
-def _print_config_panel(cfg: CoreExtractionConfig, input_dir: str, output_dir: str) -> None:
+def _print_config_panel(cfg: TMAExtractionConfig, input_dir: str, output_dir: str) -> None:
     """Render a Rich table summarising the resolved run configuration.
 
-    Printed once at the start of :func:`run_core_extraction_pipeline` so
+    Printed once at the start of :func:`run_tma_extraction_pipeline` so
     the operator can see exactly which parameters (including CLI/config
     defaults) will be used before processing begins.
 
     Parameters
     ----------
-    cfg : CoreExtractionConfig
+    cfg : TMAExtractionConfig
         The configuration whose fields are displayed.
     input_dir : str
         Input directory path, shown as the first row (not part of
@@ -552,33 +438,31 @@ def _print_config_panel(cfg: CoreExtractionConfig, input_dir: str, output_dir: s
     ``"n/a"`` instead of their values when ``cfg.ihc_enhance`` is
     ``False``, since those parameters have no effect in that case.
     """
-    tbl = Table(show_header=False, box=None, padding=(0, 2))
-    tbl.add_column("Key", style="bold white", no_wrap=True)
-    tbl.add_column("Value", style="bright_cyan")
-    for k, v in [
-        ("Input dir", input_dir),
-        ("Output dir", output_dir),
-        (
-            "Detection zoom",
-            f"{cfg.detection_magnification:g}x"
-            if cfg.detection_level is None
-            else f"legacy level {cfg.detection_level}",
-        ),
-        ("Output zoom", f"{cfg.target_magnification:g}x"),
-        ("Min area fraction", f"{cfg.min_area_fraction:.4f}"),
-        ("Circles only", str(cfg.only_circles)),
-        ("Min circularity", f"{cfg.min_circularity:.2f}"),
-        ("Box scale", f"{cfg.box_scale:.2f}"),
-        ("Per-stain Otsu", str(cfg.per_stain_detection)),
-        ("Fallback to H&E", str(cfg.fallback_to_he)),
-        ("IHC enhance", str(cfg.ihc_enhance)),
-        ("CLAHE clip", str(cfg.clahe_clip_limit) if cfg.ihc_enhance else "n/a"),
-        ("CLAHE tile", str(cfg.clahe_tile_size) if cfg.ihc_enhance else "n/a"),
-        ("TIF compression", cfg.tif_compression),
-        ("Skip existing", str(cfg.skip_existing)),
-    ]:
-        tbl.add_row(k, v)
-    console.print(Panel(tbl, title="[bold green]Core Extraction[/]", expand=False))
+    print_config_panel(
+        title="Core Extraction",
+        rows=[
+            ("Input dir", input_dir),
+            ("Output dir", output_dir),
+            (
+                "Detection zoom",
+                f"{cfg.detection_magnification:g}x"
+                if cfg.detection_level is None
+                else f"legacy level {cfg.detection_level}",
+            ),
+            ("Output zoom", f"{cfg.target_magnification:g}x"),
+            ("Min area fraction", f"{cfg.min_area_fraction:.4f}"),
+            ("Circles only", str(cfg.only_circles)),
+            ("Min circularity", f"{cfg.min_circularity:.2f}"),
+            ("Box scale", f"{cfg.box_scale:.2f}"),
+            ("Per-stain Otsu", str(cfg.per_stain_detection)),
+            ("Fallback to H&E", str(cfg.fallback_to_he)),
+            ("IHC enhance", str(cfg.ihc_enhance)),
+            ("CLAHE clip", str(cfg.clahe_clip_limit) if cfg.ihc_enhance else "n/a"),
+            ("CLAHE tile", str(cfg.clahe_tile_size) if cfg.ihc_enhance else "n/a"),
+            ("TIF compression", cfg.tif_compression),
+            ("Skip existing", str(cfg.skip_existing)),
+        ],
+    )
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -586,10 +470,10 @@ def _print_config_panel(cfg: CoreExtractionConfig, input_dir: str, output_dir: s
 # ══════════════════════════════════════════════════════════════════════════════
 
 
-def run_core_extraction_pipeline(
+def run_tma_extraction_pipeline(
     input_dir: str,
     output_root: str,
-    cfg: Optional[CoreExtractionConfig] = None,
+    cfg: Optional[TMAExtractionConfig] = None,
     target_stains: Optional[List[str]] = None,
 ) -> None:
     """Discover paired H&E/IHC slides and extract tissue cores.
@@ -598,13 +482,13 @@ def run_core_extraction_pipeline(
     ----------
     input_dir : str
     output_root : str
-    cfg : CoreExtractionConfig or None
+    cfg : TMAExtractionConfig or None
     target_stains : list[str] or None   e.g. ["H&E", "marker_A"], or None for all
     """
     if not _PYVIPS_AVAILABLE:
         raise ImportError("pyvips required. pip install rocqipath[extraction]")
     if cfg is None:
-        cfg = CoreExtractionConfig()
+        cfg = TMAExtractionConfig()
 
     def normalize_label(label: str) -> str:
         """Normalize H&E aliases and remove punctuation for comparisons."""
@@ -674,3 +558,18 @@ def run_core_extraction_pipeline(
                 logger.exception(f"{pfx} | {lbl} failed: {exc}")
 
     logger.success("Core extraction complete.")
+
+
+def run_core_extraction_pipeline(
+    input_dir: str,
+    output_root: str,
+    cfg: Optional[TMAExtractionConfig] = None,
+    target_stains: Optional[List[str]] = None,
+) -> None:
+    """Run TMA extraction through the deprecated entry-point name."""
+    warnings.warn(
+        "run_core_extraction_pipeline is deprecated; use run_tma_extraction_pipeline instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    return run_tma_extraction_pipeline(input_dir, output_root, cfg, target_stains)

@@ -146,9 +146,9 @@ results/tissue_extraction/slide_01/
 ### 80x TMA/core slides
 
 ```python
-from rocqipath.extraction import CoreExtractionConfig, run_core_extraction_pipeline
+from rocqipath.extraction import TMAExtractionConfig, run_tma_extraction_pipeline
 
-cfg = CoreExtractionConfig(
+cfg = TMAExtractionConfig(
     target_magnification=20.0,
     detection_magnification=1.25,
     source_magnification=80.0,  # omit when correct metadata is present
@@ -158,7 +158,7 @@ cfg = CoreExtractionConfig(
     fallback_to_he=True,
 )
 
-run_core_extraction_pipeline(
+run_tma_extraction_pipeline(
     input_dir="./data/tma",
     output_root="./results",
     cfg=cfg,
@@ -179,9 +179,9 @@ summary = run_patch_extraction(PatchExtractionConfig(
     aligned_dir="./results/alignment",
     output_dir="./results",
     biomarker_folders=["CD8"],
-    he_filename_pattern=r"^(?P<sample_id>.+?)_he\.tiff?$",
-    he_channel_name="he",
-    ihc_channel_name="cd8",
+    reference_pattern=r"^(?P<sample_id>.+?)_he\.tiff?$",
+    reference_name="he",
+    moving_name="cd8",
     patch_size=512,
     stride=512,
     tissue_threshold=0.50,
@@ -223,25 +223,29 @@ data/pairs/<biomarker>/ihc/<sample>_<biomarker>.<ext>
 ## Stain normalization and cell counting
 
 ```python
+from pathlib import Path
+
 from rocqipath.stain import (
     StainNormalizationConfig,
     run_stain_normalization_apply,
     run_stain_normalization_train,
 )
 
+patch_dir = Path("./patches").resolve(strict=True)
 cfg = StainNormalizationConfig(n_type="macenko", stains=["he"])
-run_stain_normalization_train("./patches", "./results", cfg)
-run_stain_normalization_apply("./patches", "./results", cfg)
+run_stain_normalization_train(str(patch_dir), "./results", cfg)
+run_stain_normalization_apply(str(patch_dir), "./results", cfg)
 ```
 
 ```python
 from rocqipath.analysis import PositiveCellCounter
+from rocqipath.config import CellCountingConfig
 
-counter = PositiveCellCounter({
-    "output_dir": "./results",
-    "target_magnification": 20.0,
-    "patch_size": 512,
-})
+counter = PositiveCellCounter(CellCountingConfig(
+    output_dir="./results",
+    target_magnification=20.0,
+    patch_size=512,
+))
 counter.count_slide("./data/cd8.svs", label="CD8")
 ```
 
@@ -253,30 +257,54 @@ from the area denominator.
 
 ```text
 src/rocqipath/
-├── magnification.py       # objective metadata and pyramid-level plans
-├── slide.py               # shared OpenSlide/PIL reader
-├── output.py              # <root>/<module>/<item> layout
-├── exceptions.py          # common exception hierarchy
-├── logger.py              # Rich/loguru output helpers
-├── registration/          # VALIS/ORB alignment
-├── extraction/            # WSI, TMA/core, and paired patches
-├── stain/                 # Reinhard, Macenko, Vahadane
-├── analysis/              # positive-cell counting
-└── visualization/         # grids, paired QC, IHC overlays, comparisons
+├── core/                  # lightweight domain primitives and infrastructure
+│   ├── magnification.py   # objective metadata and pyramid-level plans
+│   ├── slide.py           # lazy OpenSlide/Pillow reader
+│   ├── tissue.py          # behavior-preserving tissue primitives
+│   ├── output.py          # <root>/<module>/<item> layout
+│   ├── exceptions.py      # common exception hierarchy
+│   ├── logging.py         # loguru setup, timers, and sinks
+│   └── console.py         # Rich output and progress helpers
+├── utils/                 # lightweight stateless helpers
+│   ├── discovery.py       # WSI, pair, and aligned-file discovery
+│   ├── naming.py          # filename parsing and natural sorting
+│   ├── imageio.py         # lazy image reads and writes
+│   ├── vips.py            # lazy libvips interoperability
+│   ├── geometry.py        # boxes, contours, resize, coordinates
+│   ├── manifest.py        # JSON manifest helpers
+│   ├── validation.py      # shared config validators
+│   └── reporting.py       # generic summaries and config panels
+├── config/                # all typed, serializable workflow configs
+├── registration/          # registrar, VALIS/ORB backends, export, and QC
+├── extraction/            # WSI, TMA, patches, and reconstruction
+├── stain/                 # normalizers and train/apply pipelines
+├── analysis/              # positive-cell counting and reports
+├── visualization/         # grids, pairs, overlays, comparisons, thumbnails
+├── cli/                   # unified commands, prompts, and legacy menu
+└── api.py                 # deprecated feature-helper compatibility façade
 ```
 
-Primary symbols are re-exported from each subpackage. Import private helpers
-whose names start with `_` only when extending RocqiPath itself.
+Primary symbols are re-exported from each subpackage. The historical top-level
+`magnification`, `slide`, `output`, `exceptions`, and `logger` modules remain
+compatibility façades. Import private helpers whose names start with `_` only
+when extending RocqiPath itself. See [the architecture guide](docs/ARCHITECTURE.md)
+for dependency and code-placement rules.
 
 ## CLI
 
 ```bash
-rocqipath
+rocqipath --help
+rocqipath align --help
+rocqipath extract --help
+rocqipath stain --help
+rocqipath count --help
+rocqipath compare --help
 ```
 
-The menu separates ordinary WSI tissue extraction from TMA/core extraction and
-prompts for physical output magnification. For reproducible research pipelines,
-the typed Python APIs are preferred because configurations can be versioned.
+Running `rocqipath` with no subcommand opens the guided menu. The menu separates
+ordinary WSI tissue extraction from TMA/core extraction and prompts for physical
+output magnification. For reproducible research pipelines, the typed Python APIs
+are preferred because configurations can be versioned.
 
 ## Development
 

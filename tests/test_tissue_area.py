@@ -6,8 +6,8 @@ from types import SimpleNamespace
 import numpy as np
 from PIL import Image
 
-import rocqipath.analysis.cell_counting as cell_counting
-from rocqipath.analysis.cell_counting import PositiveCellCounter
+import rocqipath.analysis.counting as cell_counting
+from rocqipath.analysis.counting import PositiveCellCounter
 
 
 def test_tissue_mask_counts_only_non_background_pixels(synthetic_tissue_rgb):

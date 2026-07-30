@@ -1,5 +1,7 @@
 """Quantitative pathology analysis pipelines."""
 
-from .cell_counting import PositiveCellCounter
+from rocqipath.config import CellCountingConfig
 
-__all__ = ["PositiveCellCounter"]
+from .counting import PositiveCellCounter
+
+__all__ = ["CellCountingConfig", "PositiveCellCounter"]
