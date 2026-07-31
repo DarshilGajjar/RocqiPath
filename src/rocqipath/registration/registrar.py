@@ -176,13 +176,13 @@ class WSIRegistrar(
         Pass None for reference-only (single-slide) mode.
     config : dict
         Pipeline configuration. Expected keys:
-          - patch_size              : int   — patch edge length in pixels
-          - grid_density            : int   — number of grid rows/cols
-          - base_output_dir         : str   — root directory for all outputs
-          - target_magnification    : float — physical zoom for both slides (default 20x)
-          - overlay_max_px          : int   — (optional) max edge for QC overlay images
-          - orb_thumb_size          : int   — (optional) thumbnail size for ORB fallback
-          - ransac_threshold        : float — (optional) RANSAC reprojection threshold
+          - patch_size        : int   — patch edge length in pixels
+          - grid_density      : int   — number of grid rows/cols
+          - base_output_dir   : str   — root directory for all outputs
+          - target_magnification : float — physical zoom for both slides (default 20x)
+          - overlay_max_px    : int   — (optional) max edge for QC overlay images
+          - orb_thumb_size    : int   — (optional) thumbnail size for ORB fallback
+          - ransac_threshold  : float — (optional) RANSAC reprojection threshold
     valis_cfg : ValisConfig, optional
         Fine-grained VALIS parameters. Defaults to ``ValisConfig()``.
     """

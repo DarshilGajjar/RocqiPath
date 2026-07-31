@@ -311,7 +311,7 @@ class AlignmentProcessor:
         thumb, valid_grids = registrar.generate_grid_map()
         aligned_path = registrar.save_aligned_wsi(
             level=self.cfg.aligned_wsi_level,
-            output_path=str(Path(registrar.output_dir) / "aligned_moving.ome.tiff"),
+            output_path=str(Path(registrar.output_dir) / f"{case.case_id}_aligned_moving.ome.tiff"),
         )
 
         return AlignedCaseResult(
