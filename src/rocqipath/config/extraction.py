@@ -16,7 +16,7 @@ from rocqipath.utils.validation import (
 
 from .base import BaseConfig
 
-DEFAULT_REFERENCE_FILENAME_PATTERN = r"^(?P<sample_id>[A-Za-z0-9]+)_he\.tiff?$"
+DEFAULT_REFERENCE_FILENAME_PATTERN = r"^(?P<sample_id>[\w\-]+)_he\.tif?$"
 
 
 @dataclass
@@ -217,9 +217,9 @@ class PatchExtractionConfig(BaseConfig):
     reference_pattern: str = DEFAULT_REFERENCE_FILENAME_PATTERN
     reference_name: str = "he"
     moving_name: str = "ihc"
-    patch_size: int = 256
+    patch_size: int = 512
     stride: Optional[int] = None
-    tissue_threshold: float = 0.9
+    tissue_threshold: float = 0.5
     max_workers: int = 1
     target_magnification: float = DEFAULT_TARGET_MAGNIFICATION
     reference_source_magnification: Optional[float] = None
