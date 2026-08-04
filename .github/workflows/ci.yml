@@ -40,25 +40,10 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install -e .
-<<<<<<< Updated upstream
-          python -c "import rocqipath, rocqipath.core, rocqipath.utils; print(rocqipath.__version__)"
-      - name: Verify the base-install study surface
-        run: |
-          python -c "from rocqipath import Study; from rocqipath.study import verify_study"
-          rocqipath doctor --json > /dev/null || true
-          mkdir -p /tmp/slides && : > /tmp/slides/CASE-1_he.svs && : > /tmp/slides/CASE-1_cd8.svs
-          rocqipath study --home /tmp/rocqipath init smoke --source /tmp/slides
-          rocqipath study --home /tmp/rocqipath index smoke
-          rocqipath study --home /tmp/rocqipath verify smoke
-          rocqipath study --home /tmp/rocqipath plan smoke
-          rocqipath study --home /tmp/rocqipath run smoke --dry-run
-      - name: Verify package metadata and console entry point
-=======
 
       - name: Check package import
         if: always()
         continue-on-error: true
->>>>>>> Stashed changes
         run: |
           python -c "
           import rocqipath
