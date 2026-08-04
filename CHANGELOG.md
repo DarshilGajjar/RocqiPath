@@ -61,6 +61,13 @@ All notable changes to RocqiPath will be documented in this file from the
 - Added `tomli` as a dependency on Python 3.10 only, for `study.toml` parsing;
   `tomllib` is used from Python 3.11 onward.
 - Registered `study` and `doctor` in the CLI subcommand surface.
+- The alignment stage adapter now passes through `aligned_wsi_level`, the
+  VALIS tuning fields (`valis_feature_detector`, `valis_norm_method`,
+  `valis_num_features`, `valis_non_rigid_dim`, `valis_check_reflections`,
+  `valis_max_error_um`), and the QC read levels, and resolves
+  `reference_source_magnification` and `moving_source_magnification` from the
+  survey and `[overrides]`. It writes an `alignment` manifest recording the
+  aligned path and valid-grid count per case.
 
 ### Design notes
 

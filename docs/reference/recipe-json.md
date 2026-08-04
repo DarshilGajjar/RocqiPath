@@ -55,6 +55,16 @@ section identify a run precisely.
 | `grid_density` | `1` | Control-grid density. |
 | `qc_enabled` | `true` | Write QC figures to `qc/`. |
 | `keep_diagnostics` | `true` | Retain backend diagnostic output. |
+| `aligned_wsi_level` | `0` | Retain the full-resolution reference output. |
+| `valis_feature_detector` | `"disk"` | `disk`, `dedode`, or `superpoint`. Ignored when `method` is `orb`. |
+| `valis_norm_method` | `"img_stats"` | VALIS intensity normalisation. |
+| `valis_num_features` | `2000` | Feature budget. |
+| `valis_non_rigid_dim` | `2048` | Non-rigid working dimension. |
+| `valis_check_reflections` | `false` | Test for mirrored sections. |
+| `valis_max_error_um` | `null` | Registration quality gate, in micrometres. |
+| `qc_reference_read_level`, `qc_moving_read_level` | `null` | Pyramid levels used for QC figures only. Set these for slides scanned well above the target magnification. |
+
+Per-slide reference_source_magnification and moving_source_magnification are not set here. They are resolved from the survey and from [overrides] in study.toml, because they are a fact about each slide rather than a decision about the run. AlignmentConfig accepts one value per role, so if the reference slides in a cohort disagree, the stage passes None and warns rather than applying one slide's value to all of them.
 
 ### `patches`
 

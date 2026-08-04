@@ -239,24 +239,125 @@ def _run_alignment(
 
     from rocqipath.registration import AlignmentConfig, run_alignment
 
+    # Per-slide objective magnifications resolved by the survey, or supplied
+    # through [overrides] in study.toml. Slides scanned above the target (an
+    # 80x TMA producing 20x output) need these; the pipeline cannot infer them
+    # once the slide metadata is absent.
+    reference_source, moving_source = _pair_source_magnifications(pairs, recipe)
+    if reference_source is None and _any_missing_metadata(pairs, recipe):
+        result.warnings.append(
+            "Some reference slides have no objective metadata and no override. "
+            'Add source_magnification under [overrides."<slide_uid>"] in '
+            "study.toml, then re-run survey and plan."
+        )
+
     config = AlignmentConfig(
         input_dir=str(staged.root),
         output_dir=str(paths.root),
         pair_folders=sorted({pair.biomarker for pair in pairs}),
+        reference_name="reference",
+        moving_name="moving",
         alignment_method=str(settings.get("method", "valis")),
         target_magnification=float(settings["target_magnification"]),
+        reference_source_magnification=reference_source,
+        moving_source_magnification=moving_source,
+        aligned_wsi_level=int(settings.get("aligned_wsi_level", 0)),
         patch_size=int(settings.get("patch_size", 1024)),
         grid_density=int(settings.get("grid_density", 1)),
+        valis_feature_detector=settings.get("valis_feature_detector", "disk"),
+        valis_norm_method=settings.get("valis_norm_method", "img_stats"),
+        valis_num_features=int(settings.get("valis_num_features", 2000)),
+        valis_non_rigid_dim=int(settings.get("valis_non_rigid_dim", 2048)),
+        valis_check_reflections=bool(settings.get("valis_check_reflections", False)),
+        valis_max_error_um=settings.get("valis_max_error_um"),
         qc_enabled=bool(settings.get("qc_enabled", True)),
         qc_output_dir=str(paths.qc),
+        qc_reference_read_level=int(settings.get("qc_reference_read_level") or 0),
+        qc_moving_read_level=int(settings.get("qc_moving_read_level") or 0),
         keep_valis_diagnostics=bool(settings.get("keep_diagnostics", True)),
     )
-    run_alignment(config)
+    aligned = run_alignment(config) or []
+
+    _write_alignment_manifest(paths, recipe, aligned, pairs)
 
     result.status = "completed"
+    result.n_items = len(aligned) or len(pairs)
     result.detail["staged"] = len(staged.entries)
+    result.detail["aligned"] = [
+        str(getattr(item, "aligned_moving_path", "")) for item in aligned
+    ]
     return result
 
+def _pair_source_magnifications(
+    pairs: Sequence[Any], recipe: Recipe
+) -> tuple[Optional[float], Optional[float]]:
+    """Resolve one fallback objective magnification per role.
+
+    ``AlignmentConfig`` takes a single value per role rather than one per
+    slide, so a cohort whose reference slides disagree cannot be expressed in
+    a single run. This returns a value only when every slide of that role
+    agrees; otherwise ``None``, and the caller warns.
+    """
+    references = {
+        recipe.slide_source_magnification(pair.reference.slide_uid)
+        or pair.reference.source_magnification
+        for pair in pairs
+    }
+    movings = {
+        recipe.slide_source_magnification(pair.moving.slide_uid) or pair.moving.source_magnification
+        for pair in pairs
+    }
+    references.discard(None)
+    movings.discard(None)
+    reference = float(references.pop()) if len(references) == 1 else None
+    moving = float(movings.pop()) if len(movings) == 1 else None
+    return reference, moving
+
+
+def _any_missing_metadata(pairs: Sequence[Any], recipe: Recipe) -> bool:
+    """Return whether any paired slide lacks a resolvable magnification."""
+    for pair in pairs:
+        for record in (pair.reference, pair.moving):
+            entry = recipe.slides.get(record.slide_uid) or {}
+            if entry.get("magnification_source") == "missing":
+                return True
+    return False
+
+
+def _write_alignment_manifest(
+    paths: StudyPaths,
+    recipe: Recipe,
+    aligned: Sequence[Any],
+    pairs: Sequence[Any],
+) -> None:
+    """Record one manifest row per aligned case."""
+    from rocqipath.study.manifests import ManifestWriter
+
+    by_sample = {
+        str(getattr(getattr(item, "case", None), "sample_id", "")): item for item in aligned
+    }
+    with ManifestWriter(
+        paths.stage_dir("alignment", create=True),
+        "alignment",
+        stage="alignment",
+        study=recipe.study,
+        recipe_hash=recipe.recipe_hash,
+    ) as writer:
+        for pair in pairs:
+            item = by_sample.get(pair.case)
+            grids = getattr(item, "valid_grids", None)
+            writer.write(
+                {
+                    "uid": pair.pair_uid,
+                    "case": pair.case,
+                    "stain": pair.moving.stain,
+                    "reference_uid": pair.reference.slide_uid,
+                    "moving_uid": pair.moving.slide_uid,
+                    "aligned_moving_path": str(getattr(item, "aligned_moving_path", "") or ""),
+                    "valid_grids": len(grids) if grids is not None else None,
+                    "completed": item is not None,
+                }
+            )
 
 def _run_patches(
     paths: StudyPaths,
