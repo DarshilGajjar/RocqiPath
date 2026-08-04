@@ -89,3 +89,49 @@ Feature imports are guarded at the package façade. Each command imports its fea
 only when executed, so `rocqipath --help` remains useful in a lightweight installation.
 When adding a backend, keep its imports inside the feature package and add it to the
 appropriate optional dependency extra rather than the base dependency set.
+
+
+## The study layer
+
+`rocqipath.study` sits alongside the feature packages and is imported by the
+CLI. It may import feature packages; **feature packages must not import it.**
+
+```
+core  ->  utils  ->  config  ->  feature packages  ->  cli
+                                 (extraction, registration,
+                                  stain, analysis, visualization)
+                                        ^
+                                        |
+                                      study
+```
+
+| Module | Responsibility |
+| --- | --- |
+| `study.paths` | `ROCQIPATH_HOME` resolution and the on-disk layout |
+| `study.descriptor` | Parse and validate `study.toml`; render the template |
+| `study.index` | Discover slides, decode `slide_uid`, derive pairs |
+| `study.survey` | Measure slides; degrade gracefully when one is unreadable |
+| `study.verify` | Pre-flight checks with an actionable fix per issue |
+| `study.recipe` | Resolve and hash the plan |
+| `study.manifests` | JSONL artifact manifests plus sidecars |
+| `study.selection` | The rule language and saved QC views |
+| `study.staging` | Present indexed slides to directory-based pipelines |
+| `study.stages` | **The integration seam.** Recipe → existing typed configs → existing pipeline calls |
+| `study.results` | Aggregate manifests into tidy tables |
+| `study.study` | The `Study` facade |
+| `study.doctor` | Environment diagnostics |
+
+### Rules for this layer
+
+1. **`study.stages` is the only module that calls a pipeline.** If a pipeline
+   signature changes, that file is the only place a study needs updating.
+2. **Nothing here re-implements image processing.** A stage adapter resolves
+   inputs, builds a typed config, calls the existing entry point, and records
+   what happened.
+3. **Stage failures become results, not tracebacks.** `run_stage` returns a
+   `StageResult` with a status and an actionable error, so one failing stage
+   never aborts a cohort halfway with a stack trace.
+4. **`study.paths`, `study.descriptor`, `study.index`, `study.recipe`,
+   `study.manifests`, and `study.selection` import only the standard library
+   and `core`.** They work on a base install with no image backend, which is
+   what lets `init`, `index`, `verify`, and `plan` run anywhere.

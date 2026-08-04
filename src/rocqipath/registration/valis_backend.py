@@ -23,9 +23,9 @@ from functools import lru_cache
 from rocqipath.core.logging import logger
 
 __all__ = [
-    "HAS_VALIS",
-    "HAS_VALIS_FEATURES",
-    "ValisBackendMixin",
+    # "HAS_VALIS",
+    # "HAS_VALIS_FEATURES",
+    # "ValisBackendMixin",
     "build_matcher",
     "valis_default_warper",
 ]
