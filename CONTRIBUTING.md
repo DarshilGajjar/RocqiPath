@@ -22,7 +22,15 @@
    progress protocols or configure independent logging sinks.
 10. Keep dependencies pointing `core` → `utils` → `config` → feature packages
     → `cli`. A layer may import only layers to its left. Feature packages must
-    not import implementations from one another.
+    not import implementations from one another. `study` sits alongside the
+    feature packages: it may import them, and they must not import it.
+11. A stage that writes artifacts must write *every* artifact it produces and
+    record measurements in a manifest. Do not apply a quality threshold inside
+    an expensive stage; filtering belongs in a selection. Record measurements
+    (`tissue_fraction: 0.62`), never verdicts (`accepted: true`). See
+    `docs/concepts/qc-philosophy.md`.
+12. Never commit patient data, identifiers, or identifying filenames — in
+    code, tests, fixtures, documentation, or screenshots. See `SECURITY.md`.
 
 ## Placement decision procedure
 
@@ -42,7 +50,7 @@ Use the first matching rule:
 If moving a helper out of one feature package would break a different feature
 package, move the shared behavior downward to `core` or `utils`; never solve the
 dependency by importing across feature packages. See
-[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for examples and package
+[docs/concepts/architecture.md](docs/concepts/architecture.md) for examples and package
 responsibilities.
 
 ## Adding a feature
@@ -78,3 +86,25 @@ commit patient data, model weights, generated output, or scanner exports.
 4. Move user-visible changes from `Unreleased` into the dated changelog entry.
 5. Commit the exact verified tree, then create the annotated `v<version>` tag.
 6. Push the commit and tag only after reviewing the remote branch for new work.
+
+
+## Documentation
+
+Documentation lives in `docs/`, split by what the reader is trying to do:
+
+| Directory | Contains | Write this when |
+| --- | --- | --- |
+| `docs/start/` | Install, native runtimes, first study, migration | Onboarding changes |
+| `docs/guides/` | Task-oriented recipes | You added a capability someone will want to *do* |
+| `docs/reference/` | Formats, CLI, API, error messages | You changed a format, flag, signature, or message |
+| `docs/concepts/` | Design rationale | You made a decision future readers will question |
+
+Two rules:
+
+- **One canonical page per topic.** Cross-link rather than restate. Duplicated
+  documentation drifts, and the copy the reader finds is the stale one.
+- **New error messages go in `docs/reference/errors.md`** with their cause and
+  fix. The message itself should also name the fix wherever it can.
+
+Keep `README.md` short. It answers "should I use this, and how do I start" and
+then hands off to `docs/`.
