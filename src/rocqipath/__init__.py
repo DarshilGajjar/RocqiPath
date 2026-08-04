@@ -11,6 +11,14 @@ from .core.magnification import (
     MagnificationPlan as MagnificationPlan,
 )
 from .core.output import OutputLayout as OutputLayout
+from .study import (
+    Recipe as Recipe,
+    Selection as Selection,
+    SlideRecord as SlideRecord,
+    Study as Study,
+    StudyDescriptor as StudyDescriptor,
+    StudyPaths as StudyPaths,
+)
 
 try:
     __version__ = _distribution_version("rocqipath")
