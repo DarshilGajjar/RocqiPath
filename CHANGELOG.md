@@ -1,9 +1,78 @@
 # Changelog
 
 All notable changes to RocqiPath will be documented in this file from the
-1.0.0 maintenance baseline forward.
+0.0.1-beta version.
 
-## [Unreleased]
+## [1.0.0] - 2026-08-04
+
+### Added
+
+- Added the `rocqipath.study` workspace layer: a cohort is now described once
+  in `study.toml` and every stage resolves its own inputs, so no pipeline call
+  needs a directory argument.
+  - `study.toml` — the single hand-authored descriptor: source roots, the
+    filename pattern that decodes identity, stain roles, and per-slide
+    `[overrides]` for magnification fallbacks and exclusions.
+  - `index.jsonl` — one record per physical slide, keyed by a `slide_uid` of
+    the form `<case>__<stain>__s<NN>`. Slides are referenced in place and never
+    copied or renamed.
+  - Derived pairs: a pair is case × (reference stain, moving stain), so one
+    H&E serves every biomarker in a cohort without being duplicated on disk.
+  - `survey/` — a cheap pass recording objective magnification, microns per
+    pixel, pyramid downsamples, dimensions, and vendor for every slide.
+  - `rocqipath study verify` — pre-flight checks that report missing files,
+    cases without a reference slide, undeclared stains, absent objective
+    metadata, and slides scanned below the requested magnification, each with
+    the edit that resolves it.
+  - `recipe.json` — a fully resolved, hashed plan. Every artifact records the
+    recipe hash it was produced under.
+  - JSONL artifact manifests with sidecar metadata, written through
+    `ManifestWriter` so the sidecar survives an exception mid-stage.
+  - Selections: named QC views over a manifest, evaluated through a
+    whitelisted AST walk rather than `eval`, saved with their rule text,
+    recipe hash, and matched identifiers.
+  - `ResultTable` aggregation to tidy rows, with CSV output and optional
+    pandas conversion.
+- Added the `Study` facade, re-exported as `rocqipath.Study`, covering
+  `create`/`open`, `index`, `survey`, `verify`, `plan`, `run`, `select`,
+  `selection`, `results`, and `summary`.
+- Added the `rocqipath study` command group: `init`, `index`, `survey`,
+  `verify`, `plan`, `run`, `select`, `results`, `show`, and `list`.
+- Added `rocqipath doctor`, which reports Python, platform, native libvips and
+  OpenSlide runtimes, installed extras, and the resolved workspace root. The
+  bug-report template asks for its output.
+- Added the `ROCQIPATH_HOME` environment variable, defaulting to
+  `~/rocqipath`, as the single root for everything RocqiPath writes.
+- Added an input staging layer that presents indexed slides to the existing
+  directory-based pipelines using symlinks, falling back to hardlinks and then
+  to copying with an explicit warning.
+- Added a documentation tree under `docs/` split by intent — `start/`,
+  `guides/`, `reference/`, `concepts/`, and `qc-gallery/` — with a `faq.md` and
+  an error-message reference giving cause and fix for each message.
+- Added `CITATION.cff` and `CITATION.md`, `SECURITY.md` including a
+  patient-data policy for public issues, `CODE_OF_CONDUCT.md`, issue forms for
+  bugs, slide-format problems, features, and documentation, and a pull-request
+  template.
+
+### Changed
+
+- Rewrote `README.md` as a short entry point what RocqiPath is and is not, install with an extras table, a five-command example, and a documentation map. The detailed material moved into `docs/`.
+- Moved `docs/ARCHITECTURE.md` to `docs/concepts/architecture.md`.
+- Added `tomli` as a dependency on Python 3.10 only, for `study.toml` parsing;
+  `tomllib` is used from Python 3.11 onward.
+- Registered `study` and `doctor` in the CLI subcommand surface.
+
+### Design notes
+
+- Expensive stages now measure rather than decide. Study recipes default
+  `patches.tissue_threshold` and `counts.tissue_threshold` to `0.0`: extraction
+  and counting write every artifact with its properties, and quality filtering
+  happens afterwards as a selection. Changing a threshold no longer requires
+  re-extraction, rejected artifacts stay inspectable, and a methods section can
+  name the exact selection and recipe hash behind a figure.
+- Every existing pipeline function keeps its signature and behaviour. The study
+  layer is additive; scripts and notebooks written against the pipeline API
+  continue to work unchanged.
 
 ### Added
 
@@ -16,7 +85,7 @@ All notable changes to RocqiPath will be documented in this file from the
 - Added characterization coverage for every consolidated tissue path,
   discovery helper, logger configuration, and aligned-file resolver, plus
   import-isolation and executable README checks.
-- Added `docs/ARCHITECTURE.md` with dependency-direction and placement rules.
+- Added `docs/concepts/architecture.md` with dependency-direction and placement rules.
 
 ### Changed
 
@@ -55,7 +124,7 @@ public subpackage imports listed in the README continue to work.
 
 ### Migration guide
 
-| Old import or module | New canonical location | Compatibility |
+| Old import or module | New location | Compatibility |
 |---|---|---|
 | `rocqipath.magnification` | `rocqipath.core.magnification` | Old module remains a façade. |
 | `rocqipath.slide` | `rocqipath.core.slide` | Old module remains a façade. |
@@ -81,7 +150,7 @@ public subpackage imports listed in the README continue to work.
 | Flat `rocqipath.cli` implementation | `rocqipath.cli.commands`, `.prompts`, and `.legacy` | `rocqipath.cli:main` and the console script are unchanged. |
 | Implementations in `rocqipath.api` | `rocqipath.extraction.patches` and `rocqipath.visualization.{grids,pairs,thumbnails}` | Old module warns and re-exports the moved helpers. |
 
-## [1.0.0] - 2026-07-22
+## [0.0.1-beta] - 2026-07-22
 
 ### Changed
 

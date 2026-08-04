@@ -1,0 +1,96 @@
+name: Bug report
+description: Something behaves differently from what the documentation says.
+labels: ["bug", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ### Before you write anything
+
+        **Never attach patient slides, filenames, accession numbers, or any
+        other identifier.** Slide files embed label images and vendor metadata
+        that frequently identify a patient. See
+        [SECURITY.md](https://github.com/DarshilGajjar/RocqiPath/blob/main/SECURITY.md).
+
+        Redact paths in stack traces. Replace real filenames with a pattern
+        such as `CASE-XXX_he.svs`.
+
+  - type: checkboxes
+    id: data-safety
+    attributes:
+      label: Data safety
+      options:
+        - label: This report contains no patient data, identifiers, or identifying filenames.
+          required: true
+
+  - type: textarea
+    id: doctor
+    attributes:
+      label: Output of `rocqipath doctor`
+      description: >-
+        Run `rocqipath doctor` and paste the whole block. It reports versions,
+        native runtimes, and installed extras — and reads none of your slides.
+        Most reports are diagnosed from this alone.
+      render: text
+    validations:
+      required: true
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What you expected, and what occurred instead.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: How to reproduce
+      description: >-
+        The exact commands or Python you ran. Include `study.toml` and the
+        relevant part of `recipe.json` where applicable, with identifiers
+        redacted.
+      render: shell
+    validations:
+      required: true
+
+  - type: textarea
+    id: traceback
+    attributes:
+      label: Error output
+      description: The full message or traceback, with paths redacted.
+      render: text
+
+  - type: dropdown
+    id: stage
+    attributes:
+      label: Which part of RocqiPath?
+      multiple: true
+      options:
+        - study workspace (init / index / survey / verify / plan)
+        - alignment / registration
+        - tissue or TMA extraction
+        - paired patch extraction
+        - stain normalization
+        - cell counting
+        - visualization / QC
+        - CLI
+        - installation
+        - documentation
+        - not sure
+
+  - type: textarea
+    id: slides
+    attributes:
+      label: Slide characteristics
+      description: >-
+        Scanner vendor, format, level-0 objective magnification, and roughly
+        how many slides. **No filenames or identifiers.** The relevant lines
+        from `survey/survey.json` are ideal.
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else
+      description: Workarounds you found, when it started, what you have already tried.
