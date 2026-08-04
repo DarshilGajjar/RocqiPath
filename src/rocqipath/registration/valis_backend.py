@@ -1,32 +1,120 @@
-"""VALIS registration backend and feature-matcher construction."""
+"""VALIS registration backend and feature-matcher construction.
+
+Import policy
+─────────────
+Nothing in this module imports ``valis`` at module scope.  Importing VALIS
+costs ~7 s and instantiates LightGlue/SuperPoint matchers as a side effect
+(printing "Loaded LightGlue model" twice), which every unrelated pipeline --
+patch extraction, ORB alignment, stain normalisation -- would otherwise pay.
+
+VALIS is loaded on first actual use via :func:`_load_valis` /
+:func:`_load_valis_features`, both memoised so the cost is paid once per
+process.  ``HAS_VALIS`` and ``HAS_VALIS_FEATURES`` remain importable and are
+resolved through the module-level ``__getattr__`` using ``find_spec``, which
+locates a module without executing it.
+"""
 
 from __future__ import annotations
 
+import importlib.util
 import os
+from functools import lru_cache
 
 from rocqipath.core.logging import logger
 
-try:
-    from valis import registration
-    from valis.non_rigid_registrars import (
-        OpticalFlowWarper as _OpticalFlowWarper,
-    )
-
-    _VALIS_DEFAULT_WARPER = _OpticalFlowWarper
-    HAS_VALIS = True
-except (ImportError, OSError):
-    registration = _VALIS_DEFAULT_WARPER = None
-    HAS_VALIS = False
-
-try:
-    from valis import feature_detectors, feature_matcher
-
-    HAS_VALIS_FEATURES = True
-except (ImportError, OSError):
-    feature_detectors = feature_matcher = None
-    HAS_VALIS_FEATURES = False
+__all__ = [
+    "HAS_VALIS",
+    "HAS_VALIS_FEATURES",
+    "ValisBackendMixin",
+    "build_matcher",
+    "valis_default_warper",
+]
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+# Lazy VALIS loading
+# ─────────────────────────────────────────────────────────────────────────────
+def _module_available(name: str) -> bool:
+    """Report whether ``name`` is importable *without* executing it.
+
+    Weaker than a try/except import: a VALIS whose import fails at runtime
+    (missing native libvips/OpenSlide, for instance) still reports ``True``
+    here.  Real failures surface at the call site, where they are handled.
+    """
+    try:
+        return importlib.util.find_spec(name) is not None
+    except (ImportError, ValueError):
+        return False
+
+
+@lru_cache(maxsize=1)
+def _load_valis():
+    """Import VALIS on first use.
+
+    Returns
+    -------
+    tuple
+        ``(registration_module, OpticalFlowWarper_cls)``, or ``(None, None)``
+        when VALIS is not installed or fails to import.
+    """
+    try:
+        from valis import registration
+        from valis.non_rigid_registrars import OpticalFlowWarper
+
+        return registration, OpticalFlowWarper
+    except (ImportError, OSError) as exc:
+        logger.debug(f"[VALIS] unavailable: {exc}")
+        return None, None
+
+
+@lru_cache(maxsize=1)
+def _load_valis_features():
+    """Import the VALIS feature-detector/matcher modules on first use.
+
+    Returns ``(feature_detectors, feature_matcher)`` or ``(None, None)``.
+    """
+    try:
+        from valis import feature_detectors, feature_matcher
+
+        return feature_detectors, feature_matcher
+    except (ImportError, OSError) as exc:
+        logger.debug(f"[VALIS] feature modules unavailable: {exc}")
+        return None, None
+
+
+def valis_default_warper():
+    """Return VALIS's ``OpticalFlowWarper``, or ``None`` if VALIS is absent.
+
+    Use this instead of a module-level constant so that config defaults do not
+    drag VALIS into every import of the config module.
+    """
+    return _load_valis()[1]
+
+
+def __getattr__(name):
+    """Resolve the legacy module-level names without importing VALIS eagerly.
+
+    Keeps ``from rocqipath.registration.valis_backend import HAS_VALIS`` (and
+    ``registration``) working for existing callers.
+    """
+    if name == "HAS_VALIS":
+        return _module_available("valis")
+    if name == "HAS_VALIS_FEATURES":
+        return _module_available("valis.feature_detectors")
+    if name == "registration":
+        return _load_valis()[0]
+    if name == "_VALIS_DEFAULT_WARPER":
+        return _load_valis()[1]
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+
+def __dir__():
+    return sorted(set(globals()) | set(__all__) | {"registration"})
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Feature detector / matcher construction
+# ─────────────────────────────────────────────────────────────────────────────
 def build_matcher(
     detector_name: str = "disk",
     num_features: int = 2000,
@@ -55,10 +143,14 @@ def build_matcher(
 
     Returns
     -------
-    Matcher instance, or ``None`` when unavailable — in which case the caller
+    Matcher instance, or ``None`` when unavailable -- in which case the caller
     should simply omit the ``matcher`` argument and let VALIS choose.
     """
-    if not HAS_VALIS_FEATURES or not detector_name:
+    if not detector_name:
+        return None
+
+    feature_detectors, feature_matcher = _load_valis_features()
+    if feature_detectors is None or feature_matcher is None:
         return None
 
     builders = {
@@ -102,6 +194,9 @@ def build_matcher(
         return None
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+# Registrar mixin
+# ─────────────────────────────────────────────────────────────────────────────
 class ValisBackendMixin:
     """Methods mixed into :class:`WSIRegistrar`."""
 
@@ -121,20 +216,35 @@ class ValisBackendMixin:
 
         Design notes
         ────────────
+        - VALIS is imported here, not at module scope, so unrelated pipelines
+          do not pay the ~7 s import and LightGlue model load.
         - ``max_processed_image_dim_px`` (not ``max_image_dim_px``) controls
-          feature detection resolution. The VALIS paper recommends 850–1 000 px
+          feature detection resolution. The VALIS paper recommends 850-1 000 px
           for WSI registration.
         - ``align_to_reference=True`` pins H&E as the fixed anchor so only the
           IHC slide is warped. ``False`` (default) computes a consensus space.
-        - ``Slide.warp_xy_from_to()`` is used for coordinate mapping — this is
+        - ``Slide.warp_xy_from_to()`` is used for coordinate mapping -- this is
           the correct per-slide API (not the deprecated ``Valis.warp_xy``).
         """
+        registration, default_warper = _load_valis()
+        if registration is None:
+            raise RuntimeError(
+                "VALIS is required for alignment_method='valis' but is not "
+                "importable. Install it with: pip install -e \".[valis]\" "
+                "(and ensure the native libvips/OpenSlide runtimes are on PATH)."
+            )
+
         cfg = self.valis_cfg
+
+        # Config defaults may legitimately be None so that importing the config
+        # module does not import VALIS; resolve them now that VALIS is loaded.
+        non_rigid_cls = cfg.non_rigid_registrar_cls or default_warper
+
         logger.info("[VALIS] Initialising registration pipeline...")
         logger.info(f"        max_processed_image_dim_px = {cfg.max_processed_image_dim_px}")
         logger.info(f"        max_non_rigid_reg_dim_px   = {cfg.max_non_rigid_reg_dim_px}")
         logger.info(f"        align_to_reference         = {cfg.align_to_reference}")
-        logger.info(f"        non_rigid_registrar_cls    = {cfg.non_rigid_registrar_cls}")
+        logger.info(f"        non_rigid_registrar_cls    = {non_rigid_cls}")
 
         valis_init_kwargs = dict(
             src_dir=os.path.dirname(self.path_ref),  # fallback scan directory
@@ -146,7 +256,7 @@ class ValisBackendMixin:
             max_processed_image_dim_px=cfg.max_processed_image_dim_px,
             max_non_rigid_registration_dim_px=cfg.max_non_rigid_reg_dim_px,
             thumbnail_size=cfg.thumbnail_size,
-            non_rigid_registrar_cls=cfg.non_rigid_registrar_cls,
+            non_rigid_registrar_cls=non_rigid_cls,
             micro_rigid_registrar_cls=cfg.micro_rigid_registrar_cls,
             micro_rigid_registrar_params=cfg.micro_rigid_registrar_params,
             imgs_ordered=cfg.imgs_ordered,
@@ -203,7 +313,7 @@ class ValisBackendMixin:
                 raise
             logger.warning(
                 f"[VALIS] registration.Valis rejected {dropped} ({exc}). "
-                f"Retrying without them — upgrade valis-wsi to use DISK+LightGlue."
+                f"Retrying without them -- upgrade valis-wsi to use DISK+LightGlue."
             )
             for k in dropped:
                 valis_init_kwargs.pop(k, None)
