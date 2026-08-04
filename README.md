@@ -1,6 +1,6 @@
 # RocqiPath
 
-[![CI](https://github.com/DarshilGajjar/RocqiPath/actions/workflows/ci.yml/badge.svg)](https://github.com/DarshilGajjar/RocqiPath/actions/workflows/ci.yml)
+<!-- [![CI](https://github.com/DarshilGajjar/RocqiPath/actions/workflows/ci.yml/badge.svg)](https://github.com/DarshilGajjar/RocqiPath/actions/workflows/ci.yml) -->
 [![Python 3.10 | 3.11](https://img.shields.io/badge/python-3.10%20%7C%203.11-blue.svg)](https://www.python.org/downloads/)
 [![License: proprietary](https://img.shields.io/badge/license-proprietary-lightgrey.svg)](LICENSE)
 
