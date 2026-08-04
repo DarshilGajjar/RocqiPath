@@ -214,6 +214,20 @@ def build_recipe(
             "grid_density": 1,
             "qc_enabled": True,
             "keep_diagnostics": True,
+            # Retain the full-resolution reference output.
+            "aligned_wsi_level": 0,
+            # VALIS tuning. Ignored when method is "orb".
+            "valis_feature_detector": "disk",
+            "valis_norm_method": "img_stats",
+            "valis_num_features": 2000,
+            "valis_non_rigid_dim": 2048,
+            "valis_check_reflections": False,
+            "valis_max_error_um": None,
+            # QC read levels. null lets RocqiPath resolve them from the
+            # survey, which is what you want for slides scanned above the
+            # target magnification.
+            "qc_reference_read_level": None,
+            "qc_moving_read_level": None,
         },
         "patches": {
             "enabled": bool(moving),

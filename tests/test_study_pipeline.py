@@ -401,3 +401,61 @@ def test_doctor_json_is_machine_readable(capsys: pytest.CaptureFixture) -> None:
     payload = json.loads(capsys.readouterr().out)
     assert "python_version" in payload
     assert "packages" in payload
+
+
+# ---------------------------------------------------------------------------
+# Alignment adapter field pass-through
+# ---------------------------------------------------------------------------
+def test_alignment_recipe_exposes_valis_and_magnification_fields(tmp_path: Path) -> None:
+    """Every AlignmentConfig field a user tunes by hand must be reachable."""
+    recipe = _study(tmp_path).plan()
+    alignment = recipe.stage("alignment")
+    for key in (
+        "aligned_wsi_level",
+        "valis_feature_detector",
+        "valis_norm_method",
+        "valis_num_features",
+        "valis_non_rigid_dim",
+        "qc_reference_read_level",
+        "qc_moving_read_level",
+    ):
+        assert key in alignment
+
+
+def test_source_magnification_reaches_the_alignment_config(tmp_path: Path) -> None:
+    """An 80x TMA override must survive descriptor -> index -> recipe -> config."""
+    from rocqipath.study.stages import _pair_source_magnifications
+
+    study = _study(tmp_path)
+    descriptor = study.paths.descriptor
+    descriptor.write_text(
+        descriptor.read_text()
+        + '\n[overrides."CASE-1__he__s01"]\nsource_magnification = 80.0\n'
+        + '\n[overrides."CASE-1__cd8__s01"]\nsource_magnification = 80.0\n'
+    )
+    study.reload()
+    study.index()
+    recipe = study.plan()
+    reference, moving = _pair_source_magnifications(study.pairs(), recipe)
+    assert reference == 80.0
+    assert moving == 80.0
+
+
+def test_disagreeing_source_magnifications_resolve_to_none(tmp_path: Path) -> None:
+    """AlignmentConfig takes one value per role; a mixed cohort cannot use it."""
+    from rocqipath.study.stages import _pair_source_magnifications
+
+    study = _study(
+        tmp_path, names=("CASE-1_he.svs", "CASE-1_cd8.svs", "CASE-2_he.svs", "CASE-2_cd8.svs")
+    )
+    descriptor = study.paths.descriptor
+    descriptor.write_text(
+        descriptor.read_text()
+        + '\n[overrides."CASE-1__he__s01"]\nsource_magnification = 80.0\n'
+        + '\n[overrides."CASE-2__he__s01"]\nsource_magnification = 40.0\n'
+    )
+    study.reload()
+    study.index()
+    recipe = study.plan()
+    reference, _ = _pair_source_magnifications(study.pairs(), recipe)
+    assert reference is None
