@@ -44,6 +44,81 @@ def _study(tmp_path: Path, names, stains=("he", "cd8")) -> Study:
 # ---------------------------------------------------------------------------
 # Descriptor
 # ---------------------------------------------------------------------------
+@pytest.mark.parametrize(
+    "source",
+    [
+        (
+            r"\\dept01cap\oralonc$\48 Seshadri Lab Data Share"
+            r"\Lab Members\Darshil Gajjar\1) Study\5) PyStain"
+            r"\main\output\tma\block12"
+        ),
+        r"C:\Users\Darshil\Desktop\slides",
+        "C:/Users/Darshil/Desktop/slides",
+        "/mnt/archive/pathology/slides",
+        r"\\server\share\O'Brien Study\slides",
+        'C:\\Research\\"quoted study"\\slides',
+        r"//server/share/pathology/slides",
+        r"C:\Users\Darshil\Δ-study\slides",
+    ],
+)
+def test_descriptor_template_round_trips_source_paths(
+    tmp_path: Path,
+    source: str,
+) -> None:
+    descriptor_path = tmp_path / "study.toml"
+
+    descriptor_path.write_text(
+        descriptor_template(
+            "path_test",
+            sources=[source],
+            stains=["he", "cd8"],
+        ),
+        encoding="utf-8",
+    )
+
+    descriptor = load_descriptor(descriptor_path)
+
+    assert len(descriptor.sources) == 1
+    assert str(descriptor.sources[0].root) == source
+
+def test_descriptor_template_round_trips_multiple_source_paths(
+    tmp_path: Path,
+) -> None:
+    sources = [
+        r"\\server\share\he slides",
+        r"D:\Pathology\CD8 slides",
+        "/mnt/archive/cd31",
+    ]
+
+    descriptor_path = tmp_path / "study.toml"
+
+    descriptor_path.write_text(
+        descriptor_template(
+            "multi_source_test",
+            sources=sources,
+            stains=["he", "cd8"],
+        ),
+        encoding="utf-8",
+    )
+
+    descriptor = load_descriptor(descriptor_path)
+
+    loaded = [str(source.root) for source in descriptor.sources]
+
+    assert loaded == sources
+
+def test_descriptor_rejects_control_characters_in_source_path() -> None:
+    corrupted_path = "C:\\study\\1data"
+
+    # Simulate a string containing an actual control character.
+    corrupted_path = corrupted_path.replace("\\1", "\x01")
+
+    with pytest.raises(ConfigurationError, match="control characters"):
+        descriptor_template(
+            "invalid_path",
+            sources=[corrupted_path],
+        )
+
 def test_template_round_trips_through_the_parser(tmp_path: Path) -> None:
     path = tmp_path / "study.toml"
     path.write_text(descriptor_template("demo", sources=[tmp_path], stains=["he", "cd8"]))
