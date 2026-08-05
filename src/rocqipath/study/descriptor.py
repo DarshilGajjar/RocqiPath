@@ -64,6 +64,67 @@ class DescriptorNotFoundError(ConfigurationError, FileNotFoundError):
     missing input file keep working unchanged.
     """
 
+def _toml_basic_string(value: object) -> str:
+    """Return ``value`` encoded as a valid TOML basic string.
+
+    This safely handles:
+
+    - Windows UNC paths
+    - Windows drive-letter paths
+    - POSIX paths
+    - forward-slash network paths
+    - spaces
+    - apostrophes
+    - double quotes
+    - Unicode characters
+    - tabs, newlines, and other control characters
+    """
+    text = str(value)
+
+    escapes = {
+        '"': r"\"",
+        "\\": r"\\",
+        "\b": r"\b",
+        "\t": r"\t",
+        "\n": r"\n",
+        "\f": r"\f",
+        "\r": r"\r",
+    }
+
+    encoded: List[str] = []
+
+    for character in text:
+        if character in escapes:
+            encoded.append(escapes[character])
+        elif ord(character) < 0x20 or ord(character) == 0x7F:
+            encoded.append(f"\\u{ord(character):04X}")
+        else:
+            encoded.append(character)
+
+    return '"' + "".join(encoded) + '"'
+
+def _source_path_text(value: Union[str, Path]) -> str:
+    """Normalize a source path and reject Python-escaped control characters."""
+    text = str(Path(value).expanduser())
+
+    control_characters = [
+        character
+        for character in text
+        if ord(character) < 0x20 or ord(character) == 0x7F
+    ]
+
+    if control_characters:
+        escaped = repr(text)
+
+        raise ConfigurationError(
+            "The source path contains control characters and was probably "
+            "created from a non-raw Windows string. "
+            f"Received: {escaped}. "
+            "Use a raw string such as "
+            r'r"\\server\share\folder" or pass pathlib.Path.'
+        )
+
+    return text
 
 def _load_toml(path: Path) -> Dict[str, Any]:
     """Parse a TOML file using ``tomllib`` or the ``tomli`` backport.
@@ -521,14 +582,14 @@ def descriptor_template(
         TOML document ready to write to disk.
     """
     keys = [str(stain).strip().lower() for stain in stains if str(stain).strip()] or ["he"]
-    roots = [str(Path(item).expanduser()) for item in sources] or ["/path/to/slide/archive"]
+    roots = [_source_path_text(item) for item in sources] or ["/path/to/slide/archive"]
 
     lines: List[str] = [
         "# RocqiPath study descriptor.",
         "# This is the only file you write by hand. Everything else under this",
         "# directory is generated and safe to delete and rebuild.",
         "",
-        f'name = "{name}"',
+        f"name = {_toml_basic_string(name)}",
         f"default_magnification = {float(default_magnification):.1f}"
         "   # physical objective, not a pyramid level",
         "detection_magnification = 1.25",
@@ -548,7 +609,7 @@ def descriptor_template(
         lines += [
             "",
             "[[sources]]",
-            f'root = "{root}"',
+            f"root = {_toml_basic_string(root)}",
             f"pattern = '{DEFAULT_SLIDE_PATTERN}'",
             "recursive = true",
         ]
