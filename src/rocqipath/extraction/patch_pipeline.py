@@ -172,16 +172,40 @@ def _extract_case_patches(
     """
     ref_reader = _SlideReader(reference_path)
     target_reader = _SlideReader(target_path)
+
     try:
         ref_plan = ref_reader.configure_magnification(
-            cfg.target_magnification, cfg.reference_source_magnification
+            cfg.target_magnification,
+            cfg.reference_source_magnification,
         )
+
         target_plan = target_reader.configure_magnification(
-            cfg.target_magnification, cfg.target_source_magnification
+            cfg.target_magnification,
+            cfg.target_source_magnification,
         )
+
+        print(
+            f"[MAG] {case_id}: "
+            f"reference={ref_plan.base_magnification:g}x "
+            f"-> {ref_plan.target_magnification:g}x "
+            f"(level={ref_plan.level}, "
+            f"native={ref_plan.native_magnification:g}x, "
+            f"resize={ref_plan.resize_factor:.4f}); "
+            f"target={target_plan.base_magnification:g}x "
+            f"-> {target_plan.target_magnification:g}x "
+            f"(level={target_plan.level}, "
+            f"native={target_plan.native_magnification:g}x, "
+            f"resize={target_plan.resize_factor:.4f})"
+        )
+
         w, h = ref_reader.target_dimensions
         target_w, target_h = target_reader.target_dimensions
-        relative_error = max(abs(target_w - w) / w, abs(target_h - h) / h)
+
+        relative_error = max(
+            abs(target_w - w) / w,
+            abs(target_h - h) / h,
+        )
+        
         if relative_error > cfg.dimension_tolerance:
             raise ValueError(
                 f"Reference and moving slides differ at {cfg.target_magnification:g}x: "

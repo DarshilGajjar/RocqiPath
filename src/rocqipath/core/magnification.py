@@ -43,7 +43,7 @@ def _positive_float(value: Any) -> Optional[float]:
 
 
 def objective_magnification_from_properties(
-    properties: Mapping[str, Any], *, fallback: Optional[float] = None
+    properties: Mapping[str, Any], *, override: Optional[float] = None, fallback: Optional[float] = None
 ) -> Tuple[float, str]:
     """Resolve the level-0 objective magnification from slide metadata.
 
@@ -51,6 +51,8 @@ def objective_magnification_from_properties(
     ----------
     properties:
         OpenSlide- or libvips-style metadata mapping.
+    override:
+        Explicit value used to override any metadata.
     fallback:
         Explicit value used only when no supported metadata key is present.
         Supplying a scanner-specific fallback is recommended for metadata-poor
@@ -63,16 +65,26 @@ def objective_magnification_from_properties(
         ``(magnification, source_key)``. ``source_key`` is ``"fallback"``
         when the explicit fallback was used.
     """
+    value = _positive_float(override)
+
+    if value is not None:
+        return value, "override"
+
     for key in _OBJECTIVE_KEYS:
         value = _positive_float(properties.get(key))
+
         if value is not None:
             return value, key
+
     value = _positive_float(fallback)
+
     if value is not None:
         return value, "fallback"
+
     raise ValueError(
-        "Slide objective magnification is missing. Set source_magnification "
-        "explicitly (for example, 80.0 for an 80x TMA scan)."
+        "Slide objective magnification could not be resolved "
+        "from an explicit override, OpenSlide metadata, or "
+        "a RocqiPath-generated manifest."
     )
 
 

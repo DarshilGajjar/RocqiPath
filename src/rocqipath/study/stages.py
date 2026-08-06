@@ -290,29 +290,51 @@ def _run_alignment(
     return result
 
 def _pair_source_magnifications(
-    pairs: Sequence[Any], recipe: Recipe
-) -> tuple[Optional[float], Optional[float]]:
-    """Resolve one fallback objective magnification per role.
+        pairs: Sequence[Any],
+        recipe: Recipe,
+    ) -> tuple[Optional[float], Optional[float]]:
+        """Resolve consistent source magnifications for patch extraction.
 
-    ``AlignmentConfig`` takes a single value per role rather than one per
-    slide, so a cohort whose reference slides disagree cannot be expressed in
-    a single run. This returns a value only when every slide of that role
-    agrees; otherwise ``None``, and the caller warns.
-    """
-    references = {
-        recipe.slide_source_magnification(pair.reference.slide_uid)
-        or pair.reference.source_magnification
-        for pair in pairs
-    }
-    movings = {
-        recipe.slide_source_magnification(pair.moving.slide_uid) or pair.moving.source_magnification
-        for pair in pairs
-    }
-    references.discard(None)
-    movings.discard(None)
-    reference = float(references.pop()) if len(references) == 1 else None
-    moving = float(movings.pop()) if len(movings) == 1 else None
-    return reference, moving
+        Explicit study overrides take precedence. Otherwise, use the
+        magnification recorded during the OpenSlide survey.
+        """
+        reference_values: set[float] = set()
+        moving_values: set[float] = set()
+
+        for pair in pairs:
+            reference_mag = (
+                recipe.slide_source_magnification(
+                    pair.reference.slide_uid
+                )
+                or pair.reference.source_magnification
+            )
+
+            moving_mag = (
+                recipe.slide_source_magnification(
+                    pair.moving.slide_uid
+                )
+                or pair.moving.source_magnification
+            )
+
+            if reference_mag is not None:
+                reference_values.add(float(reference_mag))
+
+            if moving_mag is not None:
+                moving_values.add(float(moving_mag))
+
+        reference = (
+            next(iter(reference_values))
+            if len(reference_values) == 1
+            else None
+        )
+
+        moving = (
+            next(iter(moving_values))
+            if len(moving_values) == 1
+            else None
+        )
+
+        return reference, moving
 
 
 def _any_missing_metadata(pairs: Sequence[Any], recipe: Recipe) -> bool:
@@ -417,16 +439,16 @@ def _run_patches(
     # Resolve the original slide magnifications from:
     # 1. per-slide overrides in study.toml
     # 2. surveyed/indexed slide metadata
-    reference_source, moving_source = _pair_source_magnifications(
-        pairs,
-        recipe,
+    reference_source, _original_moving_source = (
+        _pair_source_magnifications(
+            pairs,
+            recipe,
+        )
     )
 
-    if reference_source is None:
-        result.warnings.append(
-            "Reference-slide objective magnification could not be resolved. "
-            "Add source_magnification overrides in study.toml."
-        )
+    target_magnification = float(
+        settings["target_magnification"]
+    )
 
     config = PatchExtractionConfig(
         he_dir=str(staged.root),
@@ -434,15 +456,11 @@ def _run_patches(
         output_dir=str(paths.root),
         biomarker_folders=biomarkers,
         reference_name=reference_stain,
-
-        # Canonical staged reference names:
-        # sample_0001__he__s01.tif
         reference_pattern=(
             rf"^(?P<sample_id>.+?)__"
             rf"{re.escape(reference_stain)}__s\d+"
             rf"\.(?:tif|tiff|svs|ndpi|scn|mrxs)$"
         ),
-
         patch_size=int(settings["patch_size"]),
         stride=int(
             settings.get("stride")
@@ -453,18 +471,19 @@ def _run_patches(
         ),
         target_magnification=target_magnification,
 
-        # Original H&E slide fallback, e.g. 80x.
+        # None means SlideReader should inspect OpenSlide metadata.
+        # A value here may come from an explicit override or survey.
         reference_source_magnification=reference_source,
 
-        # The aligned OME-TIFF was exported by the alignment stage at the
-        # requested target magnification. It may not contain OpenSlide's
-        # objective-power property, so provide that value explicitly.
+        # The aligned moving image was generated at the alignment target.
         target_source_magnification=target_magnification,
 
         dimension_tolerance=float(
             settings.get("dimension_tolerance", 0.01)
         ),
-        max_workers=int(settings.get("max_workers", 1)),
+        max_workers=int(
+            settings.get("max_workers", 1)
+        ),
     )
 
     summary = run_patch_extraction(config)
