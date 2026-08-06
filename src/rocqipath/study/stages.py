@@ -476,7 +476,7 @@ def _run_patches(
         reference_source_magnification=reference_source,
 
         # The aligned moving image was generated at the alignment target.
-        target_source_magnification=target_magnification,
+        target_source_magnification=reference_source,
 
         dimension_tolerance=float(
             settings.get("dimension_tolerance", 0.01)
