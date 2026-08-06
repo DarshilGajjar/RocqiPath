@@ -397,10 +397,12 @@ class WSIRegistrar(
             f"moving={tgt_w}x{tgt_h}, max ratio={worst:.3f}"
         )
         if max_ratio is not None and worst > float(max_ratio):
-            raise ValueError(
-                f"Reference/moving physical field ratio {worst:.3f} exceeds "
-                f"max_physical_field_ratio={max_ratio}. The two slides do not "
-                f"cover comparable areas at the target magnification."
+            logger.warning(
+                f"[FIELD WARN] Reference/moving physical field ratio "
+                f"{worst:.3f} exceeds "
+                f"max_physical_field_ratio={float(max_ratio):g}. "
+                f"The slides may cover different physical areas, but "
+                f"registration will continue."
             )
 
     # ══════════════════════════════════════════════════════════════════════════
