@@ -52,3 +52,4 @@ class AlignedCaseResult:
     thumb: Any  # Grid-map PIL.Image, or None
     valid_grids: List[int]  # Grid indices that passed tissue QC
     aligned_moving_path: Optional[str] = None
+    manifest_path: Optional[str] = None

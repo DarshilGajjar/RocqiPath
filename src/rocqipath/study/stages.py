@@ -376,8 +376,27 @@ def _write_alignment_manifest(
                     "stain": pair.moving.stain,
                     "reference_uid": pair.reference.slide_uid,
                     "moving_uid": pair.moving.slide_uid,
-                    "aligned_moving_path": str(getattr(item, "aligned_moving_path", "") or ""),
-                    "valid_grids": len(grids) if grids is not None else None,
+                    "aligned_moving_path": str(
+                        getattr(
+                            item,
+                            "aligned_moving_path",
+                            "",
+                        )
+                        or ""
+                    ),
+                    "magnification_manifest_path": str(
+                        getattr(
+                            item,
+                            "manifest_path",
+                            "",
+                        )
+                        or ""
+                    ),
+                    "valid_grids": (
+                        len(grids)
+                        if grids is not None
+                        else None
+                    ),
                     "completed": item is not None,
                 }
             )

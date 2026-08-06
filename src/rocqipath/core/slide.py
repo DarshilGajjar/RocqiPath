@@ -16,6 +16,24 @@ if TYPE_CHECKING:
     from PIL.Image import Image as PILImage
 
 
+def _image_base_name(path: Path) -> str:
+    """Return a filename without ordinary or compound image suffixes."""
+
+    name = path.name
+    lowered = name.lower()
+
+    compound_suffixes = (
+        ".ome.tiff",
+        ".ome.tif",
+    )
+
+    for suffix in compound_suffixes:
+        if lowered.endswith(suffix):
+            return name[: -len(suffix)]
+
+    return path.stem
+
+
 class SlideReader:
     """Open a WSI with OpenSlide or fall back to PIL for ordinary TIFFs.
 
@@ -87,22 +105,62 @@ class SlideReader:
         return self.plan
 
     def _manifest_magnification(self) -> Optional[float]:
-        """Read magnification recorded by RocqiPath beside an extracted TIFF."""
+        """Read output magnification recorded beside a generated image."""
+
         source = Path(self.path)
+        base_name = _image_base_name(source)
+
         candidates = [
-            source.with_name(f"{source.stem}_manifest.json"),
+            # Preferred sidecar:
+            # sample_aligned_moving_manifest.json
+            source.with_name(
+                f"{base_name}_manifest.json"
+            ),
+
+            # Backward compatibility:
+            # sample_aligned_moving.ome_manifest.json
+            source.with_name(
+                f"{source.stem}_manifest.json"
+            ),
+
+            # Generic directory-level manifest.
             source.parent / "manifest.json",
         ]
+
+        seen: set[Path] = set()
+
         for candidate in candidates:
+            if candidate in seen:
+                continue
+
+            seen.add(candidate)
+
             if not candidate.is_file():
                 continue
+
             try:
-                payload = json.loads(candidate.read_text(encoding="utf-8"))
+                payload = json.loads(
+                    candidate.read_text(encoding="utf-8")
+                )
+
                 value = payload.get("output_magnification")
-                if value is not None and float(value) > 0:
-                    return float(value)
-            except (OSError, ValueError, TypeError, json.JSONDecodeError):
+
+                if value is None:
+                    continue
+
+                parsed = float(value)
+
+                if parsed > 0:
+                    return parsed
+
+            except (
+                OSError,
+                ValueError,
+                TypeError,
+                json.JSONDecodeError,
+            ):
                 continue
+
         return None
 
     @property
