@@ -62,12 +62,31 @@ class SlideReader:
         return tuple(float(value) for value in self._slide.level_downsamples)
 
     def configure_magnification(
-        self, target_magnification: float, source_magnification: Optional[float] = None
+        self,
+        target_magnification: float,
+        source_magnification: Optional[float] = None,
     ) -> MagnificationPlan:
-        """Resolve and cache the exact target-magnification plan."""
-        fallback = source_magnification or self._manifest_magnification()
-        base, _ = objective_magnification_from_properties(self.properties, fallback=fallback)
-        self.plan = build_magnification_plan(base, target_magnification, self.level_downsamples)
+        """Resolve and cache an exact target-magnification read plan.
+
+        Resolution order
+        ----------------
+        1. Explicit source_magnification supplied by the caller.
+        2. Objective magnification reported by OpenSlide metadata.
+        3. Magnification recorded in a neighboring RocqiPath manifest.
+        4. Raise when no physically valid source magnification is available.
+        """
+        base, _source = objective_magnification_from_properties(
+            self.properties,
+            override=source_magnification,
+            fallback=self._manifest_magnification(),
+        )
+
+        self.plan = build_magnification_plan(
+            base,
+            target_magnification,
+            self.level_downsamples,
+        )
+
         return self.plan
 
     def _manifest_magnification(self) -> Optional[float]:
