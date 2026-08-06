@@ -1,8 +1,4 @@
-"""Whole-slide alignment and registration.
-
-Heavy registration backends are imported lazily so importing RocqiPath does
-not initialize VALIS, PyTorch, LightGlue, or GPU resources.
-"""
+"""Whole-slide alignment and registration."""
 
 from __future__ import annotations
 
@@ -34,8 +30,6 @@ _PIPELINE_EXPORTS = {
 
 
 def __getattr__(name: str):
-    """Load registration implementation only when an API is requested."""
-
     if name in _PIPELINE_EXPORTS:
         from . import pipeline
 
@@ -48,7 +42,7 @@ def __getattr__(name: str):
             from .registrar import WSIRegistrar
         except (ImportError, OSError) as exc:
             raise AttributeError(
-                "WSIRegistrar is unavailable because optional registration "
+                "WSIRegistrar is unavailable because registration "
                 "dependencies could not be imported."
             ) from exc
 
@@ -61,6 +55,4 @@ def __getattr__(name: str):
 
 
 def __dir__() -> list[str]:
-    return sorted(
-        set(globals()) | set(__all__)
-    )
+    return sorted(set(globals()) | set(__all__))
