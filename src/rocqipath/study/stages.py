@@ -486,7 +486,7 @@ def _run_patches(
             or settings["patch_size"]
         ),
         tissue_threshold=float(
-            settings.get("tissue_threshold", 0.0)
+            settings.get("tissue_threshold", 0.5)
         ),
         target_magnification=target_magnification,
 
