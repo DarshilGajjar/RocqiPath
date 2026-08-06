@@ -48,8 +48,7 @@ except ImportError:
     pass
 
 
-# Registration is intentionally lazy because importing VALIS may initialize
-# neural feature models such as LightGlue.
+# Registration is intentionally imported lazily.
 _REGISTRATION_EXPORTS = {
     "AlignmentConfig",
     "run_alignment",
@@ -59,7 +58,7 @@ _REGISTRATION_EXPORTS = {
 
 
 def __getattr__(name: str):
-    """Load registration APIs only when they are explicitly requested."""
+    """Load registration components only when explicitly requested."""
 
     if name in _REGISTRATION_EXPORTS:
         from . import registration
@@ -69,7 +68,7 @@ def __getattr__(name: str):
         except AttributeError as exc:
             raise AttributeError(
                 f"module {__name__!r} has no attribute {name!r}. "
-                "The optional registration dependencies may not be installed."
+                "Optional registration dependencies may be unavailable."
             ) from exc
 
         globals()[name] = value
@@ -81,6 +80,4 @@ def __getattr__(name: str):
 
 
 def __dir__() -> list[str]:
-    return sorted(
-        set(globals()) | _REGISTRATION_EXPORTS
-    )
+    return sorted(set(globals()) | _REGISTRATION_EXPORTS)
