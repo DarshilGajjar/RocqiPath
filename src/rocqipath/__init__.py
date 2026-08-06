@@ -23,11 +23,10 @@ from .study import (
 try:
     __version__ = _distribution_version("rocqipath")
 except _PackageNotFoundError:
-    # Source-tree imports before installation have no distribution metadata.
     __version__ = "0+unknown"
 
-# Optional pipelines are imported independently so a lightweight install can
-# still use configuration and utility modules without every WSI backend.
+
+# Extraction remains available at the top level.
 try:
     from .extraction import (  # noqa: F401
         CoreExtractionConfig,
@@ -42,17 +41,46 @@ try:
 except ImportError:
     pass
 
-try:
-    from .registration import AlignmentConfig, run_alignment  # noqa: F401
-except (ImportError, OSError):
-    pass
-
-try:
-    from .registration import ValisConfig, WSIRegistrar  # noqa: F401
-except (ImportError, OSError):
-    pass
 
 try:
     from .stain import StainNormalizationConfig  # noqa: F401
 except ImportError:
     pass
+
+
+# Registration is intentionally lazy because importing VALIS may initialize
+# neural feature models such as LightGlue.
+_REGISTRATION_EXPORTS = {
+    "AlignmentConfig",
+    "run_alignment",
+    "ValisConfig",
+    "WSIRegistrar",
+}
+
+
+def __getattr__(name: str):
+    """Load registration APIs only when they are explicitly requested."""
+
+    if name in _REGISTRATION_EXPORTS:
+        from . import registration
+
+        try:
+            value = getattr(registration, name)
+        except AttributeError as exc:
+            raise AttributeError(
+                f"module {__name__!r} has no attribute {name!r}. "
+                "The optional registration dependencies may not be installed."
+            ) from exc
+
+        globals()[name] = value
+        return value
+
+    raise AttributeError(
+        f"module {__name__!r} has no attribute {name!r}"
+    )
+
+
+def __dir__() -> list[str]:
+    return sorted(
+        set(globals()) | _REGISTRATION_EXPORTS
+    )
