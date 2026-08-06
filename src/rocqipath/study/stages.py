@@ -14,6 +14,7 @@ callable directly, exactly as before.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Sequence
@@ -405,22 +406,67 @@ def _run_patches(
     )
     result.warnings.extend(staged.warnings)
 
-    from rocqipath.extraction import PatchExtractionConfig, run_patch_extraction
+    from rocqipath.extraction import (
+        PatchExtractionConfig,
+        run_patch_extraction,
+    )
 
     reference_stain = str(settings.get("reference_stain", "he"))
+    target_magnification = float(settings["target_magnification"])
+
+    # Resolve the original slide magnifications from:
+    # 1. per-slide overrides in study.toml
+    # 2. surveyed/indexed slide metadata
+    reference_source, moving_source = _pair_source_magnifications(
+        pairs,
+        recipe,
+    )
+
+    if reference_source is None:
+        result.warnings.append(
+            "Reference-slide objective magnification could not be resolved. "
+            "Add source_magnification overrides in study.toml."
+        )
+
     config = PatchExtractionConfig(
         he_dir=str(staged.root),
         aligned_dir=str(alignment_dir),
         output_dir=str(paths.root),
         biomarker_folders=biomarkers,
         reference_name=reference_stain,
+
+        # Canonical staged reference names:
+        # sample_0001__he__s01.tif
+        reference_pattern=(
+            rf"^(?P<sample_id>.+?)__"
+            rf"{re.escape(reference_stain)}__s\d+"
+            rf"\.(?:tif|tiff|svs|ndpi|scn|mrxs)$"
+        ),
+
         patch_size=int(settings["patch_size"]),
-        stride=int(settings.get("stride") or settings["patch_size"]),
-        tissue_threshold=float(settings.get("tissue_threshold", 0.0)),
-        target_magnification=float(settings["target_magnification"]),
-        dimension_tolerance=float(settings.get("dimension_tolerance", 0.01)),
+        stride=int(
+            settings.get("stride")
+            or settings["patch_size"]
+        ),
+        tissue_threshold=float(
+            settings.get("tissue_threshold", 0.0)
+        ),
+        target_magnification=target_magnification,
+
+        # Original H&E slide fallback, e.g. 80x.
+        reference_source_magnification=reference_source,
+
+        # The aligned OME-TIFF was exported by the alignment stage at the
+        # requested target magnification. It may not contain OpenSlide's
+        # objective-power property, so provide that value explicitly.
+        target_source_magnification=target_magnification,
+
+        dimension_tolerance=float(
+            settings.get("dimension_tolerance", 0.01)
+        ),
         max_workers=int(settings.get("max_workers", 1)),
     )
+
     summary = run_patch_extraction(config)
 
     result.status = "completed"
