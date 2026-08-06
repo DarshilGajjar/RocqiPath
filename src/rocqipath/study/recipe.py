@@ -240,7 +240,7 @@ def build_recipe(
             "max_workers": 1,
             # Measure-everything: extraction writes every tile and records
             # its properties. Filtering happens in a selection, not here.
-            "tissue_threshold": 0.0,
+            "tissue_threshold": 0.5,
         },
         "stain": {
             "enabled": True,
