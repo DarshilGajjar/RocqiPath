@@ -108,6 +108,19 @@ def list_wsi_files(directory: Union[str, Path]) -> List[str]:
     return _list_wsi_files(directory, recursive=False, sort_mode="casefold")
 
 
+def _aligned_manifest_base_name(path: Path) -> str:
+    """Remove ordinary or compound OME-TIFF suffixes."""
+
+    name = path.name
+    lowered = name.lower()
+
+    for suffix in (".ome.tiff", ".ome.tif"):
+        if lowered.endswith(suffix):
+            return name[: -len(suffix)]
+
+    return path.stem
+
+
 def _write_aligned_wsi_manifest(
     *,
     aligned_path: str | Path,
@@ -194,9 +207,11 @@ def _write_aligned_wsi_manifest(
         # sample_0001_cd8_aligned_moving.ome
         #
         # Therefore the sidecar becomes:
-        # sample_0001_cd8_aligned_moving.ome_manifest.json
+        # sample_0001_cd8_aligned_moving_manifest.json
+        base_name = _aligned_manifest_base_name(aligned)
+
         manifest_path = aligned.with_name(
-            f"{aligned.stem}_manifest.json"
+            f"{base_name}_manifest.json"
         )
 
         manifest_path.write_text(
@@ -423,23 +438,34 @@ class AlignmentProcessor:
                 / f"{case.case_id}_aligned_moving.ome.tiff"
             ),
         )
+        try:
+            manifest_path = _write_aligned_wsi_manifest(
+                aligned_path=aligned_path,
+                reference_path=case.reference_file,
+                alignment_target_magnification=(
+                    self.cfg.target_magnification
+                ),
+                aligned_wsi_level=(
+                    self.cfg.aligned_wsi_level
+                ),
+                reference_source_magnification=(
+                    self.cfg.reference_source_magnification
+                ),
+            )
 
-        manifest_path = _write_aligned_wsi_manifest(
-            aligned_path=aligned_path,
-            reference_path=case.reference_file,
-            alignment_target_magnification=(
-                self.cfg.target_magnification
-            ),
-            aligned_wsi_level=self.cfg.aligned_wsi_level,
-            reference_source_magnification=(
-                self.cfg.reference_source_magnification
-            ),
-        )
+            logger.info(
+                f"[MAG] {case.case_id}: "
+                f"aligned WSI manifest written to "
+                f"{manifest_path}"
+            )
 
-        logger.info(
-            f"[MAG] {case.case_id}: aligned WSI manifest written "
-            f"to {manifest_path}"
-        )
+        except Exception as manifest_error:
+            logger.warning(
+                f"[MAG WARN] {case.case_id}: "
+                f"aligned WSI was saved successfully, "
+                f"but the magnification manifest could not "
+                f"be written: {manifest_error}"
+            )
 
         return AlignedCaseResult(
             case=case,
@@ -447,8 +473,9 @@ class AlignmentProcessor:
             thumb=thumb,
             valid_grids=valid_grids,
             aligned_moving_path=aligned_path,
+            manifest_path=manifest_path,
         )
-    
+
 
     # ── main loop ─────────────────────────────────────────────────────────────
 
