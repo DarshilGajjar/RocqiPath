@@ -171,38 +171,106 @@ def find_aligned_wsi(
     resolve: bool = True,
     on_event: Callable[[str, Path, list[Path]], None] | None = None,
 ) -> str | None:
-    """Resolve one aligned target WSI using configurable historical tie-breaking."""
-    case_dir = Path(aligned_dir) / biomarker / f"{sample_id}_{reference_channel}"
-    if not case_dir.is_dir():
+    """Resolve one aligned target WSI.
+
+    Supports both:
+
+    1. Current alignment layout:
+       <aligned_dir>/<sample_id>_<biomarker>/*.ome.tif*
+
+    2. Legacy patch-extraction layout:
+       <aligned_dir>/<biomarker>/<sample_id>_<reference_channel>/*.ome.tif*
+    """
+    root = Path(aligned_dir)
+
+    candidate_dirs = [
+        # Current RocqiPath alignment output:
+        # alignment/sample_0001_cd8/
+        root / f"{sample_id}_{biomarker.lower()}",
+
+        # Preserve biomarker case if folder names were not normalized.
+        root / f"{sample_id}_{biomarker}",
+
+        # Legacy layout:
+        # alignment/cd8/sample_0001_he/
+        root / biomarker / f"{sample_id}_{reference_channel}",
+    ]
+
+    # Remove duplicate candidate paths while preserving order.
+    unique_dirs: list[Path] = []
+    seen: set[str] = set()
+
+    for directory in candidate_dirs:
+        key = str(directory).casefold()
+        if key not in seen:
+            seen.add(key)
+            unique_dirs.append(directory)
+
+    case_dir: Path | None = None
+    hits: list[Path] = []
+
+    for candidate in unique_dirs:
+        if not candidate.is_dir():
+            continue
+
+        candidate_hits = [
+            path
+            for path in candidate.glob("*.ome.tif*")
+            if path.is_file()
+        ]
+
+        if candidate_hits:
+            case_dir = candidate
+            hits = candidate_hits
+            break
+
+    if not hits:
         if on_event is not None:
-            on_event("missing_directory", case_dir, [])
+            on_event(
+                "missing_directory",
+                unique_dirs[0],
+                [],
+            )
         return None
-    hits = [path for path in case_dir.glob("*.ome.tif*") if path.is_file()]
+
     if sort_mode == "natural":
         hits = sorted(hits, key=natural_sort_key)
     elif sort_mode == "lexical":
         hits = sorted(hits)
     else:
-        raise ValueError(f"Unknown aligned-file sort mode: {sort_mode!r}")
-    if not hits:
-        if on_event is not None:
-            on_event("no_matches", case_dir, [])
-        return None
+        raise ValueError(
+            f"Unknown aligned-file sort mode: {sort_mode!r}"
+        )
+
     if len(hits) == 1:
         selected = hits[0]
         return str(selected.resolve() if resolve else selected)
+
     keywords = (
         tuple(priority_keywords)
         if priority_keywords is not None
-        else (biomarker.lower(), "ihc", "aligned")
+        else (
+            biomarker.lower(),
+            "moving",
+            "ihc",
+            "aligned",
+        )
     )
+
     for keyword in keywords:
-        preferred = [path for path in hits if keyword in path.name.lower()]
+        preferred = [
+            path
+            for path in hits
+            if keyword.casefold() in path.name.casefold()
+        ]
+
         if len(preferred) == 1:
             selected = preferred[0]
             return str(selected.resolve() if resolve else selected)
-    if on_event is not None:
+
+    if on_event is not None and case_dir is not None:
         on_event("ambiguous_fallback", case_dir, hits)
+
     selected = hits[0]
     return str(selected.resolve() if resolve else selected)
 
