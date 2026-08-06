@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import inspect
 import re
+import json
 import traceback
 import warnings
 from pathlib import Path
@@ -105,6 +106,108 @@ DEFAULT_FILENAME_PATTERN: str = build_filename_pattern()
 def list_wsi_files(directory: Union[str, Path]) -> List[str]:
     """List direct-child WSIs in the alignment pipeline's casefold order."""
     return _list_wsi_files(directory, recursive=False, sort_mode="casefold")
+
+
+def _write_aligned_wsi_manifest(
+    *,
+    aligned_path: str | Path,
+    reference_path: str | Path,
+    alignment_target_magnification: float,
+    aligned_wsi_level: int,
+    reference_source_magnification: float | None = None,
+) -> Path:
+    """Write physical-resolution metadata beside an aligned OME-TIFF.
+
+    The aligned image is exported on the reference slide's coordinate
+    canvas. Its physical level-0 magnification therefore derives from
+    the reference slide and the reference pyramid level used for export.
+
+    Parameters
+    ----------
+    aligned_path
+        Path to the generated aligned OME-TIFF.
+    reference_path
+        Original reference slide defining the aligned output canvas.
+    alignment_target_magnification
+        Magnification used for registration processing.
+    aligned_wsi_level
+        Reference pyramid level exported by ``save_aligned_wsi``.
+    reference_source_magnification
+        Optional explicit override for the reference level-0
+        magnification. When omitted, OpenSlide metadata is used.
+
+    Returns
+    -------
+    pathlib.Path
+        Path to the written JSON sidecar.
+    """
+    from rocqipath.core.slide import SlideReader
+
+    aligned = Path(aligned_path)
+    reference_reader = SlideReader(str(reference_path))
+
+    try:
+        # Explicit source magnification takes precedence when supplied;
+        # otherwise SlideReader resolves OpenSlide metadata.
+        reference_plan = reference_reader.configure_magnification(
+            target_magnification=float(alignment_target_magnification),
+            source_magnification=reference_source_magnification,
+        )
+
+        level = int(aligned_wsi_level)
+
+        if level < 0 or level >= len(reference_reader.level_downsamples):
+            raise ValueError(
+                f"aligned_wsi_level={level} is invalid for reference slide "
+                f"with {len(reference_reader.level_downsamples)} level(s)."
+            )
+
+        level_downsample = float(
+            reference_reader.level_downsamples[level]
+        )
+
+        output_magnification = (
+            reference_plan.base_magnification
+            / level_downsample
+        )
+
+        payload = {
+            "output_magnification": output_magnification,
+            "alignment_target_magnification": float(
+                alignment_target_magnification
+            ),
+            "aligned_wsi_level": level,
+            "reference_base_magnification": (
+                reference_plan.base_magnification
+            ),
+            "reference_level_downsample": level_downsample,
+            "reference_path": str(Path(reference_path)),
+            "aligned_path": str(aligned),
+        }
+
+        # This naming matches SlideReader._manifest_magnification().
+        #
+        # For:
+        # sample_0001_cd8_aligned_moving.ome.tiff
+        #
+        # Path.stem is:
+        # sample_0001_cd8_aligned_moving.ome
+        #
+        # Therefore the sidecar becomes:
+        # sample_0001_cd8_aligned_moving.ome_manifest.json
+        manifest_path = aligned.with_name(
+            f"{aligned.stem}_manifest.json"
+        )
+
+        manifest_path.write_text(
+            json.dumps(payload, indent=2) + "\n",
+            encoding="utf-8",
+        )
+
+        return manifest_path
+
+    finally:
+        reference_reader.close()
 
 
 class AlignmentProcessor:
@@ -307,11 +410,35 @@ class AlignmentProcessor:
             valis_cfg=self._make_valis_config(),
         )
 
-        registrar.register_slides(method=self.cfg.alignment_method)
+        registrar.register_slides(
+            method=self.cfg.alignment_method
+        )
+
         thumb, valid_grids = registrar.generate_grid_map()
+
         aligned_path = registrar.save_aligned_wsi(
             level=self.cfg.aligned_wsi_level,
-            output_path=str(Path(registrar.output_dir) / f"{case.case_id}_aligned_moving.ome.tiff"),
+            output_path=str(
+                Path(registrar.output_dir)
+                / f"{case.case_id}_aligned_moving.ome.tiff"
+            ),
+        )
+
+        manifest_path = _write_aligned_wsi_manifest(
+            aligned_path=aligned_path,
+            reference_path=case.reference_file,
+            alignment_target_magnification=(
+                self.cfg.target_magnification
+            ),
+            aligned_wsi_level=self.cfg.aligned_wsi_level,
+            reference_source_magnification=(
+                self.cfg.reference_source_magnification
+            ),
+        )
+
+        logger.info(
+            f"[MAG] {case.case_id}: aligned WSI manifest written "
+            f"to {manifest_path}"
         )
 
         return AlignedCaseResult(
@@ -321,6 +448,7 @@ class AlignmentProcessor:
             valid_grids=valid_grids,
             aligned_moving_path=aligned_path,
         )
+    
 
     # ── main loop ─────────────────────────────────────────────────────────────
 
