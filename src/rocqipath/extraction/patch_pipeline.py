@@ -179,9 +179,46 @@ def _extract_case_patches(
             cfg.reference_source_magnification,
         )
 
+        # The aligned image usually uses the reference physical canvas.
+        # If no explicit aligned-image magnification is available, infer it
+        # from the raw canvas dimensions relative to the reference.
+        target_source_magnification = (
+            cfg.target_source_magnification
+        )
+
+        if target_source_magnification is None:
+            ref_raw_w, ref_raw_h = ref_reader.dimensions
+            target_raw_w, target_raw_h = target_reader.dimensions
+
+            width_scale = target_raw_w / ref_raw_w
+            height_scale = target_raw_h / ref_raw_h
+
+            scale_difference = abs(width_scale - height_scale)
+
+            if scale_difference > cfg.dimension_tolerance:
+                raise ValueError(
+                    "Cannot infer aligned-image magnification because "
+                    "its width and height scales disagree: "
+                    f"width_scale={width_scale:.6f}, "
+                    f"height_scale={height_scale:.6f}."
+                )
+
+            canvas_scale = (width_scale + height_scale) / 2.0
+
+            target_source_magnification = (
+                ref_plan.base_magnification * canvas_scale
+            )
+
+            print(
+                f"[MAG] {case_id}: inferred aligned-image "
+                f"base magnification="
+                f"{target_source_magnification:.4f}x "
+                f"from canvas scale={canvas_scale:.6f}"
+            )
+
         target_plan = target_reader.configure_magnification(
             cfg.target_magnification,
-            cfg.target_source_magnification,
+            target_source_magnification,
         )
 
         print(
