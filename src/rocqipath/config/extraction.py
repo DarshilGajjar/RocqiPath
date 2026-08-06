@@ -16,7 +16,11 @@ from rocqipath.utils.validation import (
 
 from .base import BaseConfig
 
-DEFAULT_REFERENCE_FILENAME_PATTERN = r"^(?P<sample_id>[\w\-]+)_he\.tif?$"
+DEFAULT_REFERENCE_FILENAME_PATTERN = (
+    r"^(?P<sample_id>.+?)"
+    r"(?:_he|__he__s\d+)"
+    r"\.(?:tif|tiff|svs|ndpi|mrxs)$"
+)
 
 
 @dataclass
