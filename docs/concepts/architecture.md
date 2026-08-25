@@ -12,15 +12,15 @@ Dependencies point downward through these layers:
 3. `config` — typed, serializable pipeline configuration.
 4. Feature packages — `registration`, `extraction`, `stain`, `analysis`, and
    `visualization`.
-5. `cli` — argument parsing, interactive prompts, and command dispatch.
+5. `cli` — argument parsing and command dispatch.
 
 A higher layer may import a lower layer. A lower layer must not import a higher one.
 Feature packages should not import implementations from another feature package. When two
 features need the same behavior, move that behavior to `core` if it understands a
 RocqiPath domain concept, or to `utils` if it is stateless and works on generic values.
 
-`core` and `utils` must remain importable with only the base dependencies, `rich` and
-`loguru`. Heavy libraries such as NumPy, OpenCV, Pillow, pyvips, OpenSlide, matplotlib,
+`core` and `utils` must remain importable without presentation or logging frameworks.
+Heavy libraries such as NumPy, OpenCV, Pillow, pyvips, OpenSlide, matplotlib,
 scikit-image, TIAToolbox, and VALIS must not be imported at module scope in those two
 packages. A narrowly scoped function-local import is acceptable when a shared primitive
 genuinely needs one.
@@ -37,7 +37,7 @@ genuinely needs one.
 | `stain` | Stain normalization | normalizer algorithms, weight formats, train/apply workflows |
 | `analysis` | Quantitative pathology | DAB-positive cell counting and reports |
 | `visualization` | Exploratory and publication figures | grids, pairs, overlays, comparisons, thumbnails |
-| `cli` | User interaction only | parsers, prompts, command handlers |
+| `cli` | User interaction only | parsers and command handlers |
 
 ## Where new code belongs
 
@@ -50,7 +50,7 @@ Use this decision procedure:
    it in `utils`.
 4. If it knows about one pipeline, stain, registration backend, output convention, or
    scientific workflow, keep it in that feature package.
-5. If it parses arguments, prompts the user, or selects a workflow, place it in `cli`.
+5. If it parses arguments or selects a workflow, place it in `cli`.
 
 Do not choose a location based only on file size. Split modules at responsibility
 boundaries: orchestration, detection, transformation, serialization, reporting, and
@@ -59,9 +59,8 @@ export are usually separate units.
 ## Public API and compatibility
 
 Subpackage `__init__.py` files are the supported public façades. Internal implementations
-may move, but documented imports remain available through re-exports. Deprecated flat or
-historical module paths are small compatibility shims; new code should import from the
-canonical package named in the shim.
+may move, but documented imports remain available through those canonical feature exports.
+Deprecated flat and historical module paths are not retained.
 
 Configuration and numeric image-processing behavior are compatibility boundaries too.
 Thresholds, coordinate spaces, resize methods, and serialization keys must not change

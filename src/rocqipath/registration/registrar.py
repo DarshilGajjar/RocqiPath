@@ -61,13 +61,27 @@ from rocqipath.core.magnification import (
     objective_magnification_from_properties,
 )
 from rocqipath.core.output import OutputLayout
-from rocqipath.registration.export import RegistrationExportMixin
-from rocqipath.registration.orb_backend import OrbBackendMixin
-from rocqipath.registration.patches import PatchGridMixin
-from rocqipath.registration.quality import RegistrationQualityMixin
+from rocqipath.registration.export import (
+    _orb_affine_for_level,
+    _rgb_ome_xml,
+    _save_orb_streamed,
+    save_aligned_wsi,
+)
+from rocqipath.registration.orb_backend import _register_orb
+from rocqipath.registration.patches import (
+    _check_patch_grid_viability,
+    _read_exact_magnification,
+    extract_patch_pair,
+    extract_single_patch,
+    generate_grid_map,
+)
+from rocqipath.registration.quality import (
+    _check_registration_quality,
+    _save_valis_overlay,
+)
 from rocqipath.registration.valis_backend import (
     HAS_VALIS,
-    ValisBackendMixin,
+    _register_valis,
     build_matcher,  # noqa: F401 - compatibility for prior internal imports
 )
 from rocqipath.utils.geometry import transform_coords
@@ -149,13 +163,7 @@ def magnification_fallback(properties, explicit=None):
 # ══════════════════════════════════════════════════════════════════════════════
 
 
-class WSIRegistrar(
-    ValisBackendMixin,
-    RegistrationQualityMixin,
-    RegistrationExportMixin,
-    OrbBackendMixin,
-    PatchGridMixin,
-):
+class WSIRegistrar:
     """Register paired WSIs and extract spatially aligned patches.
 
     Workflow
@@ -190,6 +198,20 @@ class WSIRegistrar(
     # ──────────────────────────────────────────────────────────────────────────
     # Construction
     # ──────────────────────────────────────────────────────────────────────────
+
+    _check_patch_grid_viability = _check_patch_grid_viability
+    _check_registration_quality = _check_registration_quality
+    _orb_affine_for_level = _orb_affine_for_level
+    _read_exact_magnification = _read_exact_magnification
+    _register_orb = _register_orb
+    _register_valis = _register_valis
+    _rgb_ome_xml = _rgb_ome_xml
+    _save_orb_streamed = _save_orb_streamed
+    _save_valis_overlay = _save_valis_overlay
+    extract_patch_pair = extract_patch_pair
+    extract_single_patch = extract_single_patch
+    generate_grid_map = generate_grid_map
+    save_aligned_wsi = save_aligned_wsi
 
     def __init__(
         self,

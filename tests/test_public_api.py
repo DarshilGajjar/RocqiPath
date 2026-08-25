@@ -2,9 +2,6 @@
 
 from __future__ import annotations
 
-import importlib
-import sys
-
 import pytest
 
 import rocqipath.analysis as analysis
@@ -14,7 +11,7 @@ import rocqipath.stain as stain
 import rocqipath.visualization as visualization
 from rocqipath import DEFAULT_TARGET_MAGNIFICATION, MagnificationPlan, OutputLayout
 from rocqipath.analysis import CellCountingConfig, PositiveCellCounter
-from rocqipath.exceptions import (
+from rocqipath.core.exceptions import (
     ConfigurationError,
     DependencyError,
     ExtractionError,
@@ -174,15 +171,6 @@ def test_exception_hierarchy_is_stable() -> None:
     assert issubclass(RegistrationQualityError, RegistrationError)
     assert issubclass(SlideNotFoundError, FileNotFoundError)
     assert issubclass(DependencyError, ImportError)
-
-
-def test_registration_core_compatibility_path_warns() -> None:
-    """Keep the documented legacy registration module available with a warning."""
-    sys.modules.pop("rocqipath.registration.core", None)
-    with pytest.warns(DeprecationWarning, match="registration.core is deprecated"):
-        legacy = importlib.import_module("rocqipath.registration.core")
-    assert legacy.ValisConfig is ValisConfig
-    assert legacy.WSIRegistrar is WSIRegistrar
 
 
 def test_tma_compatibility_symbols_warn(monkeypatch) -> None:

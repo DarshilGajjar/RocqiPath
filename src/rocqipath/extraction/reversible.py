@@ -14,11 +14,18 @@ from rocqipath.core.magnification import DEFAULT_TARGET_MAGNIFICATION
 from rocqipath.core.output import OutputLayout
 from rocqipath.core.slide import SlideReader as _SlideReader
 from rocqipath.core.tissue import pil_is_tissue as _pil_is_tissue
-from rocqipath.extraction.reconstruction import PatchReconstructionMixin
+from rocqipath.extraction.reconstruction import (
+    _assemble_canvas,
+    _finalize_canvas,
+    _index_patch_files,
+    _load_metadata,
+    _patch_directory,
+    _save_pyramid,
+)
 from rocqipath.utils.discovery import find_aligned_wsi
 
 
-class ReversiblePatchExtractor(PatchReconstructionMixin):
+class ReversiblePatchExtractor:
     """Extract sliding-window H&E/IHC patch pairs from aligned whole-slide images.
 
     For each H&E slide found under ``he_root`` (matching the naming
@@ -339,6 +346,51 @@ class ReversiblePatchExtractor(PatchReconstructionMixin):
         tqdm.write(f"  [OK] {case_id}: {idx - 1} patches saved")
 
     # ── WSI reconstruction (single method, pyvips pyramidal output) ───────────
+
+    def reconstruct_wsi(
+        self,
+        case_id: str,
+        biomarker: str,
+        output_path: str,
+        mode: str = "he",
+        split: str = "test",
+    ) -> dict:
+        """Reconstruct extracted patches as a pyramidal whole-slide TIFF."""
+        del split
+        save_dir = os.path.join(output_path, "reconstructed_wsi")
+        os.makedirs(save_dir, exist_ok=True)
+        final_save_path = os.path.join(save_dir, f"{case_id}_{mode}_pyramid.tif")
+
+        metadata = _load_metadata(self, case_id)
+        width, height = metadata.get("dimensions", (0, 0))
+        patches = metadata.get("patches", [])
+        stride = metadata.get("stride", self.patch_size)
+        overlapping = stride < self.patch_size
+        print(f"[INFO] Canvas     : {width} × {height} px")
+        print(f"[INFO] Stride     : {stride}  |  Overlap: {overlapping}")
+        print(f"[INFO] Patches    : {len(patches)}")
+
+        patch_dir = _patch_directory(self, case_id, mode)
+        if not os.path.isdir(patch_dir):
+            print(f"[ERROR] Patch directory not found: {patch_dir}")
+            return {"placed": 0, "missing": len(patches)}
+
+        tag = "he" if mode.lower() in ("he", "predicted_ihc") else biomarker.lower()
+        canvas, counts, placed, missing = _assemble_canvas(
+            (width, height),
+            patches,
+            patch_dir,
+            _index_patch_files(patch_dir),
+            case_id=case_id,
+            tag=tag,
+            mode=mode,
+            overlapping=overlapping,
+        )
+        final_array = _finalize_canvas(canvas, counts, overlapping)
+        print(f"[INFO] Writing pyramidal TIFF → {final_save_path}")
+        _save_pyramid(final_array, final_save_path)
+        print(f"[OK] Saved: {final_save_path}  (placed={placed}, missing={missing})")
+        return {"placed": placed, "missing": missing}
 
     # ── Batch run ──────────────────────────────────────────────────────────────
     def run(self):

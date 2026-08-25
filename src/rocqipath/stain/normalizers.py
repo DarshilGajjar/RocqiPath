@@ -125,7 +125,7 @@ class ReinhardNormalizer(StainNormalizerBase):
             :meth:`fit_from_patches` (or :meth:`load_weights`) before
             calling :meth:`transform`; ``target_means``/``target_stds``
             start as ``None`` and :meth:`transform` raises
-            :class:`~rocqipath.exceptions.ExtractionError` if called too
+            :class:`~rocqipath.core.exceptions.ExtractionError` if called too
             early.
         """
         if not _TIATOOLBOX_AVAILABLE:
@@ -291,7 +291,7 @@ class MacenkoNormalizer(StainNormalizerBase):
             :meth:`load_weights`) before calling :meth:`transform` or
             :meth:`hematoxylin`; ``stain_matrix_target`` starts as
             ``None`` and :meth:`transform` raises
-            :class:`~rocqipath.exceptions.ExtractionError` if called too
+            :class:`~rocqipath.core.exceptions.ExtractionError` if called too
             early.
         """
         if not _TIATOOLBOX_AVAILABLE:
@@ -441,7 +441,7 @@ class VahadaneNormalizer(StainNormalizerBase):
             :meth:`load_weights`) before calling :meth:`transform` or
             :meth:`hematoxylin`; ``stain_matrix_target`` starts as
             ``None`` and :meth:`transform` raises
-            :class:`~rocqipath.exceptions.ExtractionError` if called too
+            :class:`~rocqipath.core.exceptions.ExtractionError` if called too
             early.
         """
         if not _TIATOOLBOX_AVAILABLE:

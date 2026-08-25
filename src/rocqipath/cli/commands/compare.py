@@ -6,8 +6,7 @@ import argparse
 import os
 from typing import List, Optional
 
-from loguru import logger
-
+from rocqipath.core.logging import configure_logging, logger
 from rocqipath.utils.manifest import load_manifest as _load_manifest
 
 VALID_REGIONS = ("center", "top_left", "top_right", "bottom_left", "bottom_right")
@@ -97,7 +96,7 @@ def _resolve_inputs(
 
 def run(args: argparse.Namespace, parser: argparse.ArgumentParser) -> int:
     """Generate all requested WSI comparison figures."""
-    from rocqipath.visualization.comparison import configure_logging
+    from rocqipath.visualization.comparison import _build_banner
     from rocqipath.visualization.comparison_workflow import visualize_side_by_side
 
     if args.random_rois < 0:
@@ -111,10 +110,11 @@ def run(args: argparse.Namespace, parser: argparse.ArgumentParser) -> int:
     ]
     regions = [region for region in VALID_REGIONS if region in args.regions]
     configure_logging(
-        tool_name="RocqiPath — Publication-Quality Visualizer",
-        subtitle="WSI Visualization Module",
         save_dir=wsi_dir,
+        file_level="DEBUG",
+        log_filename="execution_log.log",
     )
+    print(_build_banner("RocqiPath — Publication-Quality Visualizer", "WSI Visualization Module"))
     logger.info(f"Regions: {regions}")
     logger.info(f"Zoom levels: {[zoom[0] for zoom in zoom_sizes]}")
     logger.info(f"Output base: {save_path}")

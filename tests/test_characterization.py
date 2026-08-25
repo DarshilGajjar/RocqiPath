@@ -8,17 +8,13 @@ from pathlib import Path
 import numpy as np
 from PIL import Image
 
-import rocqipath.extraction.engine as extraction_engine
-import rocqipath.registration.alignment as alignment
+import rocqipath.registration.pipeline as alignment
 import rocqipath.utils as public_utils
 import rocqipath.visualization.comparison as wsi_compare
-from rocqipath.analysis.cell_counting import PositiveCellCounter
+from rocqipath.analysis.counting import PositiveCellCounter
 from rocqipath.core.tissue import optical_density_otsu_mask
-from rocqipath.extraction.patch_extraction import (
-    ReversiblePatchExtractor,
-    _find_aligned_target,
-    _patch_is_tissue,
-)
+from rocqipath.extraction.patch_pipeline import _find_aligned_target, _patch_is_tissue
+from rocqipath.extraction.reversible import ReversiblePatchExtractor
 from rocqipath.stain.stain_normalization import tissue_fraction as stain_tissue_fraction
 
 
@@ -124,59 +120,6 @@ def test_wsi_discovery_variants_characterization(tmp_path: Path) -> None:
         "slide2.svs",
         "Z.ndpi",
     ]
-
-
-def test_extraction_logging_characterization(tmp_path: Path, monkeypatch) -> None:
-    """Pin extraction logging as additive and file-path based."""
-    calls = []
-    monkeypatch.setattr(
-        extraction_engine,
-        "add_log_file",
-        lambda path, *, level: calls.append((path, level)),
-    )
-
-    extraction_engine.configure_logging()
-    extraction_engine.configure_logging(
-        str(tmp_path),
-        file_level="INFO",
-        log_filename="tissue.log",
-    )
-
-    assert calls == [(str((tmp_path / "tissue.log").resolve()), "INFO")]
-
-
-def test_comparison_logging_characterization(tmp_path: Path, monkeypatch) -> None:
-    """Pin comparison logging as reset-plus-console-and-file configuration."""
-
-    class FakeLogger:
-        def __init__(self) -> None:
-            self.events = []
-
-        def remove(self) -> None:
-            self.events.append(("remove",))
-
-        def add(self, sink, **kwargs) -> None:
-            self.events.append(("add", sink, kwargs))
-
-        def info(self, message) -> None:
-            self.events.append(("info", message))
-
-    fake = FakeLogger()
-    monkeypatch.setattr(wsi_compare, "logger", fake)
-
-    wsi_compare.configure_logging("WSI Compare", "Synthetic", str(tmp_path))
-
-    assert fake.events[0] == ("remove",)
-    assert fake.events[1][0] == "add"
-    assert fake.events[1][2]["level"] == "INFO"
-    assert fake.events[1][2]["colorize"] is True
-    assert fake.events[2][0:2] == ("add", str(tmp_path / "execution_log.log"))
-    assert fake.events[2][2]["level"] == "DEBUG"
-    assert fake.events[2][2]["rotation"] == "10 MB"
-    assert fake.events[2][2]["retention"] == 5
-    assert fake.events[3][0] == "info"
-    assert "WSI Compare" in fake.events[3][1]
-    assert "Synthetic" in fake.events[3][1]
 
 
 def test_aligned_file_resolvers_characterization(tmp_path: Path) -> None:

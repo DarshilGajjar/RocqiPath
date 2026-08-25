@@ -1,13 +1,10 @@
 """Lightweight shared infrastructure for all RocqiPath feature packages.
 
-Importing this package requires only the base ``rich`` and ``loguru``
-dependencies. Imaging backends used by :class:`SlideReader` are loaded lazily.
+Imaging backends used by :class:`SlideReader` are loaded lazily.
 """
 
 from .console import (
     ask,
-    console,
-    make_progress,
     print_banner,
     print_code,
     print_counts,
@@ -39,15 +36,11 @@ from .exceptions import (
     WSIProcessingError,
 )
 from .logging import (
-    Timer,
     add_log_file,
     configure_logging,
     get_logger,
-    install_traceback,
-    log_exception,
     logger,
     set_log_level,
-    timed,
 )
 from .magnification import (
     DEFAULT_TARGET_MAGNIFICATION,
@@ -80,20 +73,15 @@ __all__ = [
     "RegistrationQualityError",
     "SlideNotFoundError",
     "SlideReader",
-    "Timer",
     "UnsupportedFormatError",
     "WSIProcessingError",
     "add_log_file",
     "ask",
     "brightness_saturation_is_tissue",
     "build_magnification_plan",
-    "console",
     "configure_logging",
     "get_logger",
-    "install_traceback",
-    "log_exception",
     "logger",
-    "make_progress",
     "objective_magnification_from_properties",
     "optical_density_max_channel",
     "optical_density_otsu_mask",
@@ -120,7 +108,6 @@ __all__ = [
     "set_log_level",
     "spinner",
     "status_context",
-    "timed",
     "tissue_fraction",
     "tissue_mask",
     "track",

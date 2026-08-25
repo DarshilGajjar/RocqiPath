@@ -5,14 +5,6 @@ from __future__ import annotations
 import argparse
 from typing import List, Optional
 
-from rocqipath.cli.prompts import (
-    _get_bool,
-    _get_dir,
-    _get_existing_dir,
-    _get_float,
-    _get_int,
-    _get_stain_list,
-)
 from rocqipath.core.console import print_error, print_warn
 from rocqipath.core.exceptions import ConfigurationError, DependencyError, ExtractionError
 
@@ -82,50 +74,6 @@ def run(args: argparse.Namespace, _parser: argparse.ArgumentParser) -> int:
     except KeyboardInterrupt:
         print_warn("Interrupted by user.")
         return 130
-
-
-def run_interactive() -> int:
-    """Collect and run stain-normalization settings interactively."""
-    from rocqipath.stain import (
-        StainNormalizationConfig,
-        run_stain_normalization_apply,
-        run_stain_normalization_train,
-    )
-
-    print("\n" + "─" * 72)
-    print("  Stain Normalization")
-    print("─" * 72)
-    mode = input("  Mode — train / apply [train]: ").strip().lower() or "train"
-    if mode not in ("train", "apply"):
-        print("  Unknown mode — defaulting to train.")
-        mode = "train"
-    input_dir = _get_existing_dir("  Input directory: ")
-    output_dir = _get_dir("  Output directory: ")
-    n_type = (
-        input("  Algorithm — reinhard / macenko / vahadane [macenko]: ").strip().lower()
-        or "macenko"
-    )
-    stains = _get_stain_list("Stain folder tokens, e.g. he")
-    if mode == "train":
-        config = StainNormalizationConfig(
-            n_type=n_type,
-            stains=stains,
-            fit_min_tissue=_get_float("Min tissue fraction to use a patch [0-1]", 0.1),
-            max_train_patches=_get_int(
-                "Max patches for mosaic (Macenko/Vahadane)",
-                1000,
-                1,
-            ),
-        )
-        run_stain_normalization_train(input_dir, output_dir, config)
-    else:
-        config = StainNormalizationConfig(
-            n_type=n_type,
-            stains=stains,
-            resume=_get_bool("Skip patches already normalised (resume)?", False),
-        )
-        run_stain_normalization_apply(input_dir, output_dir, config)
-    return 0
 
 
 def main(argv: Optional[List[str]] = None) -> int:

@@ -5,11 +5,11 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from rocqipath.extraction.patch_extraction import (
+from rocqipath.extraction.patch_pipeline import (
     PatchExtractionConfig,
     run_patch_extraction,
 )
-from rocqipath.registration.alignment import AlignmentConfig, run_alignment
+from rocqipath.registration.pipeline import AlignmentConfig, run_alignment
 from rocqipath.utils import discover_patch_pairs
 from rocqipath.utils.manifest import write_region_manifest, write_slide_manifest
 

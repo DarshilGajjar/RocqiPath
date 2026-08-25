@@ -32,7 +32,7 @@ def _marker_mask(img_rgb: np.ndarray, profile: MarkerProfile) -> np.ndarray:
     Notes
     -----
     Same detection family as
-    :meth:`rocqipath.analysis.cell_counting.PositiveCellCounter._brown_mask`
+    :meth:`rocqipath.analysis.counting.PositiveCellCounter._brown_mask`
     combined with its OTSU-refinement step, generalized here so the hue
     range and saturation floor are per-marker configurable rather than
     fixed to a single "brown" gate:

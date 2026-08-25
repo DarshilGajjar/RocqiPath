@@ -15,11 +15,6 @@ def build_parser() -> argparse.ArgumentParser:
         description="Whole-slide image processing for computational pathology.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
-    parser.add_argument(
-        "--interactive",
-        action="store_true",
-        help="Open the historical guided menu.",
-    )
     subparsers = parser.add_subparsers(dest="command", metavar="COMMAND")
     commands = (
         ("study", "Create and run a study workspace.", study),
@@ -43,18 +38,12 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: Optional[List[str]] = None) -> int:
-    """Dispatch a subcommand or launch the guided menu when none is supplied."""
+    """Dispatch a command-line subcommand."""
     parser = build_parser()
     args = parser.parse_args(argv)
-    if args.interactive or args.command is None:
-        from rocqipath.cli.legacy import main_menu
-
-        try:
-            main_menu()
-            return 0
-        except KeyboardInterrupt:
-            print("\n  Interrupted by user.\n")
-            return 130
+    if args.command is None:
+        parser.print_help()
+        return 2
     return int(args._handler(args, args._command_parser) or 0)
 
 

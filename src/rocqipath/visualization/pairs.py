@@ -41,7 +41,7 @@ def view_pairs(grid_folder, num_to_show="all"):
     total = len(pairs)
 
     if total == 0:
-        logger.warning("No paired patches found under {}", root)
+        logger.warning("No paired patches found under %s", root)
         return
 
     if num_to_show == "all":
@@ -49,7 +49,7 @@ def view_pairs(grid_folder, num_to_show="all"):
     else:
         indices = sorted(random.sample(range(total), min(int(num_to_show), total)))
 
-    logger.info("Visualizing {} pairs from {}", len(indices), os.path.basename(grid_folder))
+    logger.info("Visualizing %s pairs from %s", len(indices), os.path.basename(grid_folder))
 
     for idx in indices:
         path_a, path_b, f_name = pairs[idx]
