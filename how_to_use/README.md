@@ -1,8 +1,7 @@
 # RocqiPath how-to-use notebooks
 
-These notebooks document the refactored RocqiPath package from branch
-`refactor/package-structure`, commit `7e7296f`. They use the current public
-subpackage APIs and the updated alignment implementation.
+These notebooks are the practical documentation for RocqiPath. They call the
+feature APIs directly without a dataset or experiment-management layer.
 
 ## Recommended order
 

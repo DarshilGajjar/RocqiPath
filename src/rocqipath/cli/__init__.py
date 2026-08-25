@@ -8,7 +8,7 @@ from typing import List, Optional
 
 def build_parser() -> argparse.ArgumentParser:
     """Build the root parser and all feature subcommands."""
-    from rocqipath.cli.commands import align, compare, count, doctor, extract, stain, study
+    from rocqipath.cli.commands import align, compare, count, extract, stain
 
     parser = argparse.ArgumentParser(
         prog="rocqipath",
@@ -17,8 +17,6 @@ def build_parser() -> argparse.ArgumentParser:
     )
     subparsers = parser.add_subparsers(dest="command", metavar="COMMAND")
     commands = (
-        ("study", "Create and run a study workspace.", study),
-        ("doctor", "Report the environment RocqiPath is running in.", doctor),
         ("align", "Register paired whole-slide images.", align),
         ("extract", "Extract WSI tissue regions or TMA cores.", extract),
         ("stain", "Train or apply a stain normalizer.", stain),

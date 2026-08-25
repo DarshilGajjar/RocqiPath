@@ -27,7 +27,6 @@ def test_readme_python_examples_reach_data_boundary(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Run each example until completion or its documented missing-data boundary."""
-    monkeypatch.setenv("ROCQIPATH_HOME", str(tmp_path / "workspace"))
     monkeypatch.chdir(tmp_path)
     try:
         exec(compile(source, str(README), "exec"), {})

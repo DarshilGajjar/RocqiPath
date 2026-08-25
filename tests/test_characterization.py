@@ -10,12 +10,13 @@ from PIL import Image
 
 import rocqipath.registration.pipeline as alignment
 import rocqipath.utils as public_utils
-import rocqipath.visualization.comparison as wsi_compare
+from rocqipath.visualization.comparison_workflow import _tissue_fraction
+from rocqipath.visualization.roi import _is_tissue as comparison_is_tissue
 from rocqipath.analysis.counting import PositiveCellCounter
 from rocqipath.core.tissue import optical_density_otsu_mask
 from rocqipath.extraction.patch_pipeline import _find_aligned_target, _patch_is_tissue
 from rocqipath.extraction.reversible import ReversiblePatchExtractor
-from rocqipath.stain.stain_normalization import tissue_fraction as stain_tissue_fraction
+from rocqipath.stain.normalizers import tissue_fraction as stain_tissue_fraction
 
 
 def _half_tissue_image() -> Image.Image:
@@ -62,11 +63,11 @@ def test_comparison_tissue_helpers_characterization() -> None:
             message="Image.Image.getdata is deprecated",
             category=DeprecationWarning,
         )
-        assert wsi_compare._tissue_fraction(tissue, bbox) == 1.0
-        assert wsi_compare._tissue_fraction(blank, bbox) == 0.0
-    assert wsi_compare._is_tissue(220 / 255, 0.05) is True
-    assert wsi_compare._is_tissue((220 / 255) + 1e-6, 0.05) is False
-    assert wsi_compare._is_tissue(220 / 255, 0.0499) is False
+        assert _tissue_fraction(tissue, bbox) == 1.0
+        assert _tissue_fraction(blank, bbox) == 0.0
+    assert comparison_is_tissue(220 / 255, 0.05) is True
+    assert comparison_is_tissue((220 / 255) + 1e-6, 0.05) is False
+    assert comparison_is_tissue(220 / 255, 0.0499) is False
 
 
 def test_stain_tissue_fraction_characterization() -> None:

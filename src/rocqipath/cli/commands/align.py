@@ -7,8 +7,8 @@ import argparse
 
 def configure_parser(parser: argparse.ArgumentParser) -> None:
     """Add alignment arguments to a command parser."""
-    parser.add_argument("input_dir", nargs="?", help="Directory containing WSI pair folders.")
-    parser.add_argument("output_dir", nargs="?", help="Root directory for aligned outputs.")
+    parser.add_argument("input_dir", help="Directory containing WSI pair folders.")
+    parser.add_argument("output_dir", help="Root directory for aligned outputs.")
     parser.add_argument("--method", choices=("valis", "orb"), default="valis")
     parser.add_argument("--pair-folders", nargs="*", default=[])
     parser.add_argument("--reference-name", default="reference")
@@ -29,9 +29,6 @@ def configure_parser(parser: argparse.ArgumentParser) -> None:
 
 def run(args: argparse.Namespace, parser: argparse.ArgumentParser) -> int:
     """Run alignment from parsed command-line arguments."""
-    if not args.input_dir or not args.output_dir:
-        parser.error("input_dir and output_dir are required")
-
     from rocqipath.registration import AlignmentConfig, run_alignment
 
     config = AlignmentConfig(

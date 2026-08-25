@@ -1,20 +1,13 @@
-"""Compatibility coverage for typed and legacy configuration inputs."""
+"""Coverage for typed feature configuration inputs."""
 
 from __future__ import annotations
 
-from dataclasses import asdict
-
 import pytest
 
-import rocqipath.config as legacy_config
 import rocqipath.extraction as extraction
 import rocqipath.registration as registration
 import rocqipath.stain as stain
 import rocqipath.visualization as visualization
-from rocqipath.analysis.counting import (
-    CellCountingConfig,
-    PositiveCellCounter,
-)
 from rocqipath.config import (
     AlignmentConfig,
     IHCOverlayConfig,
@@ -27,48 +20,6 @@ from rocqipath.config import (
     ValisConfig,
 )
 from rocqipath.core.exceptions import ConfigurationError
-
-
-def test_default_config_is_computed_from_typed_defaults() -> None:
-    """Return a fresh deprecated mapping derived from the dataclass."""
-    with pytest.warns(DeprecationWarning):
-        first = legacy_config.DEFAULT_CONFIG
-    with pytest.warns(DeprecationWarning):
-        second = legacy_config.DEFAULT_CONFIG
-
-    assert first == asdict(legacy_config.RegistrarDefaults())
-    assert first is not second
-
-
-def test_cell_counter_accepts_equivalent_dict_and_dataclass(
-    tmp_path,
-    capsys,
-) -> None:
-    """Resolve legacy mappings and typed configs to identical state."""
-    values = {
-        "patch_size": "64",
-        "tissue_threshold": "0.25",
-        "magnification": "10",
-        "output_dir": str(tmp_path),
-        "min_cell_area": "5",
-        "max_cell_area": "12",
-    }
-    from_dict = PositiveCellCounter(values)
-    capsys.readouterr()
-    typed = PositiveCellCounter(CellCountingConfig.from_dict(values))
-    capsys.readouterr()
-
-    fields = (
-        "patch_size",
-        "tissue_threshold",
-        "target_magnification",
-        "output_dir",
-        "min_cell_area",
-        "max_cell_area",
-    )
-    assert {field: getattr(from_dict, field) for field in fields} == {
-        field: getattr(typed, field) for field in fields
-    }
 
 
 def test_feature_packages_reexport_central_config_classes() -> None:

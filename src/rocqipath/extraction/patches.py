@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 from typing import List, Optional
 
-from rocqipath.config import PatchExtractionConfig, default_config
+from rocqipath.config import PatchExtractionConfig
 from rocqipath.core.logging import logger
 from rocqipath.extraction.patch_pipeline import run_patch_extraction
 from rocqipath.extraction.reversible import ReversiblePatchExtractor
@@ -76,15 +76,11 @@ def extract_patches_single(
     """
     _require_patch_dependencies()
     os.makedirs(output_dir, exist_ok=True)
-    cfg = default_config()
-    cfg.update(
-        {
-            "base_input_dir": input_dir,
-            "base_output_dir": output_dir,
-            "patch_size": patch_size,
-            "grid_density": grid_density,
-        }
-    )
+    cfg = {
+        "base_output_dir": output_dir,
+        "patch_size": patch_size,
+        "grid_density": grid_density,
+    }
 
     all_files = list_wsi_files(input_dir)
     files_to_process = wsi_files if wsi_files else all_files

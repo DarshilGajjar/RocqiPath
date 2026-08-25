@@ -3,9 +3,8 @@
 from __future__ import annotations
 
 import re
-import warnings
 from dataclasses import dataclass, field
-from typing import Any, List, Optional, Tuple
+from typing import List, Optional, Tuple
 
 from rocqipath.core.magnification import DEFAULT_TARGET_MAGNIFICATION
 from rocqipath.utils.validation import (
@@ -35,8 +34,6 @@ class BaseExtractionConfig(BaseConfig):
         Physical objective magnification used for contour detection.
     source_magnification : float, optional
         Objective fallback when slide metadata is absent.
-    detection_level : int, optional
-        Legacy explicit pyramid level; ``None`` selects by physical zoom.
     preview_scale : float
         Preview dimensions as a fraction of extracted-region dimensions.
     min_area_fraction : float
@@ -54,7 +51,6 @@ class BaseExtractionConfig(BaseConfig):
     target_magnification: float = DEFAULT_TARGET_MAGNIFICATION
     detection_magnification: float = 1.25
     source_magnification: Optional[float] = None
-    detection_level: Optional[int] = None
     preview_scale: float = 0.2
     min_area_fraction: float = 0.0005
     tif_tile: bool = True
@@ -97,13 +93,6 @@ class BaseExtractionConfig(BaseConfig):
                 name="source_magnification",
                 message="source_magnification must be > 0 when supplied",
             )
-        require(
-            self.detection_level is None or self.detection_level >= 0,
-            "detection_level must be >= 0 when supplied",
-        )
-
-
-_BaseExtractionConfig = BaseExtractionConfig
 
 
 @dataclass
@@ -114,7 +103,6 @@ class TissueExtractionConfig(BaseExtractionConfig):
     default minimum area fraction and no circularity gate.
     """
 
-    detection_level: Optional[int] = None
     min_area_fraction: float = 0.005
 
 
@@ -169,19 +157,6 @@ class TMAExtractionConfig(BaseExtractionConfig):
             name="clahe_clip_limit",
             message=f"clahe_clip_limit must be > 0; got {self.clahe_clip_limit}",
         )
-
-
-class CoreExtractionConfig(TMAExtractionConfig):
-    """Deprecated compatibility name for :class:`TMAExtractionConfig`."""
-
-    def __new__(cls, *args: Any, **kwargs: Any) -> "CoreExtractionConfig":
-        """Warn when constructing the legacy configuration name."""
-        warnings.warn(
-            "CoreExtractionConfig is deprecated; use TMAExtractionConfig instead.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        return super().__new__(cls)
 
 
 @dataclass
@@ -294,10 +269,8 @@ class PatchExtractionConfig(BaseConfig):
 
 __all__ = [
     "BaseExtractionConfig",
-    "CoreExtractionConfig",
     "DEFAULT_REFERENCE_FILENAME_PATTERN",
     "PatchExtractionConfig",
     "TMAExtractionConfig",
     "TissueExtractionConfig",
-    "_BaseExtractionConfig",
 ]

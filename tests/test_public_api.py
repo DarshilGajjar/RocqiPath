@@ -2,15 +2,13 @@
 
 from __future__ import annotations
 
-import pytest
-
 import rocqipath.analysis as analysis
 import rocqipath.extraction as extraction
 import rocqipath.registration as registration
 import rocqipath.stain as stain
 import rocqipath.visualization as visualization
-from rocqipath import DEFAULT_TARGET_MAGNIFICATION, MagnificationPlan, OutputLayout
 from rocqipath.analysis import CellCountingConfig, PositiveCellCounter
+from rocqipath.core import DEFAULT_TARGET_MAGNIFICATION, MagnificationPlan, OutputLayout
 from rocqipath.core.exceptions import (
     ConfigurationError,
     DependencyError,
@@ -22,13 +20,11 @@ from rocqipath.core.exceptions import (
     WSIProcessingError,
 )
 from rocqipath.extraction import (
-    CoreExtractionConfig,
     PatchExtractionConfig,
     ReversiblePatchExtractor,
     TMAExtractionConfig,
     TissueExtractionConfig,
     extract_tissue_regions,
-    run_core_extraction_pipeline,
     run_patch_extraction,
     run_tma_extraction_pipeline,
     run_tissue_pipeline,
@@ -62,13 +58,11 @@ from rocqipath.visualization import (
 EXPECTED_PUBLIC_SYMBOLS = {
     "analysis": {"CellCountingConfig", "PositiveCellCounter"},
     "extraction": {
-        "CoreExtractionConfig",
         "PatchExtractionConfig",
         "ReversiblePatchExtractor",
         "TMAExtractionConfig",
         "TissueExtractionConfig",
         "extract_tissue_regions",
-        "run_core_extraction_pipeline",
         "run_patch_extraction",
         "run_tma_extraction_pipeline",
         "run_tissue_pipeline",
@@ -108,12 +102,10 @@ def test_documented_imports_resolve() -> None:
         MagnificationPlan,
         OutputLayout,
         TissueExtractionConfig,
-        CoreExtractionConfig,
         PatchExtractionConfig,
         ReversiblePatchExtractor,
         TMAExtractionConfig,
         run_tissue_pipeline,
-        run_core_extraction_pipeline,
         run_patch_extraction,
         run_tma_extraction_pipeline,
         extract_tissue_regions,
@@ -171,23 +163,3 @@ def test_exception_hierarchy_is_stable() -> None:
     assert issubclass(RegistrationQualityError, RegistrationError)
     assert issubclass(SlideNotFoundError, FileNotFoundError)
     assert issubclass(DependencyError, ImportError)
-
-
-def test_tma_compatibility_symbols_warn(monkeypatch) -> None:
-    """Keep old TMA symbol names callable while making new names canonical."""
-    import rocqipath.extraction.tma as tma
-
-    with pytest.warns(DeprecationWarning, match="CoreExtractionConfig is deprecated"):
-        legacy_config = CoreExtractionConfig()
-    canonical_config = TMAExtractionConfig()
-    assert legacy_config.min_circularity == canonical_config.min_circularity
-
-    calls = []
-    monkeypatch.setattr(
-        tma,
-        "run_tma_extraction_pipeline",
-        lambda *args, **kwargs: calls.append((args, kwargs)),
-    )
-    with pytest.warns(DeprecationWarning, match="run_core_extraction_pipeline is deprecated"):
-        run_core_extraction_pipeline("input", "output", legacy_config, ["H&E"])
-    assert calls == [(("input", "output", legacy_config, ["H&E"]), {})]

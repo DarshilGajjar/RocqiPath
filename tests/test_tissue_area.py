@@ -8,6 +8,7 @@ from PIL import Image
 
 import rocqipath.analysis.counting as cell_counting
 from rocqipath.analysis.counting import PositiveCellCounter
+from rocqipath.config import CellCountingConfig
 
 
 def test_tissue_mask_counts_only_non_background_pixels(synthetic_tissue_rgb):
@@ -38,12 +39,12 @@ def test_count_slide_uses_mask_pixels_for_area(tmp_path: Path, synthetic_tissue_
 
     monkeypatch.setattr(cell_counting, "_SlideReader", FakeReader)
     counter = PositiveCellCounter(
-        {
-            "patch_size": 10,
-            "tissue_threshold": 0.1,
-            "output_dir": str(tmp_path),
-            "min_cell_area": 1,
-        }
+        CellCountingConfig(
+            patch_size=10,
+            tissue_threshold=0.1,
+            output_dir=str(tmp_path),
+            min_cell_area=1,
+        )
     )
     monkeypatch.setattr(counter, "_count_patch", lambda _rgb: (5,))
 

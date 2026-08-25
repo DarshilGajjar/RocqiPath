@@ -31,13 +31,7 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Medical Science Apps.",
 ]
 
-# ---------------------------------------------------------------------------
-# Core dependencies required by supported Python versions.
-# ---------------------------------------------------------------------------
-dependencies = [
-    # study.toml parsing; tomllib is stdlib from Python 3.11 onward.
-    'tomli>=2.0 ; python_version < "3.11"',
-]
+dependencies = []
 
 [project.optional-dependencies]
 # `pip install rocqipath[extraction]`
