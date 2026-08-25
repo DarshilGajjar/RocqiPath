@@ -7,8 +7,8 @@ import argparse
 
 def configure_parser(parser: argparse.ArgumentParser) -> None:
     """Add extraction arguments to a command parser."""
-    parser.add_argument("input_dir", nargs="?", help="Directory containing input WSIs.")
-    parser.add_argument("output_dir", nargs="?", help="Root directory for extracted regions.")
+    parser.add_argument("input_dir", help="Directory containing input WSIs.")
+    parser.add_argument("output_dir", help="Root directory for extracted regions.")
     parser.add_argument("--mode", choices=("wsi", "tma"), default="wsi")
     parser.add_argument("--target-magnification", type=float, default=20.0)
     parser.add_argument("--detection-magnification", type=float, default=1.25)
@@ -26,9 +26,6 @@ def configure_parser(parser: argparse.ArgumentParser) -> None:
 
 def run(args: argparse.Namespace, parser: argparse.ArgumentParser) -> int:
     """Run WSI or TMA extraction from parsed arguments."""
-    if not args.input_dir or not args.output_dir:
-        parser.error("input_dir and output_dir are required")
-
     if args.mode == "wsi":
         from rocqipath.extraction import TissueExtractionConfig, run_tissue_pipeline
 

@@ -10,7 +10,6 @@ from typing import Optional, Tuple
 import matplotlib.patches as patches
 import matplotlib.pyplot as plt
 
-from rocqipath.config import default_config
 from rocqipath.core.logging import logger
 from rocqipath.core.output import OutputLayout
 from rocqipath.utils import (
@@ -108,22 +107,16 @@ def plot_selector_map(thumb_img, valid_ids, rows, cols, output_path=None, *, sho
 
 def _build_registrar_config(
     *,
-    input_dir: str,
     output_dir: str,
     patch_size: int = 512,
     grid_density: int = 20,
 ) -> dict:
     """Construct the historical WSIRegistrar configuration mapping."""
-    config = default_config()
-    config.update(
-        {
-            "base_input_dir": input_dir,
-            "base_output_dir": output_dir,
-            "patch_size": patch_size,
-            "grid_density": grid_density,
-        }
-    )
-    return config
+    return {
+        "base_output_dir": output_dir,
+        "patch_size": patch_size,
+        "grid_density": grid_density,
+    }
 
 
 def generate_single_grid_map_for_slide(
@@ -207,7 +200,6 @@ def export_grid_map(
     _require_grid_dependencies()
     os.makedirs(output_dir, exist_ok=True)
     cfg = _build_registrar_config(
-        input_dir=os.path.dirname(wsi_path),
         output_dir=output_dir,
         grid_density=grid_density,
     )
@@ -234,7 +226,6 @@ def export_paired_grid_maps(
     layout = OutputLayout(output_dir)
     single_dir = tempfile.mkdtemp(prefix="rocqipath_grid_maps_")
     cfg = _build_registrar_config(
-        input_dir=input_dir,
         output_dir=output_dir,
         grid_density=grid_density,
     )

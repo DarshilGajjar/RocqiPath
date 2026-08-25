@@ -17,7 +17,7 @@ Batch (whole directory)::
     run_tissue_pipeline(
         input_dir  = "./data/wsi",
         output_dir = "./data/wsi/extracted",
-        cfg        = TissueExtractionConfig(detection_level=2, min_area_fraction=0.005),
+        cfg        = TissueExtractionConfig(detection_magnification=1.25),
     )
 
 Single slide::
@@ -97,12 +97,7 @@ def _print_config_panel(cfg: TissueExtractionConfig, input_dir: str, output_dir:
         rows=[
             ("Input dir", input_dir),
             ("Output dir", output_dir),
-            (
-                "Detection zoom",
-                f"{cfg.detection_magnification:g}x"
-                if cfg.detection_level is None
-                else f"legacy level {cfg.detection_level}",
-            ),
+            ("Detection zoom", f"{cfg.detection_magnification:g}x"),
             ("Output zoom", f"{cfg.target_magnification:g}x"),
             ("Min area fraction", f"{cfg.min_area_fraction:.4f}"),
             ("Preview scale", f"{cfg.preview_scale:.2f}"),
@@ -155,7 +150,6 @@ def extract_tissue_regions(
 
     thumbnail = _load_thumbnail(
         Path(wsi_path),
-        cfg.detection_level,
         target_magnification=cfg.detection_magnification,
         source_magnification=cfg.source_magnification,
     )

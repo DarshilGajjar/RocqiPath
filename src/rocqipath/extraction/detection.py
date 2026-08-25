@@ -25,27 +25,19 @@ from rocqipath.utils.vips import vips_to_numpy_rgb as _vips_to_numpy_rgb
 
 def _load_thumbnail(
     wsi_path: Path,
-    level: Optional[int] = None,
     *,
     target_magnification: float = 1.25,
     source_magnification: Optional[float] = None,
 ) -> np.ndarray:
     """Load a downsampled thumbnail of a whole-slide image via pyvips.
 
-    Attempts, in order, to open the requested pyramid level using two
-    different pyvips access syntaxes (some formats expose pyramid levels
-    as ``[level=N]``, others as ``[page=N]``), and falls back to loading
-    the full-resolution image and resizing it in-memory if neither
-    succeeds.
+    Chooses the pyramid level nearest the requested physical magnification
+    and resizes only when the native level is not exact.
 
     Parameters
     ----------
     wsi_path : Path
         Path to the whole-slide image file.
-    level : int
-        Requested pyramid level, where level 0 is full resolution and
-        each subsequent level is (conventionally) half the linear
-        resolution of the previous one.
 
     Returns
     -------
@@ -58,36 +50,11 @@ def _load_thumbnail(
     ImportError
         If the optional ``pyvips`` dependency is not installed.
 
-    Notes
-    -----
-    Resolution order:
-
-    1. Try ``f"{path}[level={level}]"`` (common for SVS and similar
-       formats).
-    2. Try ``f"{path}[page={level}]"`` (common for multi-page TIFF-based
-       formats).
-    3. If both raise :class:`pyvips.Error`, log a warning and fall back
-       to opening the full-resolution image and resizing it by
-       ``1 / (2 ** level)`` — this is slow (it loads the entire base
-       resolution into memory) but guarantees a result for formats whose
-       pyramid structure pyvips can't address directly.
-
-    All three paths ultimately return through :func:`_vips_to_numpy_rgb`,
-    so the returned array is always RGB-only regardless of the source
-    image's band count.
     """
     if not _PYVIPS_AVAILABLE:
         raise ImportError("pyvips is required. pip install rocqipath[extraction]")
     path = Path(wsi_path)
     base = _open_vips_pyramid_level(path, 0)
-
-    if level is not None:
-        try:
-            image = _open_vips_pyramid_level(path, level)
-        except Exception:
-            logger.warning(f"Level {level} unavailable for {path.name}; resizing level 0.")
-            image = base.resize(1 / (2**level))
-        return _vips_to_numpy_rgb(image)
 
     base_mag, source = _resolve_vips_magnification(base, source_magnification)
     if target_magnification > base_mag:

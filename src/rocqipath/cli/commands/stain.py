@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import argparse
-from typing import List, Optional
 
 from rocqipath.core.console import print_error, print_warn
 from rocqipath.core.exceptions import ConfigurationError, DependencyError, ExtractionError
@@ -74,14 +73,3 @@ def run(args: argparse.Namespace, _parser: argparse.ArgumentParser) -> int:
     except KeyboardInterrupt:
         print_warn("Interrupted by user.")
         return 130
-
-
-def main(argv: Optional[List[str]] = None) -> int:
-    """Run the standalone stain command used by the legacy module shim."""
-    parser = argparse.ArgumentParser(
-        prog="stain_normalization",
-        description="Batch H&E stain normalisation (Reinhard / Macenko / Vahadane).",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-    )
-    configure_parser(parser)
-    return run(parser.parse_args(argv), parser)

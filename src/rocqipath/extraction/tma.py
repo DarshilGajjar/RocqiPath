@@ -44,17 +44,14 @@ from __future__ import annotations
 __all__ = [
     "TMAExtractionConfig",
     "run_tma_extraction_pipeline",
-    "CoreExtractionConfig",
     "discover_pairs",
     "get_reference_boxes",
     "enhance_ihc_thumbnail",
     "extract_stain_cores",
-    "run_core_extraction_pipeline",
 ]
 
 import os
 import re
-import warnings
 from dataclasses import asdict
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -62,7 +59,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import cv2
 import numpy as np
 
-from rocqipath.config import CoreExtractionConfig, TMAExtractionConfig
+from rocqipath.config import TMAExtractionConfig
 from rocqipath.extraction.detection import _detect_regions, _load_thumbnail
 from rocqipath.extraction.engine import (
     SUPPORTED_EXTENSIONS,
@@ -253,7 +250,6 @@ def get_reference_boxes(
     """
     thumbnail = _load_thumbnail(
         he_path,
-        cfg.detection_level,
         target_magnification=cfg.detection_magnification,
         source_magnification=cfg.source_magnification,
     )
@@ -301,7 +297,6 @@ def extract_stain_cores(
     elif cfg.per_stain_detection:
         raw = _load_thumbnail(
             wsi_path,
-            cfg.detection_level,
             target_magnification=cfg.detection_magnification,
             source_magnification=cfg.source_magnification,
         )
@@ -442,12 +437,7 @@ def _print_config_panel(cfg: TMAExtractionConfig, input_dir: str, output_dir: st
         rows=[
             ("Input dir", input_dir),
             ("Output dir", output_dir),
-            (
-                "Detection zoom",
-                f"{cfg.detection_magnification:g}x"
-                if cfg.detection_level is None
-                else f"legacy level {cfg.detection_level}",
-            ),
+            ("Detection zoom", f"{cfg.detection_magnification:g}x"),
             ("Output zoom", f"{cfg.target_magnification:g}x"),
             ("Min area fraction", f"{cfg.min_area_fraction:.4f}"),
             ("Circles only", str(cfg.only_circles)),
@@ -557,18 +547,3 @@ def run_tma_extraction_pipeline(
                 logger.exception(f"{pfx} | {lbl} failed: {exc}")
 
     logger.info("Core extraction complete.")
-
-
-def run_core_extraction_pipeline(
-    input_dir: str,
-    output_root: str,
-    cfg: Optional[TMAExtractionConfig] = None,
-    target_stains: Optional[List[str]] = None,
-) -> None:
-    """Run TMA extraction through the deprecated entry-point name."""
-    warnings.warn(
-        "run_core_extraction_pipeline is deprecated; use run_tma_extraction_pipeline instead.",
-        DeprecationWarning,
-        stacklevel=2,
-    )
-    return run_tma_extraction_pipeline(input_dir, output_root, cfg, target_stains)

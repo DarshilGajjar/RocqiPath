@@ -2,11 +2,9 @@
 
 from __future__ import annotations
 
-import inspect
-import re
 import json
+import re
 import traceback
-import warnings
 from pathlib import Path
 from typing import Any, List, Union
 
@@ -15,6 +13,7 @@ from rocqipath.core.logging import logger
 from rocqipath.core.output import OutputLayout
 from rocqipath.registration.models import AlignedCaseResult, CaseContext
 from rocqipath.registration.quality import qc_center_patch_side_by_side
+from rocqipath.registration.registrar import ValisConfig, WSIRegistrar
 from rocqipath.utils.discovery import (
     build_sample_pairs,
     discover_pair_folders,
@@ -71,29 +70,6 @@ except ImportError:
         return iterable
 
 
-try:
-    from rocqipath.core.console import print_banner as _print_banner
-
-    _print_banner()
-except Exception:
-    pass
-
-
-try:
-    from rocqipath.registration.registrar import ValisConfig, WSIRegistrar
-
-    WSI_PROCESSING_AVAILABLE = True
-except ImportError:
-    WSIRegistrar = None  # type: ignore[assignment,misc]
-    ValisConfig = None  # type: ignore[assignment,misc]
-    WSI_PROCESSING_AVAILABLE = False
-    warnings.warn(
-        "rocqipath.registration.registrar not found. "
-        "Set dry_run=True to test slide pairing without running registration.",
-        stacklevel=2,
-    )
-
-
 DEFAULT_REFERENCE_NAME: str = "reference"
 
 
@@ -110,7 +86,6 @@ def list_wsi_files(directory: Union[str, Path]) -> List[str]:
 
 def _aligned_manifest_base_name(path: Path) -> str:
     """Remove ordinary or compound OME-TIFF suffixes."""
-
     name = path.name
     lowered = name.lower()
 
@@ -175,24 +150,15 @@ def _write_aligned_wsi_manifest(
                 f"with {len(reference_reader.level_downsamples)} level(s)."
             )
 
-        level_downsample = float(
-            reference_reader.level_downsamples[level]
-        )
+        level_downsample = float(reference_reader.level_downsamples[level])
 
-        output_magnification = (
-            reference_plan.base_magnification
-            / level_downsample
-        )
+        output_magnification = reference_plan.base_magnification / level_downsample
 
         payload = {
             "output_magnification": output_magnification,
-            "alignment_target_magnification": float(
-                alignment_target_magnification
-            ),
+            "alignment_target_magnification": float(alignment_target_magnification),
             "aligned_wsi_level": level,
-            "reference_base_magnification": (
-                reference_plan.base_magnification
-            ),
+            "reference_base_magnification": (reference_plan.base_magnification),
             "reference_level_downsample": level_downsample,
             "reference_path": str(Path(reference_path)),
             "aligned_path": str(aligned),
@@ -210,9 +176,7 @@ def _write_aligned_wsi_manifest(
         # sample_0001_cd8_aligned_moving_manifest.json
         base_name = _aligned_manifest_base_name(aligned)
 
-        manifest_path = aligned.with_name(
-            f"{base_name}_manifest.json"
-        )
+        manifest_path = aligned.with_name(f"{base_name}_manifest.json")
 
         manifest_path.write_text(
             json.dumps(payload, indent=2) + "\n",
@@ -316,43 +280,15 @@ class AlignmentProcessor:
             A config instance with ``max_acceptable_error_um`` set from
             ``self.cfg.valis_max_error_um``.
 
-        Raises
-        ------
-        RuntimeError
-            If :mod:`rocqipath.registration.registrar` (and therefore VALIS)
-            is not installed. Callers should either install the
-            ``valis``/``wsi`` extra or set ``dry_run=True`` on the
-            ``AlignmentConfig`` to skip real registration entirely.
         """
-        if not WSI_PROCESSING_AVAILABLE:
-            raise RuntimeError(
-                "rocqipath.registration.registrar is not installed. "
-                "Install the package or set dry_run=True."
-            )
-        candidate = {
-            "max_acceptable_error_um": self.cfg.valis_max_error_um,
-            # "max_processed_image_dim_px": self.cfg.valis_processed_dim,
-            "max_non_rigid_reg_dim_px": self.cfg.valis_non_rigid_dim,
-            "feature_detector": self.cfg.valis_feature_detector,
-            "num_features": self.cfg.valis_num_features,
-            "check_for_reflections": self.cfg.valis_check_reflections,
-            "norm_method": self.cfg.valis_norm_method,
-        }
-
-        # Only pass fields this ValisConfig actually defines, so an older core
-        # degrades to its defaults with a clear warning instead of TypeError.
-        try:
-            accepted = set(inspect.signature(ValisConfig).parameters)
-        except (TypeError, ValueError):
-            accepted = set(candidate)
-        rejected = sorted(k for k in candidate if k not in accepted)
-        if rejected:
-            logger.warning(
-                f"ValisConfig does not accept {rejected} — those registration "
-                f"settings will not take effect. Update "
-                f"rocqipath.registration.registrar."
-            )
-        return ValisConfig(**{k: v for k, v in candidate.items() if k in accepted})
+        return ValisConfig(
+            max_acceptable_error_um=self.cfg.valis_max_error_um,
+            max_non_rigid_reg_dim_px=self.cfg.valis_non_rigid_dim,
+            feature_detector=self.cfg.valis_feature_detector,
+            num_features=self.cfg.valis_num_features,
+            check_for_reflections=self.cfg.valis_check_reflections,
+            norm_method=self.cfg.valis_norm_method,
+        )
 
     def _make_registrar_cfg(self, output_root: Path, item_name: str) -> dict:
         """Build the plain-dict config expected by ``WSIRegistrar``'s constructor.
@@ -412,12 +348,6 @@ class AlignmentProcessor:
         if self.cfg.dry_run:
             return AlignedCaseResult(case=case, registrar=None, thumb=None, valid_grids=[])
 
-        if not WSI_PROCESSING_AVAILABLE:
-            raise RuntimeError(
-                "rocqipath.registration.registrar is not installed. "
-                "Install the package or set dry_run=True."
-            )
-
         registrar = WSIRegistrar(
             case.reference_file,
             case.moving_file,
@@ -425,39 +355,24 @@ class AlignmentProcessor:
             valis_cfg=self._make_valis_config(),
         )
 
-        registrar.register_slides(
-            method=self.cfg.alignment_method
-        )
+        registrar.register_slides(method=self.cfg.alignment_method)
 
         thumb, valid_grids = registrar.generate_grid_map()
 
         aligned_path = registrar.save_aligned_wsi(
             level=self.cfg.aligned_wsi_level,
-            output_path=str(
-                Path(registrar.output_dir)
-                / f"{case.case_id}_aligned_moving.ome.tiff"
-            ),
+            output_path=str(Path(registrar.output_dir) / f"{case.case_id}_aligned_moving.ome.tiff"),
         )
         try:
             manifest_path = _write_aligned_wsi_manifest(
                 aligned_path=aligned_path,
                 reference_path=case.reference_file,
-                alignment_target_magnification=(
-                    self.cfg.target_magnification
-                ),
-                aligned_wsi_level=(
-                    self.cfg.aligned_wsi_level
-                ),
-                reference_source_magnification=(
-                    self.cfg.reference_source_magnification
-                ),
+                alignment_target_magnification=(self.cfg.target_magnification),
+                aligned_wsi_level=(self.cfg.aligned_wsi_level),
+                reference_source_magnification=(self.cfg.reference_source_magnification),
             )
 
-            logger.info(
-                f"[MAG] {case.case_id}: "
-                f"aligned WSI manifest written to "
-                f"{manifest_path}"
-            )
+            logger.info(f"[MAG] {case.case_id}: aligned WSI manifest written to {manifest_path}")
 
         except Exception as manifest_error:
             logger.warning(
@@ -475,7 +390,6 @@ class AlignmentProcessor:
             aligned_moving_path=aligned_path,
             manifest_path=manifest_path,
         )
-
 
     # ── main loop ─────────────────────────────────────────────────────────────
 

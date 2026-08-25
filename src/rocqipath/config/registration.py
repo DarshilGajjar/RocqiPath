@@ -1,10 +1,10 @@
-"""Typed alignment, VALIS, ORB, and legacy registrar configurations."""
+"""Typed alignment, VALIS, and ORB configurations."""
 
 from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field
-from typing import Any, List, Optional
+from typing import List, Optional
 
 from rocqipath.core.magnification import DEFAULT_TARGET_MAGNIFICATION
 from rocqipath.utils.naming import (
@@ -217,48 +217,8 @@ class OrbConfig(BaseConfig):
     min_ncc_threshold: float = 0.25
 
 
-@dataclass
-class RegistrarDefaults(OrbConfig):
-    """Typed source for the deprecated flat registrar mapping."""
-
-    base_input_dir: str | None = None
-    base_output_dir: str | None = None
-    patch_size: int = 512
-    target_magnification: float = DEFAULT_TARGET_MAGNIFICATION
-    reference_source_magnification: float | None = None
-    target_source_magnification: float | None = None
-    grid_density: int = 20
-    overlay_max_px: int = 4000
-
-
-def default_config() -> dict[str, Any]:
-    """Return a fresh legacy registrar mapping derived from typed defaults."""
-    defaults = RegistrarDefaults()
-    legacy_order = (
-        "base_input_dir",
-        "base_output_dir",
-        "patch_size",
-        "target_magnification",
-        "reference_source_magnification",
-        "target_source_magnification",
-        "grid_density",
-        "ransac_threshold",
-        "orb_thumb_size",
-        "orb_refine_thumb_size",
-        "orb_refine_enabled",
-        "orb_max_contours",
-        "orb_min_area_frac",
-        "orb_match_threshold",
-        "min_ncc_threshold",
-        "overlay_max_px",
-    )
-    return {name: getattr(defaults, name) for name in legacy_order}
-
-
 __all__ = [
     "AlignmentConfig",
     "OrbConfig",
-    "RegistrarDefaults",
     "ValisConfig",
-    "default_config",
 ]

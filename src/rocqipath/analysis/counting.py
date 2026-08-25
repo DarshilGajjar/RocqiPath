@@ -78,15 +78,12 @@ class PositiveCellCounter:
     -------------
     ::
 
-        counter = PositiveCellCounter({
-            "patch_size":   512,
-            "magnification": 2,
-            "output_dir":   "./results/cell_counts",
-        })
+        counter = PositiveCellCounter(CellCountingConfig(output_dir="./results/cell_counts"))
         result = counter.count_slide("./slide_01.svs")
 
-    Parameters (cfg dict)
-    ---------------------
+    Parameters
+    ----------
+    cfg : CellCountingConfig
     patch_size        : tile size in pixels at the chosen magnification (default 512)
     tissue_threshold  : minimum tissue fraction per patch (default 0.10)
     target_magnification : physical analysis zoom — default 20x
@@ -95,22 +92,21 @@ class PositiveCellCounter:
     max_cell_area     : maximum cell area in px², None = no upper bound
     """
 
-    def __init__(self, cfg: CellCountingConfig | dict):
+    def __init__(self, cfg: CellCountingConfig):
         """Resolve configuration, create the output directory, and print a summary.
 
         Parameters
         ----------
-        cfg : dict
-            Configuration dict. All keys are optional:
+        cfg : CellCountingConfig
+            Typed counting configuration:
 
             - ``"patch_size"`` (int) — tile edge length in pixels at the
               chosen magnification. Defaults to ``512``.
             - ``"tissue_threshold"`` (float) — minimum fraction of
               non-background pixels (see :meth:`_is_tissue`) for a patch
               to be processed at all. Defaults to ``0.10``.
-            - ``"target_magnification"`` (float) — exact physical zoom for
-              analysis. Defaults to ``20.0``. The legacy ``"magnification"``
-              key is accepted as a physical-value alias.
+            - ``target_magnification`` (float) — exact physical zoom for
+              analysis. Defaults to ``20.0``.
             - ``"output_dir"`` (str) — root directory for results.
               Defaults to ``"./cell_count_output"``; created if it
               doesn't exist.
@@ -128,15 +124,14 @@ class PositiveCellCounter:
         area range, thresholding strategy) to stdout after resolving all
         fields.
         """
-        resolved = cfg if isinstance(cfg, CellCountingConfig) else CellCountingConfig.from_dict(cfg)
-        self.patch_size = resolved.patch_size
-        self.tissue_threshold = resolved.tissue_threshold
-        self.target_magnification = resolved.target_magnification
-        self.source_magnification = resolved.source_magnification
-        self.paired_source_magnification = resolved.paired_source_magnification
-        self.output_dir = resolved.output_dir
-        self.min_cell_area = resolved.min_cell_area
-        self.max_cell_area = resolved.max_cell_area
+        self.patch_size = cfg.patch_size
+        self.tissue_threshold = cfg.tissue_threshold
+        self.target_magnification = cfg.target_magnification
+        self.source_magnification = cfg.source_magnification
+        self.paired_source_magnification = cfg.paired_source_magnification
+        self.output_dir = cfg.output_dir
+        self.min_cell_area = cfg.min_cell_area
+        self.max_cell_area = cfg.max_cell_area
 
         self.layout = OutputLayout(self.output_dir)
         self.layout.module_dir("cell_counting")

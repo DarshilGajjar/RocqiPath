@@ -16,8 +16,6 @@ def test_cli_exposes_one_subcommand_per_pipeline() -> None:
         action for action in parser._actions if isinstance(action, argparse._SubParsersAction)
     )
     assert set(subparsers.choices) == {
-        "study",
-        "doctor",
         "align",
         "extract",
         "stain",
@@ -26,9 +24,7 @@ def test_cli_exposes_one_subcommand_per_pipeline() -> None:
     }
 
 
-@pytest.mark.parametrize(
-    "command", ["study", "doctor", "align", "extract", "stain", "count", "compare"]
-)
+@pytest.mark.parametrize("command", ["align", "extract", "stain", "count", "compare"])
 def test_subcommand_help_exits_cleanly(command: str, capsys) -> None:
     """Ensure each command can show help without loading its optional backend."""
     with pytest.raises(SystemExit) as exc_info:

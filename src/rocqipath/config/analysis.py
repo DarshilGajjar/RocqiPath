@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass
-from typing import Any, Mapping
 
 from rocqipath.core.magnification import DEFAULT_TARGET_MAGNIFICATION
 from rocqipath.utils.validation import (
@@ -67,29 +66,6 @@ class CellCountingConfig(BaseConfig):
         require(
             self.max_cell_area is None or self.max_cell_area >= self.min_cell_area,
             "max_cell_area must be >= min_cell_area",
-        )
-
-    @classmethod
-    def from_dict(
-        cls,
-        values: Mapping[str, Any],
-    ) -> "CellCountingConfig":
-        """Build from the historical permissive mapping input."""
-        return cls(
-            patch_size=values.get("patch_size", 512),
-            tissue_threshold=values.get("tissue_threshold", 0.10),
-            target_magnification=values.get(
-                "target_magnification",
-                values.get(
-                    "magnification",
-                    DEFAULT_TARGET_MAGNIFICATION,
-                ),
-            ),
-            source_magnification=values.get("source_magnification"),
-            paired_source_magnification=values.get("paired_source_magnification"),
-            output_dir=values.get("output_dir", "./cell_count_output"),
-            min_cell_area=values.get("min_cell_area", 50),
-            max_cell_area=values.get("max_cell_area"),
         )
 
 
