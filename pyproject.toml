@@ -32,11 +32,9 @@ classifiers = [
 ]
 
 # ---------------------------------------------------------------------------
-# Core dependencies — required by the installed CLI and shared logger.
+# Core dependencies required by supported Python versions.
 # ---------------------------------------------------------------------------
 dependencies = [
-    "rich>=13.0",
-    "loguru>=0.7",
     # study.toml parsing; tomllib is stdlib from Python 3.11 onward.
     'tomli>=2.0 ; python_version < "3.11"',
 ]

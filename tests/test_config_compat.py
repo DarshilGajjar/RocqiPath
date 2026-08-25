@@ -11,7 +11,7 @@ import rocqipath.extraction as extraction
 import rocqipath.registration as registration
 import rocqipath.stain as stain
 import rocqipath.visualization as visualization
-from rocqipath.analysis.cell_counting import (
+from rocqipath.analysis.counting import (
     CellCountingConfig,
     PositiveCellCounter,
 )

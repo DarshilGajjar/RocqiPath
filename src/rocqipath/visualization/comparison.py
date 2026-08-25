@@ -9,11 +9,10 @@ quick exploratory QC plots.
 
 Also runnable as a standalone script::
 
-    python -m rocqipath.visualization.wsi_compare --help
+    rocqipath compare --help
 
-Uses its own self-contained banner/logging setup (via ``loguru``,
-independent of :mod:`rocqipath.logger`) since it predates the unified
-logging system and is also usable outside the rest of the package.
+Uses the package's standard-library logging configuration and remains usable
+through the unified command-line interface.
 
 WSI Visualization Module for RocqiPath — PUBLICATION-QUALITY EDITION
 Generates high-resolution side-by-side comparisons with scale bars,
@@ -21,12 +20,9 @@ colorblind-safe annotations, and professional figure formatting.
 """
 
 import shutil
-from typing import Optional
 
-from loguru import logger
 from PIL import Image, PngImagePlugin
 
-from rocqipath.core.logging import configure_logging as _configure_shared_logging
 from rocqipath.visualization.comparison_workflow import (
     VALID_REGIONS as VALID_REGIONS,
     _add_scale_bar as _add_scale_bar,
@@ -69,7 +65,7 @@ GRAYSCALE_PALETTE = [
 
 
 # ============================================================================
-# UNIVERSAL LOGGING + BANNER SETUP
+# PLAIN-TEXT BANNER
 # ============================================================================
 def _build_banner(tool_name: str, subtitle: str = "") -> str:
     """Build a centred, boxed ASCII banner string for startup logging.
@@ -96,10 +92,7 @@ def _build_banner(tool_name: str, subtitle: str = "") -> str:
 
     Notes
     -----
-    This is a self-contained plain-text banner, independent of the
-    Rich-based banner in :func:`rocqipath.logger.print_banner` — this
-    module predates the unified logging system and remains usable
-    standalone.
+    The result is plain text suitable for either ``print`` or stdlib logging.
     """
     inner_width = 54
     lines = [
@@ -116,55 +109,6 @@ def _build_banner(tool_name: str, subtitle: str = "") -> str:
     )
     term_width = shutil.get_terminal_size(fallback=(80, 24)).columns
     return "\n" + "\n".join(line.center(term_width) for line in lines) + "\n"
-
-
-def configure_logging(
-    tool_name: str = "Digital Pathology Pipeline",
-    subtitle: str = "",
-    save_dir: Optional[str] = None,
-) -> None:
-    """Reset and configure this module's loguru sinks, printing a startup banner.
-
-    Parameters
-    ----------
-    tool_name : str, optional
-        Title shown in the startup banner (see :func:`_build_banner`).
-        Defaults to ``"Digital Pathology Pipeline"``.
-    subtitle : str, optional
-        Optional subtitle line for the banner. Omitted from the banner
-        when empty.
-    save_dir : str, optional
-        If given, an additional file sink is created inside this
-        directory (created if it doesn't exist), logging at DEBUG level
-        to ``execution_log.log`` with automatic rotation at 10 MB and up
-        to 5 retained rotated files. When omitted (``None``), logging
-        goes only to stdout.
-
-    Notes
-    -----
-    Calls ``logger.remove()`` first, clearing any previously configured
-    sinks on the module-level ``loguru`` logger — so calling this
-    function replaces rather than adds to prior configuration. The
-    stdout sink logs at INFO level with a colourised timestamp/level/message
-    format. After configuring sinks, logs the banner produced by
-    :func:`_build_banner` at INFO level.
-    """
-    _configure_shared_logging(
-        save_dir,
-        file_level="DEBUG",
-        log_filename="execution_log.log",
-        reset=True,
-        logger_instance=logger,
-        console_format=(
-            "<green>{time:YYYY-MM-DD HH:mm:ss}</green> | "
-            "<level>{level: <8}</level> | "
-            "<white>{message}</white>"
-        ),
-        colorize=True,
-        rotation="10 MB",
-        retention=5,
-        banner=_build_banner(tool_name, subtitle),
-    )
 
 
 # ============================================================================

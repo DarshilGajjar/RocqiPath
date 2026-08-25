@@ -22,7 +22,7 @@ Batch (whole directory)::
 
 Single slide::
 
-    from rocqipath.extraction.tissue_extraction import TissueExtractionConfig, extract_tissue_regions
+    from rocqipath.extraction.tissue import TissueExtractionConfig, extract_tissue_regions
 
     regions = extract_tissue_regions("./slide_01.svs", "./out")
 """
@@ -42,9 +42,8 @@ from rocqipath.extraction.detection import _detect_regions, _load_thumbnail
 from rocqipath.extraction.engine import (
     SUPPORTED_EXTENSIONS,
     _resolve_vips_magnification,
-    configure_logging,
 )
-from rocqipath.core.logging import get_logger, logger
+from rocqipath.core.logging import configure_logging, get_logger, logger
 from rocqipath.core.output import OutputLayout
 from rocqipath.utils.imageio import save_preview as _save_preview
 from rocqipath.utils.imageio import save_tif as _save_tif
@@ -65,12 +64,12 @@ except (ImportError, OSError):
 _log = get_logger("tissue_extraction")
 
 # ══════════════════════════════════════════════════════════════════════════════
-# Rich config panel
+# Plain-text configuration summary
 # ══════════════════════════════════════════════════════════════════════════════
 
 
 def _print_config_panel(cfg: TissueExtractionConfig, input_dir: str, output_dir: str) -> None:
-    """Render a Rich table summarising the resolved run configuration.
+    """Print the resolved run configuration.
 
     Printed once at the start of :func:`run_tissue_pipeline` so the
     operator can see exactly which parameters will be used before
@@ -90,7 +89,7 @@ def _print_config_panel(cfg: TissueExtractionConfig, input_dir: str, output_dir:
     Notes
     -----
     Purely a display/logging side effect — writes to
-    :data:`rocqipath.logger.console` (or its local fallback) and returns
+    plain text and returns
     nothing.
     """
     print_config_panel(
@@ -229,7 +228,7 @@ def extract_tissue_regions(
                     "output_magnification": cfg.target_magnification,
                 },
             )
-            logger.success(f"  SAVED    {tag}")
+            logger.info(f"  SAVED    {tag}")
             status = "saved"
 
         manifests.append(
@@ -301,9 +300,9 @@ def run_tissue_pipeline(
         try:
             regions = extract_tissue_regions(str(wsi_path), output_dir, cfg)
             results[wsi_path.stem] = regions
-            logger.success(f"{wsi_path.name} — {len(regions)} region(s)")
+            logger.info(f"{wsi_path.name} — {len(regions)} region(s)")
         except Exception as exc:
             logger.exception(f"{wsi_path.name} failed: {exc}")
 
-    logger.success(f"Tissue pipeline complete — {len(results)}/{len(wsi_files)} processed")
+    logger.info(f"Tissue pipeline complete — {len(results)}/{len(wsi_files)} processed")
     return results

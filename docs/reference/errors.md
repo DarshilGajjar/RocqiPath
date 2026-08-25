@@ -4,7 +4,7 @@ Every RocqiPath error inherits from `WSIProcessingError`, so one `except`
 clause catches all of them:
 
 ```python
-from rocqipath.exceptions import WSIProcessingError
+from rocqipath.core.exceptions import WSIProcessingError
 
 try:
     study.run("alignment")

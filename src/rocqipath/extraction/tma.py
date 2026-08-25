@@ -9,7 +9,7 @@ biomarker(s) are being imaged.
 
 Use this module when a slide contains multiple circular tissue regions.
 For a slide containing a single contiguous tissue section, use
-rocqipath.extraction.tissue_extraction instead.
+rocqipath.extraction.tissue instead.
 
 TMA-specific parameters in TMAExtractionConfig
 --------------------------------------------------
@@ -67,9 +67,8 @@ from rocqipath.extraction.detection import _detect_regions, _load_thumbnail
 from rocqipath.extraction.engine import (
     SUPPORTED_EXTENSIONS,
     _resolve_vips_magnification,
-    configure_logging,
 )
-from rocqipath.core.logging import get_logger, logger
+from rocqipath.core.logging import configure_logging, get_logger, logger
 from rocqipath.core.output import OutputLayout
 from rocqipath.utils.imageio import save_preview as _save_preview
 from rocqipath.utils.imageio import save_tif as _save_tif
@@ -394,7 +393,7 @@ def extract_stain_cores(
                     },
                 },
             )
-            logger.success(f"  SAVED    {stain_label}/{tag}  [{detection_source}]")
+            logger.info(f"  SAVED    {stain_label}/{tag}  [{detection_source}]")
             saved += 1
             status = "saved"
 
@@ -433,7 +432,7 @@ def _print_config_panel(cfg: TMAExtractionConfig, input_dir: str, output_dir: st
     Notes
     -----
     Purely a display/logging side effect — writes to
-    :data:`rocqipath.logger.console` (or its local fallback) and returns
+    plain text and returns
     nothing. CLAHE-related rows (``"CLAHE clip"``, ``"CLAHE tile"``) show
     ``"n/a"`` instead of their values when ``cfg.ihc_enhance`` is
     ``False``, since those parameters have no effect in that case.
@@ -553,11 +552,11 @@ def run_tma_extraction_pipeline(
                     n_regions=len(mfs),
                     regions=mfs,
                 )
-                logger.success(f"{pfx} | {lbl} — {ns} saved, {nsk} skipped")
+                logger.info(f"{pfx} | {lbl} — {ns} saved, {nsk} skipped")
             except Exception as exc:
                 logger.exception(f"{pfx} | {lbl} failed: {exc}")
 
-    logger.success("Core extraction complete.")
+    logger.info("Core extraction complete.")
 
 
 def run_core_extraction_pipeline(

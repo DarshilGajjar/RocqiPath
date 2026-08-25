@@ -4,7 +4,6 @@ from pathlib import Path
 
 from PIL import Image
 
-import rocqipath.api as api
 import rocqipath.visualization.grids as grids
 
 
@@ -12,7 +11,7 @@ def test_grid_map_rejects_unknown_extension_without_subscripting_format(tmp_path
     source = tmp_path / "slide.txt"
     source.write_text("not a slide", encoding="utf-8")
 
-    assert api.generate_single_grid_map_for_slide(
+    assert grids.generate_single_grid_map_for_slide(
         str(source), str(tmp_path / "maps"), {"grid_density": 2}
     ) == (False, None, "Unsupported WSI format")
 
@@ -41,7 +40,7 @@ def test_grid_map_success_contract_and_cleanup(tmp_path: Path, monkeypatch):
     monkeypatch.setattr(grids, "WSIRegistrar", FakeRegistrar)
     monkeypatch.setattr(grids, "plot_selector_map", fake_plot)
 
-    success, map_path, reason = api.generate_single_grid_map_for_slide(
+    success, map_path, reason = grids.generate_single_grid_map_for_slide(
         str(source), str(tmp_path / "maps"), {"grid_density": 2}
     )
 

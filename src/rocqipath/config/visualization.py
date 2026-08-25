@@ -11,7 +11,6 @@ from rocqipath.utils.validation import require
 
 from .base import BaseConfig
 
-SUPPORTED_MARKER_METHODS = frozenset({"hsv"})
 BASE_RENDER_MODES = frozenset({"mask", "original"})
 PLOT_MODES = frozenset({"grid", "composite", "both"})
 
@@ -26,8 +25,6 @@ class MarkerProfile(BaseConfig):
         RGB overlay color, with each channel in ``[0, 255]``.
     label : str
         Human-readable figure label.
-    method : {"hsv"}
-        Marker detection method.
     hue_range : tuple of int
         Inclusive OpenCV hue bounds in ``[0, 179]``.
     sat_min : int
@@ -35,20 +32,12 @@ class MarkerProfile(BaseConfig):
     """
 
     color: Tuple[int, int, int]
-    method: str = "hsv"
     label: Optional[str] = None
     hue_range: Tuple[int, int] = (5, 20)
     sat_min: int = 30
-    value_threshold: Optional[int] = None
 
     def __post_init__(self) -> None:
         """Validate marker detection and color parameters."""
-        require(
-            self.method in SUPPORTED_MARKER_METHODS,
-            f"MarkerProfile.method must be one of "
-            f"{sorted(SUPPORTED_MARKER_METHODS)}; got {self.method!r}",
-            exception_type=ConfigurationError,
-        )
         require(
             len(self.color) == 3 and all(0 <= channel <= 255 for channel in self.color),
             f"color must be an (R, G, B) tuple with each value in [0, 255]; got {self.color}",

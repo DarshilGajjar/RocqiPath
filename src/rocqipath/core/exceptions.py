@@ -4,12 +4,12 @@ All library-specific errors inherit from :class:`WSIProcessingError` so
 callers can catch every error the library raises with a single ``except``
 clause::
 
-    from rocqipath.exceptions import WSIProcessingError
+    from rocqipath.core.exceptions import WSIProcessingError
 
     try:
         run_alignment(cfg)
     except WSIProcessingError as exc:
-        logger.error("Pipeline failed: {}", exc)
+        logger.error("Pipeline failed: %s", exc)
 
 Hierarchy
 ---------

@@ -5,8 +5,9 @@ from __future__ import annotations
 import os
 from typing import Dict, List, Optional, Tuple
 
-from loguru import logger
 from PIL import Image
+
+from rocqipath.core.logging import logger
 
 from rocqipath.utils.geometry import (
     add_scale_bar as _add_scale_bar_impl,

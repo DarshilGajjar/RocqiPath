@@ -207,7 +207,6 @@ class OrbConfig(BaseConfig):
     ``min_ncc_threshold`` is a dimensionless normalized correlation.
     """
 
-    n_features: int = 5000
     ransac_threshold: float = 5.0
     orb_thumb_size: int = 1500
     orb_refine_thumb_size: int = 3000
@@ -229,7 +228,6 @@ class RegistrarDefaults(OrbConfig):
     reference_source_magnification: float | None = None
     target_source_magnification: float | None = None
     grid_density: int = 20
-    downsample_factor: int = 64
     overlay_max_px: int = 4000
 
 
@@ -244,8 +242,6 @@ def default_config() -> dict[str, Any]:
         "reference_source_magnification",
         "target_source_magnification",
         "grid_density",
-        "downsample_factor",
-        "n_features",
         "ransac_threshold",
         "orb_thumb_size",
         "orb_refine_thumb_size",

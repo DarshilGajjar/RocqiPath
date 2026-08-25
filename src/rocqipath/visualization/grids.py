@@ -98,7 +98,7 @@ def plot_selector_map(thumb_img, valid_ids, rows, cols, output_path=None, *, sho
     plt.axis("off")
     if output_path:
         plt.savefig(output_path)
-        logger.info("Grid map saved to {}", output_path)
+        logger.info("Grid map saved to %s", output_path)
 
     if show:
         plt.show(block=False)

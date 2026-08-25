@@ -5,8 +5,8 @@ $ rocqipath --help
 $ rocqipath <command> --help
 ```
 
-Running `rocqipath` with no arguments opens the guided menu. Pass
-`--interactive` to open it explicitly.
+Running `rocqipath` with no arguments prints the command help. Pipeline
+configuration is supplied through explicit command-line arguments.
 
 ## `rocqipath doctor`
 
@@ -130,7 +130,7 @@ not using a workspace.
 | `rocqipath count` | Count DAB-positive cells |
 | `rocqipath compare` | Publication-quality WSI comparison figures |
 
-Each accepts `--interactive` to be prompted for its settings.
+Run `<command> --help` for its complete argument list.
 
 ## Exit codes
 

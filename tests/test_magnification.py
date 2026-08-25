@@ -7,11 +7,11 @@ from pathlib import Path
 
 from PIL import Image
 
-from rocqipath.magnification import (
+from rocqipath.core.magnification import (
     build_magnification_plan,
     objective_magnification_from_properties,
 )
-from rocqipath.slide import SlideReader
+from rocqipath.core.slide import SlideReader
 
 
 class MagnificationPlanTests(unittest.TestCase):

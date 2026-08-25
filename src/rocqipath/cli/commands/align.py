@@ -4,16 +4,6 @@ from __future__ import annotations
 
 import argparse
 
-from rocqipath.cli.prompts import (
-    _get_bool,
-    _get_dir,
-    _get_existing_dir,
-    _get_float,
-    _get_int,
-    _get_optional_float,
-)
-from rocqipath.core.logging import logger
-
 
 def configure_parser(parser: argparse.ArgumentParser) -> None:
     """Add alignment arguments to a command parser."""
@@ -35,19 +25,12 @@ def configure_parser(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--dry-run", action="store_true", help="Discover pairs without registration."
     )
-    parser.add_argument(
-        "--interactive",
-        action="store_true",
-        help="Collect configuration through the historical prompts.",
-    )
 
 
 def run(args: argparse.Namespace, parser: argparse.ArgumentParser) -> int:
     """Run alignment from parsed command-line arguments."""
-    if args.interactive:
-        return run_interactive()
     if not args.input_dir or not args.output_dir:
-        parser.error("input_dir and output_dir are required unless --interactive is used")
+        parser.error("input_dir and output_dir are required")
 
     from rocqipath.registration import AlignmentConfig, run_alignment
 
@@ -72,49 +55,3 @@ def run(args: argparse.Namespace, parser: argparse.ArgumentParser) -> int:
     results = run_alignment(config)
     print(f"Processed {len(results)} alignment result(s).")
     return 0
-
-
-def run_interactive() -> int:
-    """Collect alignment settings with the historical interactive prompts."""
-    from rocqipath.registration import AlignmentConfig, run_alignment
-
-    print("\n" + "─" * 72)
-    print("  Alignment Pipeline")
-    print("─" * 72)
-    print("  Register fixed / moving slide pairs and save aligned OME-TIFFs.")
-    print("  Press Enter to accept defaults shown in [brackets].\n")
-
-    input_dir = _get_existing_dir("  Input directory (contains pair folders): ")
-    output_dir = _get_dir("  Output directory: ")
-    raw_pairs = input("  Pair folders (comma-separated, or Enter for all): ").strip()
-    pair_folders = [item.strip() for item in raw_pairs.split(",") if item.strip()]
-    reference_name = input("  Reference folder/role name [reference]: ").strip() or "reference"
-    moving_name = input("  Moving folder/role name [moving]: ").strip() or "moving"
-    method = input("  Method — valis / orb [valis]: ").strip().lower() or "valis"
-    if method not in ("valis", "orb"):
-        print("  Unknown method — defaulting to valis.")
-        method = "valis"
-
-    config = AlignmentConfig(
-        input_dir=input_dir,
-        output_dir=output_dir,
-        pair_folders=pair_folders,
-        reference_name=reference_name,
-        moving_name=moving_name,
-        alignment_method=method,
-        aligned_wsi_level=_get_int("Aligned WSI pyramid level (0 = full res)", 0, 0),
-        valis_max_error_um=_get_optional_float(
-            "Max acceptable VALIS error in um (Enter = no limit)"
-        ),
-        qc_enabled=_get_bool("Save centre-patch QC PNG per case?", False),
-        patch_size=_get_int("Patch size px", 1024, 1),
-        grid_density=_get_int("Grid density rows", 1, 1),
-        target_magnification=_get_float("Target magnification (physical x)", 20.0),
-    )
-    try:
-        results = run_alignment(config)
-        print(f"\n  Done - {len(results)} case(s) processed.")
-        return 0
-    except Exception as exc:
-        logger.exception(f"Alignment pipeline failed: {exc}")
-        return 1

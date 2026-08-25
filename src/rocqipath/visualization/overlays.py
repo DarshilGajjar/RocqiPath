@@ -234,7 +234,7 @@ def process_ihc_overlay(
     than one case directory was found, cases are processed concurrently
     via a :class:`concurrent.futures.ThreadPoolExecutor` (same threads-
     over-processes rationale as
-    :func:`rocqipath.extraction.patch_extraction.run_patch_extraction`:
+    :func:`rocqipath.extraction.patch_pipeline.run_patch_extraction`:
     the work is I/O- and NumPy-bound, which releases the GIL, so threads
     capture most of the available concurrency without process-pool
     pickling overhead). With ``max_workers=1`` (the default) or only one
