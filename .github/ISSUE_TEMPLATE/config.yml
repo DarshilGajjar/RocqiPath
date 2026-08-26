@@ -1,13 +1,5 @@
-blank_issues_enabled: false
+blank_issues_enabled: true
 contact_links:
-  - name: Question or usage help
-    url: https://github.com/DarshilGajjar/RocqiPath/discussions
-    about: >-
-      Ask how to do something, or discuss an approach. Please search the
-      documentation first — docs/faq.md and docs/reference/errors.md answer
-      most recurring questions.
   - name: Security vulnerability
     url: https://github.com/DarshilGajjar/RocqiPath/security/advisories/new
-    about: >-
-      Report privately. Never open a public issue for a vulnerability, and
-      never attach patient data anywhere.
+    about: Report security problems privately. Do not include patient data.

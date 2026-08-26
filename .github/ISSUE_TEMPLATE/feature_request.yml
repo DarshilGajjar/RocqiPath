@@ -1,61 +1,25 @@
 name: Feature request
-description: Suggest a capability or an improvement to an existing one.
-labels: ["enhancement", "needs-triage"]
+description: Suggest a practical pathology-image analysis improvement.
+labels: ["enhancement"]
 body:
-  - type: markdown
-    attributes:
-      value: >-
-        The most useful requests describe the **workflow problem** rather than
-        a specific implementation. Knowing what you are trying to accomplish
-        often reveals a better solution than the one either of us thought of
-        first.
-
   - type: textarea
     id: problem
     attributes:
       label: What are you trying to do?
-      description: >-
-        The analysis or workflow, and where RocqiPath currently gets in the
-        way. Concrete beats abstract.
+      description: Describe the workflow and where RocqiPath gets in the way.
     validations:
       required: true
 
   - type: textarea
     id: proposal
     attributes:
-      label: What would help
-      description: A sketch of the API, CLI, or behaviour you have in mind.
+      label: What would help?
+      description: Describe the API, CLI behavior, or output you would find useful.
+    validations:
+      required: true
 
   - type: textarea
-    id: alternatives
+    id: workaround
     attributes:
-      label: What you do instead today
-      description: >-
-        Workarounds, other tools, or manual steps. This helps gauge how much
-        the gap actually costs.
-
-  - type: dropdown
-    id: area
-    attributes:
-      label: Which area?
-      multiple: true
-      options:
-        - study workspace
-        - alignment / registration
-        - tissue or TMA extraction
-        - paired patch extraction
-        - stain normalization
-        - cell counting
-        - visualization / QC
-        - selections and result tables
-        - CLI
-        - documentation
-
-  - type: checkboxes
-    id: scope
-    attributes:
-      label: Scope check
-      options:
-        - label: >-
-            This is about preparing or analysing slide data, not about training
-            models. RocqiPath is deliberately not a deep-learning framework.
+      label: What do you do today?
+      description: Note any manual steps or other tools you currently use.
