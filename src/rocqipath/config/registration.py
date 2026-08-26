@@ -1536,7 +1536,7 @@ class ValisConfig(BaseConfig):
         """
         if self.non_rigid_registrar_cls is None:
             try:
-                from valis.non_rigid_registrars import OpticalFlowWarper
+                from valis.non_rigid_registrars import OpticalFlowWarper # type: ignore[import]
             except (ImportError, OSError):
                 return
 
