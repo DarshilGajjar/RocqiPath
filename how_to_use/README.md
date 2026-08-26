@@ -15,7 +15,7 @@ feature APIs directly without a dataset or experiment-management layer.
 | `05_Stain_Normalization.ipynb` | Train and apply Reinhard/Macenko/Vahadane normalization | `stain` |
 | `06_DAB_Positive_Cell_Counting.ipynb` | Single, batch, and paired DAB-positive cell counts | `cellcount` |
 | `07_Visualization_and_Quality_Control.ipynb` | Patch QC, grid maps, marker overlays, publication figures | `viz` |
-| `08_End_to_End_HnE_CD8_Workflow.ipynb` | Reproducible alignment-to-analysis recipe | combined extras |
+| `08_End_to_End_HnE_CD8_Workflow.ipynb` | Direct H&E/CD8 alignment-to-analysis workflow | combined extras |
 
 ## Start Jupyter
 
@@ -55,6 +55,5 @@ installing the Python packages alone may not install those runtimes.
 
 ## Validation
 
-All notebooks are valid notebook v4 JSON, every Python cell compiles, and the
-base/synthetic notebooks were executed without private WSI data. Data-dependent
-and optional-backend cells are intentionally left unexecuted.
+The notebooks were checked against the current public APIs on 2026-08-25.
+Data-dependent and long-running cells remain disabled by default.
