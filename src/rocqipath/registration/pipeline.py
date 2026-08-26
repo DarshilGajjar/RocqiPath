@@ -281,13 +281,30 @@ class AlignmentProcessor:
             ``self.cfg.valis_max_error_um``.
 
         """
+        # New API: explicit ValisConfig wins.
+        if self.cfg.valis_config is not None:
+            return self.cfg.valis_config
+
+        # Legacy API remains completely functional.
         return ValisConfig(
-            max_acceptable_error_um=self.cfg.valis_max_error_um,
-            max_non_rigid_reg_dim_px=self.cfg.valis_non_rigid_dim,
-            feature_detector=self.cfg.valis_feature_detector,
-            num_features=self.cfg.valis_num_features,
-            check_for_reflections=self.cfg.valis_check_reflections,
-            norm_method=self.cfg.valis_norm_method,
+            max_acceptable_error_um=(
+                self.cfg.valis_max_error_um
+            ),
+            max_non_rigid_reg_dim_px=(
+                self.cfg.valis_non_rigid_dim
+            ),
+            feature_detector=(
+                self.cfg.valis_feature_detector
+            ),
+            num_features=(
+                self.cfg.valis_num_features
+            ),
+            check_for_reflections=(
+                self.cfg.valis_check_reflections
+            ),
+            norm_method=(
+                self.cfg.valis_norm_method
+            ),
         )
 
     def _make_registrar_cfg(self, output_root: Path, item_name: str) -> dict:
