@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import importlib.util
 import os
+from typing import Optional
 from functools import lru_cache
 
 from rocqipath.core.logging import logger
@@ -109,87 +110,214 @@ def __getattr__(name):
 def __dir__():
     return sorted(set(globals()) | set(__all__) | {"registration"})
 
-
 # ─────────────────────────────────────────────────────────────────────────────
 # Feature detector / matcher construction
 # ─────────────────────────────────────────────────────────────────────────────
-def build_matcher(
-    detector_name: str = "disk",
+_FEATURE_DETECTOR_ALIASES = {
+    "disk": "DiskFD",
+    "dedode": "DeDoDeFD",
+    "superpoint": "SuperPointFD",
+    "orb": "OrbFD",
+    "brisk": "BriskFD",
+    "kaze": "KazeFD",
+    "akaze": "AkazeFD",
+    "daisy": "DaisyFD",
+    "latch": "LatchFD",
+    "boost": "BoostFD",
+    "vgg": "VggFD",
+    "orb_vgg": "OrbVggFD",
+    "censure_vgg": "CensureVggFD",
+}
+
+
+_MATCHER_ALIASES = {
+    "lightglue": "LightGlueMatcher",
+    "superglue": "SuperGlueMatcher",
+    "descriptor": "Matcher",
+    "generic": "Matcher",
+}
+
+
+def build_feature_detector(
+    detector_name: str,
+    *,
     num_features: int = 2000,
     rgb: bool = False,
+    detector_kwargs: Optional[dict] = None,
 ):
-    """Build a VALIS feature detector + matcher pair.
+    """Instantiate a VALIS feature detector by alias or class name."""
 
-    Pairing rules, verified against the VALIS source:
+    if not detector_name:
+        return None
 
-    * ``DiskFD`` and ``DeDoDeFD`` subclass ``KorniaFD`` and expose
-      ``light_glue_feature_name``, so they pair with ``LightGlueMatcher``.
-      They accept ``num_features``.
-    * ``SuperPointFD`` does **not** subclass ``KorniaFD`` and has no
-      ``light_glue_feature_name``; passing it to ``LightGlueMatcher`` raises
-      ``AttributeError`` inside ``set_fd``.  It must use ``SuperGlueMatcher``,
-      and its base ``FeatureDD.__init__`` does not accept ``num_features``.
+    feature_detectors, _ = _load_valis_features()
 
-    Parameters
-    ----------
-    detector_name : str
-        ``"disk"`` (default), ``"dedode"``, or ``"superpoint"``.
-    num_features : int
-        Keypoint budget.  Ignored for SuperPoint.
-    rgb : bool
-        Detect on RGB rather than the processed single-channel image.
+    if feature_detectors is None:
+        return None
 
-    Returns
-    -------
-    Matcher instance, or ``None`` when unavailable -- in which case the caller
-    should simply omit the ``matcher`` argument and let VALIS choose.
-    """
+    kwargs = dict(detector_kwargs or {})
+
+    key = detector_name.lower()
+
+    class_name = _FEATURE_DETECTOR_ALIASES.get(
+        key,
+        detector_name,
+    )
+
+    detector_cls = getattr(
+        feature_detectors,
+        class_name,
+        None,
+    )
+
+    if detector_cls is None:
+        raise ValueError(
+            f"Unknown VALIS feature detector {detector_name!r}. "
+            f"No class named {class_name!r} exists in "
+            f"valis.feature_detectors."
+        )
+
+    # Kornia-based detectors such as DISK and DeDoDe support these.
+    kornia_base = getattr(feature_detectors, "KorniaFD", None)
+
+    if (
+        kornia_base is not None
+        and isinstance(detector_cls, type)
+        and issubclass(detector_cls, kornia_base)
+    ):
+        kwargs.setdefault(
+            "num_features",
+            int(num_features),
+        )
+
+        kwargs.setdefault(
+            "rgb",
+            bool(rgb),
+        )
+
+    return detector_cls(**kwargs)
+
+
+def build_matcher(
+    detector_name: str = "disk",
+    matcher_name: str = "auto",
+    *,
+    num_features: int = 2000,
+    rgb: bool = False,
+    detector_kwargs: Optional[dict] = None,
+    matcher_kwargs: Optional[dict] = None,
+):
+    """Build a VALIS detector + matcher combination."""
+
     if not detector_name:
         return None
 
     feature_detectors, feature_matcher = _load_valis_features()
+
     if feature_detectors is None or feature_matcher is None:
         return None
 
-    builders = {
-        "disk": ("DiskFD", True),
-        "dedode": ("DeDoDeFD", True),
-        "superpoint": ("SuperPointFD", False),
-    }
-    key = detector_name.lower()
-    if key not in builders:
-        logger.warning(
-            f"[VALIS] Unknown feature_detector {detector_name!r}; "
-            f"expected one of {sorted(builders)}. Using VALIS defaults."
+    detector = build_feature_detector(
+        detector_name,
+        num_features=num_features,
+        rgb=rgb,
+        detector_kwargs=detector_kwargs,
+    )
+
+    matcher_kwargs = dict(matcher_kwargs or {})
+
+    requested_matcher = (
+        matcher_name.lower()
+        if isinstance(matcher_name, str)
+        else matcher_name
+    )
+
+    # --------------------------------------------------------------
+    # Let installed VALIS choose its native default.
+    # --------------------------------------------------------------
+    if requested_matcher in {
+        None,
+        "valis_default",
+        "default",
+    }:
+        return None
+
+    # --------------------------------------------------------------
+    # Automatically determine the appropriate matcher.
+    # --------------------------------------------------------------
+    if requested_matcher == "auto":
+        kornia_base = getattr(
+            feature_detectors,
+            "KorniaFD",
+            None,
         )
-        return None
 
-    cls_name, is_kornia = builders[key]
-    detector_cls = getattr(feature_detectors, cls_name, None)
-    if detector_cls is None:
-        logger.warning(
-            f"[VALIS] {cls_name} not present in this valis version. Using VALIS defaults."
+        superpoint_cls = getattr(
+            feature_detectors,
+            "SuperPointFD",
+            None,
         )
-        return None
 
-    try:
-        kwargs = {"rgb": bool(rgb)}
-        if is_kornia:
-            kwargs["num_features"] = int(num_features)
-        detector = detector_cls(**kwargs)
+        if (
+            kornia_base is not None
+            and isinstance(detector, kornia_base)
+        ):
+            requested_matcher = "lightglue"
 
-        if is_kornia:
-            return feature_matcher.LightGlueMatcher(detector)
+        elif (
+            superpoint_cls is not None
+            and isinstance(detector, superpoint_cls)
+        ):
+            requested_matcher = "superglue"
 
-        matcher_cls = getattr(feature_matcher, "SuperGlueMatcher", None)
-        if matcher_cls is None:
-            logger.warning("[VALIS] SuperGlueMatcher unavailable. Using defaults.")
-            return None
-        return matcher_cls(feature_detector=detector)
+        else:
+            requested_matcher = "descriptor"
 
-    except Exception as exc:
-        logger.warning(f"[VALIS] Could not build {cls_name} matcher ({exc}). Using defaults.")
-        return None
+    # --------------------------------------------------------------
+    # Resolve alias or exact VALIS class name.
+    # --------------------------------------------------------------
+    class_name = _MATCHER_ALIASES.get(
+        requested_matcher,
+        matcher_name,
+    )
+
+    matcher_cls = getattr(
+        feature_matcher,
+        class_name,
+        None,
+    )
+
+    if matcher_cls is None:
+        raise ValueError(
+            f"Unknown VALIS matcher {matcher_name!r}. "
+            f"No class named {class_name!r} exists in "
+            f"valis.feature_matcher."
+        )
+
+    # --------------------------------------------------------------
+    # Validate known incompatible combinations.
+    # --------------------------------------------------------------
+    if class_name == "LightGlueMatcher":
+        kornia_base = getattr(
+            feature_detectors,
+            "KorniaFD",
+            None,
+        )
+
+        if (
+            kornia_base is None
+            or not isinstance(detector, kornia_base)
+        ):
+            raise ValueError(
+                "VALIS LightGlueMatcher requires a "
+                "KorniaFD-compatible feature detector. "
+                "Use DiskFD/DeDoDeFD, or matcher='auto'."
+            )
+
+    return matcher_cls(
+        feature_detector=detector,
+        **matcher_kwargs,
+    )
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -261,16 +389,71 @@ def _register_valis(self) -> None:
     if cfg.norm_method is not None:
         valis_init_kwargs["norm_method"] = cfg.norm_method
 
-    # DISK + LightGlue (VALIS 1.2.0+ default). Set explicitly so the same
-    # detector is used regardless of the installed VALIS version.
-    matcher = build_matcher(cfg.feature_detector, cfg.num_features, cfg.rgb_features)
+    # ------------------------------------------------------------------
+    # Main rigid matcher
+    # ------------------------------------------------------------------
+    matcher = build_matcher(
+        detector_name=cfg.feature_detector,
+        matcher_name=cfg.matcher,
+        num_features=cfg.num_features,
+        rgb=cfg.rgb_features,
+        detector_kwargs=cfg.feature_detector_kwargs,
+        matcher_kwargs=cfg.matcher_kwargs,
+    )
+
     if matcher is not None:
         valis_init_kwargs["matcher"] = matcher
+
         logger.info(
             f"        matcher                    = "
-            f"{matcher.__class__.__name__}({cfg.feature_detector}, "
-            f"n={cfg.num_features})"
+            f"{matcher.__class__.__name__}"
         )
+
+        logger.info(
+            f"        feature detector           = "
+            f"{matcher.feature_detector.__class__.__name__}"
+        )
+
+
+    # ------------------------------------------------------------------
+    # Optional sorting/orientation matcher
+    # ------------------------------------------------------------------
+    if (
+        cfg.sorting_feature_detector is not None
+        or cfg.sorting_matcher is not None
+    ):
+        sorting_detector = (
+            cfg.sorting_feature_detector
+            or "vgg"
+        )
+
+        sorting_matcher = build_matcher(
+            detector_name=sorting_detector,
+            matcher_name=cfg.sorting_matcher or "auto",
+            num_features=cfg.num_features,
+            rgb=False,
+            detector_kwargs=(
+                cfg.sorting_feature_detector_kwargs
+            ),
+            matcher_kwargs=(
+                cfg.sorting_matcher_kwargs
+            ),
+        )
+
+        if sorting_matcher is not None:
+            valis_init_kwargs[
+                "matcher_for_sorting"
+            ] = sorting_matcher
+
+            logger.info(
+                f"        sorting matcher            = "
+                f"{sorting_matcher.__class__.__name__}"
+            )
+
+            logger.info(
+                f"        sorting feature detector   = "
+                f"{sorting_matcher.feature_detector.__class__.__name__}"
+            )
 
     # Escape hatch: anything not covered by a typed field. Applied last, so
     # a caller-supplied value wins over the baseline above -- building one
@@ -302,7 +485,7 @@ def _register_valis(self) -> None:
     except TypeError as exc:
         # Older VALIS releases do not accept every keyword above. Drop the
         # optional ones and retry rather than failing the whole case.
-        optional = ("matcher", "norm_method", "check_for_reflections")
+        optional = ("matcher", "matcher_for_sorting", "norm_method", "check_for_reflections")
         dropped = [k for k in optional if k in valis_init_kwargs]
         if not dropped:
             raise
