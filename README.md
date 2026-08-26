@@ -1,3 +1,5 @@
+![RocqiPath pathology image-analysis workflow](assets/rocqipath-banner.png)
+
 # RocqiPath
 
 Personal tools for common pathology image-analysis jobs:
