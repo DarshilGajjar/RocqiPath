@@ -266,7 +266,7 @@ class AlignmentProcessor:
 
     # ── internal helpers ──────────────────────────────────────────────────────
 
-    def _make_valis_config(self) -> Any:
+    def _make_valis_config(self) -> ValisConfig:
         """Build a ``ValisConfig`` from this processor's ``AlignmentConfig``.
 
         Currently forwards only ``valis_max_error_um`` — the rest of

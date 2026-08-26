@@ -358,6 +358,42 @@ class AlignmentConfig(BaseConfig):
 
         When supplied, this value must be strictly positive.
 
+    valis_config : ValisConfig or None, default=None
+        Complete VALIS backend configuration.
+
+        This is the preferred interface for advanced VALIS registration
+        configuration. It allows feature detectors, feature matchers,
+        sorting/orientation matchers, registration resolutions, non-rigid
+        registration, micro-registration, and other VALIS-specific options
+        to be configured through a dedicated ``ValisConfig`` object.
+
+        When supplied, this configuration takes precedence over the legacy
+        ``valis_*`` convenience fields defined directly on
+        ``AlignmentConfig``.
+
+        Example::
+
+            valis_cfg = ValisConfig(
+                feature_detector="disk",
+                matcher="lightglue",
+                num_features=3000,
+                sorting_feature_detector="brisk",
+                sorting_matcher="descriptor",
+            )
+
+            cfg = AlignmentConfig(
+                input_dir="./wsi_input",
+                output_dir="./wsi_output/aligned",
+                alignment_method="valis",
+                valis_config=valis_cfg,
+            )
+
+        ``None`` preserves the legacy behavior, where RocqiPath constructs a
+        ``ValisConfig`` internally from ``valis_max_error_um``,
+        ``valis_non_rigid_dim``, ``valis_feature_detector``,
+        ``valis_num_features``, ``valis_check_reflections``, and
+        ``valis_norm_method``.    
+    
     valis_max_error_um : float or None, default=None
         Maximum accepted VALIS registration error, expressed in micrometres.
 
@@ -747,10 +783,15 @@ class AlignmentConfig(BaseConfig):
     reference_source_magnification: Optional[float] = None
     moving_source_magnification: Optional[float] = None
 
+    # ------------------------------------------------------------------
+    # VALIS backend configuration
+    # ------------------------------------------------------------------
+
+    # Preferred advanced API.
+    valis_config: Optional["ValisConfig"] = None
+
+    # Legacy/high-level convenience options retained for compatibility.
     valis_max_error_um: Optional[float] = None
-
-    max_physical_field_ratio: Optional[float] = 2.0
-
     valis_non_rigid_dim: int = 2048
     valis_feature_detector: Optional[str] = "disk"
     valis_num_features: int = 2000
@@ -813,6 +854,13 @@ class AlignmentConfig(BaseConfig):
         WSI files, inspect image metadata, discover pair folders, or execute
         registration.
         """
+
+        # Convert serialized VALIS configuration back into ValisConfig.
+        if isinstance(self.valis_config, dict):
+            self.valis_config = ValisConfig.from_dict(
+                self.valis_config
+            )
+
         require(
             bool(self.reference_name and self.moving_name),
             "reference_name and moving_name must be non-empty strings.",
