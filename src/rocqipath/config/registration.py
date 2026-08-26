@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import List, Optional
 
 from rocqipath.core.magnification import DEFAULT_TARGET_MAGNIFICATION
 from rocqipath.utils.naming import (
