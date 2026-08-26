@@ -783,6 +783,8 @@ class AlignmentConfig(BaseConfig):
     reference_source_magnification: Optional[float] = None
     moving_source_magnification: Optional[float] = None
 
+    max_physical_field_ratio: Optional[float] = None
+
     # ------------------------------------------------------------------
     # VALIS backend configuration
     # ------------------------------------------------------------------
