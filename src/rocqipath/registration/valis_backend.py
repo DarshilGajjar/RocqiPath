@@ -498,9 +498,28 @@ def _register_valis(self) -> None:
         self.valis_obj = registration.Valis(**valis_init_kwargs)
 
     logger.info("[VALIS] Running registration (rigid + non-rigid)...")
+
     if cfg.processor_dict:
-        logger.info(f"[VALIS] Custom image processors for {len(cfg.processor_dict)} key(s)")
-    rigid_reg, non_rigid_reg, error_df = self.valis_obj.register(processor_dict=cfg.processor_dict)
+        logger.info(
+            f"[VALIS] Custom image processors for "
+            f"{len(cfg.processor_dict)} key(s)"
+        )
+
+    rigid_reg, non_rigid_reg, error_df = self.valis_obj.register(
+        processor_dict=cfg.processor_dict
+    )
+
+    # ------------------------------------------------------------------
+    # Validate VALIS registration
+    # ------------------------------------------------------------------
+    if rigid_reg is None or rigid_reg is False:
+        self.registration_ok = False
+
+        raise RuntimeError(
+            "VALIS registration failed: register() returned no rigid "
+            "registration result. Review the VALIS traceback above for "
+            "the underlying error."
+        )
 
     # ── Optional: second non-rigid micro pass ──────────────────────────
     if cfg.run_register_micro:
