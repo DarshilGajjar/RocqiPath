@@ -177,7 +177,7 @@ class ValisConfig(BaseConfig):
     imgs_ordered: bool = False
     micro_rigid_registrar_cls: Optional[object] = None
     micro_rigid_registrar_params: dict = field(default_factory=dict)
-    run_register_micro: bool = True
+    run_register_micro: bool = False
     register_micro_dim_px: int = 4096
     feature_detector: Optional[str] = "disk"
     num_features: int = 2000
