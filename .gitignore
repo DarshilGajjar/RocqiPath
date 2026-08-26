@@ -1,53 +1,53 @@
-# --- Byte-compiled / cache ---------------------------------------------------
+# Python
 __pycache__/
 *.py[cod]
-*$py.class
 *.so
-
-# --- Distribution / packaging -------------------------------------------------
 build/
 dist/
 *.egg-info/
 .eggs/
-wheelhouse/
-
-# --- Virtual environments -------------------------------------------------
 .venv/
 venv/
-env/
-ENV/
 
-# --- Testing / coverage -----------------------------------------------------
+# Tool caches
 .pytest_cache/
+.ruff_cache/
+.mypy_cache/
 .coverage
 .coverage.*
 htmlcov/
-.mypy_cache/
-.ruff_cache/
+.ipynb_checkpoints/
 
-# --- IDE / editor -------------------------------------------------------
+# Editors and operating systems
 .vscode/
 .idea/
 *.swp
 *.swo
-
-# --- OS cruft -------------------------------------------------------
 .DS_Store
 Thumbs.db
 
-# --- Project-specific outputs (large binary / data — never commit) --------
+# Local configuration
+.env
+.env.*
+!.env.example
+
+# Pathology data and generated outputs
+data/
+results/
+output/
+outputs/
+cell_count_output/
+wsi_output/
+logs/
+*.log
 *.svs
 *.ndpi
 *.scn
 *.mrxs
+*.vms
+*.vmu
 *.tif
 *.tiff
 !tests/**/*.tif
+!tests/**/*.tiff
 *.npz
-results/
-outputs/
-logs/
-*.log
-
-# --- Local environment / secrets -------------------------------------------------
-.env
