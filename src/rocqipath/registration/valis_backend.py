@@ -177,8 +177,25 @@ def build_feature_detector(
             f"valis.feature_detectors."
         )
 
-    # Kornia-based detectors such as DISK and DeDoDe support these.
-    kornia_base = getattr(feature_detectors, "KorniaFD", None)
+    # ------------------------------------------------------------------
+    # VALIS SuperPoint compatibility
+    # ------------------------------------------------------------------
+    if class_name == "SuperPointFD":
+
+        class _SuperPointFDCompat(detector_cls):
+            def _detect_and_compute(self, image, mask=None):
+                return super()._detect_and_compute(image)
+
+        detector_cls = _SuperPointFDCompat
+
+    # ------------------------------------------------------------------
+    # Kornia-based feature detectors
+    # ------------------------------------------------------------------
+    kornia_base = getattr(
+        feature_detectors,
+        "KorniaFD",
+        None,
+    )
 
     if (
         kornia_base is not None
