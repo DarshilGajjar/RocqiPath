@@ -55,7 +55,6 @@ visualization, and an end-to-end H&E/CD8 workflow.
 Whole-slide images and filenames may contain patient information. Keep data outside the
 repository and do not attach it to public issues.
 
-## License and citation
+## License
 
-RocqiPath is proprietary software. See [LICENSE](LICENSE) for terms and [CITATION.md](CITATION.md)
-for citations of the scientific libraries used by each workflow.
+No license has been selected yet. See [LICENSE](LICENSE) for the current terms.
