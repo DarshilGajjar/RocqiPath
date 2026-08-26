@@ -380,16 +380,30 @@ class AlignmentProcessor:
             level=self.cfg.aligned_wsi_level,
             output_path=str(Path(registrar.output_dir) / f"{case.case_id}_aligned_moving.ome.tiff"),
         )
+
+        if aligned_path is None:
+            raise RuntimeError(
+                f"{case.case_id}: aligned WSI export failed. "
+                "No output file was produced."
+            )
+
+        manifest_path = None
+
         try:
             manifest_path = _write_aligned_wsi_manifest(
                 aligned_path=aligned_path,
                 reference_path=case.reference_file,
-                alignment_target_magnification=(self.cfg.target_magnification),
-                aligned_wsi_level=(self.cfg.aligned_wsi_level),
-                reference_source_magnification=(self.cfg.reference_source_magnification),
+                alignment_target_magnification=self.cfg.target_magnification,
+                aligned_wsi_level=self.cfg.aligned_wsi_level,
+                reference_source_magnification=(
+                    self.cfg.reference_source_magnification
+                ),
             )
 
-            logger.info(f"[MAG] {case.case_id}: aligned WSI manifest written to {manifest_path}")
+            logger.info(
+                f"[MAG] {case.case_id}: "
+                f"aligned WSI manifest written to {manifest_path}"
+            )
 
         except Exception as manifest_error:
             logger.warning(
