@@ -9,7 +9,7 @@ feature APIs directly without a dataset or experiment-management layer.
 |---|---|---|
 | `00_Installation_and_API_Overview.ipynb` | Environment, imports, typed configs, output layout | base |
 | `01_Slide_Inspection_and_Magnification.ipynb` | Open a slide and read exact physical magnification | `extraction` |
-| `02_WSI_and_TMA_Tissue_Extraction.ipynb` | Ordinary WSI regions and TMA/core extraction | `extraction` |
+| `02_WSI_and_TMA_Tissue_Extraction.ipynb` | Ordinary WSI regions and TMA/core extraction, with optional semantic masks | `extraction` or `extraction,semantic` |
 | `03_HnE_IHC_Alignment.ipynb` | Pair discovery, dry run, ORB/VALIS registration, QC | `orb` or `valis` |
 | `04_Paired_Patch_Extraction_and_Reconstruction.ipynb` | Matched patches, manifests, viewing, reconstruction | `extraction,viz` |
 | `05_Stain_Normalization.ipynb` | Train and apply Reinhard/Macenko/Vahadane normalization | `stain` |
@@ -37,7 +37,8 @@ jupyter lab
 ```
 
 Use `.[valis]` instead of or in addition to `.[orb]` when VALIS registration
-is required. OpenSlide and libvips are native prerequisites for WSI workflows;
+is required. Add `semantic` to use TIAToolbox segmentation while leaving the
+existing Otsu detector as the default. OpenSlide and libvips are native prerequisites for WSI workflows;
 installing the Python packages alone may not install those runtimes.
 
 ## Notebook conventions

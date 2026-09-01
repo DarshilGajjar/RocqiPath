@@ -243,22 +243,31 @@ def discover_pairs(
 
 def get_reference_boxes(
     he_path: Path, cfg: TMAExtractionConfig
-) -> Tuple[List[Dict[str, float]], np.ndarray]:
+) -> Tuple[List[Dict[str, float]], np.ndarray, List[Dict[str, Any]]]:
     """Detect tissue cores on the H&E reference slide.
 
-    Returns (rel_boxes, thumbnail).
+    Returns (accepted relative boxes, thumbnail, rejected semantic candidates).
     """
     thumbnail = _load_thumbnail(
         he_path,
         target_magnification=cfg.detection_magnification,
         source_magnification=cfg.source_magnification,
     )
-    return _detect_regions(
+    if cfg.detector == "semantic":
+        from rocqipath.extraction.semantic import semantic_regions
+
+        boxes, rejected = semantic_regions(he_path, cfg, strict_circles=cfg.only_circles)
+        return boxes, thumbnail, rejected
+    return (
+        _detect_regions(
+            thumbnail,
+            min_area_fraction=cfg.min_area_fraction,
+            only_circles=cfg.only_circles,
+            min_circularity=cfg.min_circularity,
+        ),
         thumbnail,
-        min_area_fraction=cfg.min_area_fraction,
-        only_circles=cfg.only_circles,
-        min_circularity=cfg.min_circularity,
-    ), thumbnail
+        [],
+    )
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -292,8 +301,9 @@ def extract_stain_cores(
     os.makedirs(stain_out_dir, exist_ok=True)
 
     # Determine bounding boxes and detection source
-    if cached_rgb is not None:
-        active_boxes, detection_source = he_rel_boxes, "he_reference"
+    if cached_rgb is not None or cfg.detector == "semantic":
+        active_boxes = he_rel_boxes
+        detection_source = "semantic_he_reference" if cfg.detector == "semantic" else "he_reference"
     elif cfg.per_stain_detection:
         raw = _load_thumbnail(
             wsi_path,
@@ -339,10 +349,12 @@ def extract_stain_cores(
         core_dir = Path(stain_out_dir)
         core_dir.mkdir(parents=True, exist_ok=True)
 
-        x = int(box["rx"] * full_w)
-        y = int(box["ry"] * full_h)
-        w = int(box["rw"] * full_w)
-        h = int(box["rh"] * full_h)
+        rel_box = {key: box[key] for key in ("rx", "ry", "rw", "rh")}
+        shape_metrics = {key: value for key, value in box.items() if key not in rel_box}
+        x = int(rel_box["rx"] * full_w)
+        y = int(rel_box["ry"] * full_h)
+        w = int(rel_box["rw"] * full_w)
+        h = int(rel_box["rh"] * full_h)
         if cfg.box_scale != 1.0:
             cx = x + w // 2
             cy = y + h // 2
@@ -374,7 +386,7 @@ def extract_stain_cores(
                 sample_id=sample_id,
                 region_number=n,
                 source_file=Path(wsi_path).name,
-                rel_box=box,
+                rel_box=rel_box,
                 abs_box=abs_box,
                 full_slide_dims=full_dims,
                 detection_source=detection_source,
@@ -386,6 +398,7 @@ def extract_stain_cores(
                     "config": {
                         k: v for k, v in asdict(cfg).items() if k not in ("tif_tile", "tif_pyramid")
                     },
+                    **({"shape_metrics": shape_metrics} if shape_metrics else {}),
                 },
             )
             logger.info(f"  SAVED    {stain_label}/{tag}  [{detection_source}]")
@@ -397,7 +410,8 @@ def extract_stain_cores(
                 "core_number": n,
                 "core_tag": tag,
                 "detection_source": detection_source,
-                "relative_box": box,
+                "relative_box": rel_box,
+                **({"shape_metrics": shape_metrics} if shape_metrics else {}),
                 "absolute_box": abs_box,
                 "status": status,
             }
@@ -438,6 +452,7 @@ def _print_config_panel(cfg: TMAExtractionConfig, input_dir: str, output_dir: st
             ("Input dir", input_dir),
             ("Output dir", output_dir),
             ("Detection zoom", f"{cfg.detection_magnification:g}x"),
+            ("Detector", cfg.detector),
             ("Output zoom", f"{cfg.target_magnification:g}x"),
             ("Min area fraction", f"{cfg.min_area_fraction:.4f}"),
             ("Circles only", str(cfg.only_circles)),
@@ -508,10 +523,11 @@ def run_tma_extraction_pipeline(
         if "HnE" not in stains:
             logger.error(f"{pfx} | No H&E — skipping")
             continue
-        he_boxes, he_thumb = get_reference_boxes(stains["HnE"]["path"], cfg)
+        he_boxes, he_thumb, rejected = get_reference_boxes(stains["HnE"]["path"], cfg)
         if not he_boxes:
             logger.warning(f"{pfx} | No cores found — adjust min_area_fraction or min_circularity")
-            continue
+            if cfg.detector != "semantic":
+                continue
 
         selected = [
             (lbl, info)
@@ -541,6 +557,11 @@ def run_tma_extraction_pipeline(
                     source_file=info["path"].name,
                     n_regions=len(mfs),
                     regions=mfs,
+                    extra_meta=(
+                        {"rejected_regions": rejected, "n_rejected": len(rejected)}
+                        if cfg.detector == "semantic"
+                        else None
+                    ),
                 )
                 logger.info(f"{pfx} | {lbl} — {ns} saved, {nsk} skipped")
             except Exception as exc:
