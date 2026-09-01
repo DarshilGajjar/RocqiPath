@@ -24,6 +24,14 @@ python -m pip install -e ".[extraction,orb,stain,cellcount,viz]"
 ```
 
 Use the `valis` extra instead of `orb` when non-rigid VALIS registration is needed.
+Add the `semantic` extra to use TIAToolbox tissue segmentation:
+
+```console
+python -m pip install -e ".[extraction,semantic]"
+rocqipath extract /path/to/slides /path/to/output --detector semantic
+```
+
+Omitting `--detector semantic` keeps the existing Otsu-based extraction behavior.
 Slide reading also requires OpenSlide; registration and pyramidal TIFF output require
 libvips.
 

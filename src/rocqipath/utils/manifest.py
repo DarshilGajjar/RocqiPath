@@ -58,22 +58,22 @@ def write_slide_manifest(
     source_file: str,
     n_regions: int,
     regions: list[dict[str, Any]],
+    extra_meta: dict[str, Any] | None = None,
 ) -> None:
     """Write a slide-level summary for every extracted region."""
     generated_at = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+    manifest = {
+        "generated_at": generated_at,
+        "pipeline": pipeline,
+        "sample_id": sample_id,
+        "source_file": source_file,
+        "n_regions": n_regions,
+        "regions": regions,
+    }
+    if extra_meta:
+        manifest.update(extra_meta)
     with open(path, "w") as stream:
-        json.dump(
-            {
-                "generated_at": generated_at,
-                "pipeline": pipeline,
-                "sample_id": sample_id,
-                "source_file": source_file,
-                "n_regions": n_regions,
-                "regions": regions,
-            },
-            stream,
-            indent=2,
-        )
+        json.dump(manifest, stream, indent=2)
 
 
 def load_manifest(manifest_path: str) -> dict[str, Any]:

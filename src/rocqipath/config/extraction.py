@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field
-from typing import List, Optional, Tuple
+from typing import List, Literal, Optional, Tuple
 
 from rocqipath.core.magnification import DEFAULT_TARGET_MAGNIFICATION
 from rocqipath.utils.validation import (
@@ -58,6 +58,13 @@ class BaseExtractionConfig(BaseConfig):
     tif_compression: str = "lzw"
     tif_quality: int = 99
     skip_existing: bool = True
+    detector: Literal["otsu", "semantic"] = "otsu"
+    semantic_model: str = "fcn-tissue_mask"
+    semantic_weights_path: Optional[str] = None
+    semantic_device: Literal["auto", "cpu", "cuda"] = "auto"
+    semantic_batch_size: int = 4
+    semantic_num_workers: int = 0
+    semantic_source_mpp: Optional[float] = None
 
     def __post_init__(self) -> None:
         """Preserve shared extraction validation and user-facing messages."""
@@ -92,6 +99,29 @@ class BaseExtractionConfig(BaseConfig):
                 self.source_magnification,
                 name="source_magnification",
                 message="source_magnification must be > 0 when supplied",
+            )
+        require(
+            self.detector in {"otsu", "semantic"},
+            f"detector must be 'otsu' or 'semantic'; got {self.detector!r}",
+        )
+        require(bool(self.semantic_model.strip()), "semantic_model cannot be empty")
+        require(
+            self.semantic_device in {"auto", "cpu", "cuda"},
+            "semantic_device must be 'auto', 'cpu', or 'cuda'",
+        )
+        require(
+            self.semantic_batch_size >= 1,
+            "semantic_batch_size must be >= 1",
+        )
+        require(
+            self.semantic_num_workers >= 0,
+            "semantic_num_workers must be >= 0",
+        )
+        if self.semantic_source_mpp is not None:
+            validate_positive(
+                self.semantic_source_mpp,
+                name="semantic_source_mpp",
+                message="semantic_source_mpp must be > 0 when supplied",
             )
 
 
@@ -138,6 +168,10 @@ class TMAExtractionConfig(BaseExtractionConfig):
     ihc_enhance: bool = True
     clahe_clip_limit: float = 3.0
     clahe_tile_size: Tuple[int, int] = field(default_factory=lambda: (8, 8))
+    min_aspect_ratio: float = 0.90
+    min_solidity: float = 0.95
+    min_relative_area: float = 0.80
+    max_relative_area: float = 1.20
 
     def __post_init__(self) -> None:
         """Validate TMA fields after the shared extraction fields."""
@@ -156,6 +190,14 @@ class TMAExtractionConfig(BaseExtractionConfig):
             self.clahe_clip_limit,
             name="clahe_clip_limit",
             message=f"clahe_clip_limit must be > 0; got {self.clahe_clip_limit}",
+        )
+        validate_fraction(self.min_aspect_ratio, name="min_aspect_ratio")
+        validate_fraction(self.min_solidity, name="min_solidity")
+        validate_positive(self.min_relative_area, name="min_relative_area")
+        validate_positive(self.max_relative_area, name="max_relative_area")
+        require(
+            self.min_relative_area <= self.max_relative_area,
+            "min_relative_area cannot exceed max_relative_area",
         )
 
 

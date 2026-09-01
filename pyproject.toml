@@ -45,6 +45,13 @@ extraction = [
     "tqdm>=4.65",
 ]
 
+# `pip install rocqipath[extraction,semantic]`
+# Optional TIAToolbox model inference for tissue and strict TMA-core detection.
+semantic = [
+    "tiatoolbox>=2.1",
+    "zarr>=2.16",
+]
+
 # `pip install rocqipath[orb]`
 # Contour/ORB registration and streamed aligned OME-TIFF export, without VALIS.
 orb = [

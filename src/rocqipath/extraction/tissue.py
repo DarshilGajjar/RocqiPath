@@ -98,6 +98,7 @@ def _print_config_panel(cfg: TissueExtractionConfig, input_dir: str, output_dir:
             ("Input dir", input_dir),
             ("Output dir", output_dir),
             ("Detection zoom", f"{cfg.detection_magnification:g}x"),
+            ("Detector", cfg.detector),
             ("Output zoom", f"{cfg.target_magnification:g}x"),
             ("Min area fraction", f"{cfg.min_area_fraction:.4f}"),
             ("Preview scale", f"{cfg.preview_scale:.2f}"),
@@ -148,14 +149,21 @@ def extract_tissue_regions(
     slide_name = Path(wsi_path).stem
     slide_dir = OutputLayout(output_dir).item_dir("tissue_extraction", slide_name)
 
-    thumbnail = _load_thumbnail(
-        Path(wsi_path),
-        target_magnification=cfg.detection_magnification,
-        source_magnification=cfg.source_magnification,
-    )
-    rel_boxes = _detect_regions(
-        thumbnail, cfg.min_area_fraction, only_circles=False, min_circularity=0.0
-    )
+    if cfg.detector == "semantic":
+        from rocqipath.extraction.semantic import semantic_regions
+
+        rel_boxes, _rejected = semantic_regions(Path(wsi_path), cfg)
+        detection_source = "semantic"
+    else:
+        thumbnail = _load_thumbnail(
+            Path(wsi_path),
+            target_magnification=cfg.detection_magnification,
+            source_magnification=cfg.source_magnification,
+        )
+        rel_boxes = _detect_regions(
+            thumbnail, cfg.min_area_fraction, only_circles=False, min_circularity=0.0
+        )
+        detection_source = "otsu"
 
     if not rel_boxes:
         logger.warning(
@@ -185,10 +193,12 @@ def extract_tissue_regions(
         tag = f"region_{n:03d}"
         rdir = slide_dir
 
-        x = int(box["rx"] * full_w)
-        y = int(box["ry"] * full_h)
-        w = int(box["rw"] * full_w)
-        h = int(box["rh"] * full_h)
+        rel_box = {key: box[key] for key in ("rx", "ry", "rw", "rh")}
+        shape_metrics = {key: value for key, value in box.items() if key not in rel_box}
+        x = int(rel_box["rx"] * full_w)
+        y = int(rel_box["ry"] * full_h)
+        w = int(rel_box["rw"] * full_w)
+        h = int(rel_box["rh"] * full_h)
         x = max(0, min(x, full_w - 1))
         y = max(0, min(y, full_h - 1))
         w = max(1, min(w, full_w - x))
@@ -212,14 +222,15 @@ def extract_tissue_regions(
                 sample_id=slide_name,
                 region_number=n,
                 source_file=Path(wsi_path).name,
-                rel_box=box,
+                rel_box=rel_box,
                 abs_box=abs_box,
                 full_slide_dims=full_dims,
-                detection_source="otsu",
+                detection_source=detection_source,
                 extra_meta={
                     "source_magnification": source_mag,
                     "magnification_source": mag_source,
                     "output_magnification": cfg.target_magnification,
+                    **({"shape_metrics": shape_metrics} if shape_metrics else {}),
                 },
             )
             logger.info(f"  SAVED    {tag}")
@@ -229,7 +240,7 @@ def extract_tissue_regions(
             {
                 "region_number": n,
                 "region_tag": tag,
-                "relative_box": box,
+                "relative_box": rel_box,
                 "absolute_box": abs_box,
                 "status": status,
             }

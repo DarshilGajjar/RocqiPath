@@ -31,3 +31,13 @@ def test_subcommand_help_exits_cleanly(command: str, capsys) -> None:
         main([command, "--help"])
     assert exc_info.value.code == 0
     assert f"usage: rocqipath {command}" in capsys.readouterr().out
+
+
+def test_extract_defaults_to_otsu_and_accepts_semantic() -> None:
+    """Keep semantic extraction opt-in."""
+    parser = build_parser()
+    assert parser.parse_args(["extract", "input", "output"]).detector == "otsu"
+    args = parser.parse_args(
+        ["extract", "input", "output", "--detector", "semantic", "--semantic-device", "cpu"]
+    )
+    assert (args.detector, args.semantic_device) == ("semantic", "cpu")
