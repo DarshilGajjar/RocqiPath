@@ -16,4 +16,11 @@ if [ ! -d node_modules ]; then
   "$studio_pnpm" install
 fi
 
+if [[ "$studio_pnpm" == *.cmd ]]; then
+  studio_node_dir="$(dirname "$(command -v node)")"
+  studio_node_win="$(cygpath -w "$studio_node_dir")"
+  studio_pnpm_win="$(cygpath -w "$studio_pnpm")"
+  exec cmd.exe //d //s //c "set \"PATH=$studio_node_win;%PATH%\" & call $studio_pnpm_win dev"
+fi
+
 exec "$studio_pnpm" dev "$@"
