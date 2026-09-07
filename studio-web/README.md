@@ -21,7 +21,8 @@ bash start-studio.sh
 ```
 
 The script locates `studio-web` relative to itself, so an absolute path to the
-script also works from another directory. It runs `pnpm dev` in the foreground;
+script also works from another directory. It finds pnpm, installs missing
+frontend dependencies, then runs `pnpm dev` in the foreground;
 press **Ctrl+C** to stop. Extra arguments are forwarded, for example
 `bash start-studio.sh --port 3001`. Node.js and pnpm must be on your shell's PATH.
 
