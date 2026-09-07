@@ -60,6 +60,10 @@ The [`how_to_use`](how_to_use/README.md) notebooks cover installation, slide ins
 extraction, alignment, patch reconstruction, stain normalization, cell counting,
 visualization, and an end-to-end H&E/CD8 workflow.
 
+The local browser workspace is being developed in `studio-web`. See
+[Using RocqiPath Studio](how_to_use/09_Studio_Web.md) for its current status,
+setup, API usage, workflow inputs, results, and troubleshooting.
+
 ## Development
 
 Use Python 3.10 or 3.11 in a virtual environment, then run:
