@@ -100,7 +100,8 @@ root in **Git Bash** on Windows, or Bash on macOS/Linux:
 bash start-studio.sh
 ```
 
-It starts the frontend development server and forwards optional arguments
+It finds pnpm, installs missing frontend dependencies, starts the frontend
+development server, and forwards optional arguments
 (`bash start-studio.sh --port 3001`). It does not install dependencies or start
 the Python API. Keep the backend terminal from step 2 running separately.
 Press **Ctrl+C** to stop the frontend. From inside `studio-web`, the equivalent
