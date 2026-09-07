@@ -7,12 +7,23 @@ Read the [local Studio usage guide](../how_to_use/09_Studio_Web.md) for Python
 setup, backend launch, frontend development, API examples, workflow inputs,
 output locations, and troubleshooting.
 
-Frontend development commands, from this directory:
+Install frontend dependencies once, from this directory:
 
 ```console
 pnpm install
-pnpm dev
 ```
+
+Then start the frontend from the repository root using **Git Bash** on Windows,
+or Bash on macOS/Linux:
+
+```bash
+bash start-studio.sh
+```
+
+The script locates `studio-web` relative to itself, so an absolute path to the
+script also works from another directory. It runs `pnpm dev` in the foreground;
+press **Ctrl+C** to stop. Extra arguments are forwarded, for example
+`bash start-studio.sh --port 3001`. Node.js and pnpm must be on your shell's PATH.
 
 Open the local address printed by the development server. Starting this
 preview does not start the RocqiPath backend. The generated `pnpm start`

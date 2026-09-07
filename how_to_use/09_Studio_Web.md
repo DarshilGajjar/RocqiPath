@@ -91,8 +91,20 @@ Open a second terminal from the repository root:
 ```powershell
 cd studio-web
 pnpm install
-pnpm dev
 ```
+
+After installing dependencies, use the single startup script from the repository
+root in **Git Bash** on Windows, or Bash on macOS/Linux:
+
+```bash
+bash start-studio.sh
+```
+
+It starts the frontend development server and forwards optional arguments
+(`bash start-studio.sh --port 3001`). It does not install dependencies or start
+the Python API. Keep the backend terminal from step 2 running separately.
+Press **Ctrl+C** to stop the frontend. From inside `studio-web`, the equivalent
+command is `bash ../start-studio.sh`.
 
 Open the local address printed by the development server. Currently this is a
 starter preview, **not the finished pathology workspace**. Do not expect slide
