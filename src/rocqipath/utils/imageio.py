@@ -25,7 +25,8 @@ def imwrite_rgb(path: Path, rgb: Any) -> None:
     import cv2 as cv
 
     path.parent.mkdir(parents=True, exist_ok=True)
-    cv.imwrite(str(path), cv.cvtColor(rgb, cv.COLOR_RGB2BGR))
+    if not cv.imwrite(str(path), cv.cvtColor(rgb, cv.COLOR_RGB2BGR)):
+        raise OSError(f"Could not write image: {path}")
 
 
 def save_tif(region: Any, tif_path: Path, cfg: Any) -> None:

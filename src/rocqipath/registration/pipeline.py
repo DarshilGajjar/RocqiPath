@@ -6,7 +6,7 @@ import json
 import re
 import traceback
 from pathlib import Path
-from typing import Any, List, Union
+from typing import List, Union
 
 from rocqipath.config import AlignmentConfig
 from rocqipath.core.logging import logger

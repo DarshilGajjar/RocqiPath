@@ -91,7 +91,8 @@ class StainNormalizerBase:
         """Create the parent directory and write a NumPy archive."""
         resolved = Path(path)
         resolved.parent.mkdir(parents=True, exist_ok=True)
-        np.savez(resolved, **arrays)
+        with resolved.open("wb") as stream:
+            np.savez(stream, **arrays)
         return resolved
 
     @staticmethod
@@ -264,8 +265,9 @@ class ReinhardNormalizer(StainNormalizerBase):
             If ``path`` does not exist.
         """
         path, data = self._load_archive(path, "Reinhard weights not found: {path}")
-        self.target_means = data["means"]
-        self.target_stds = data["stds"]
+        with data:
+            self.target_means = data["means"]
+            self.target_stds = data["stds"]
         self._norm.target_means = _flat_to_tia_means(self.target_means)
         self._norm.target_stds = _flat_to_tia_means(self.target_stds)
         logger.debug(f"Reinhard | weights loaded ← {path}")
@@ -414,10 +416,14 @@ class MacenkoNormalizer(StainNormalizerBase):
             If ``path`` does not exist.
         """
         path, data = self._load_archive(path, "Macenko weights not found: {path}")
-        self.stain_matrix_target = data["sm"]
-        self.target_concentrations = data["tc"]
+        with data:
+            self.stain_matrix_target = data["sm"]
+            self.target_concentrations = data["tc"]
         self._norm.stain_matrix_target = self.stain_matrix_target
         self._norm.target_concentrations = self.target_concentrations
+        self._norm.maxC_target = np.percentile(
+            self.target_concentrations, 99, axis=0
+        ).reshape((1, 2))
         logger.debug(f"Macenko | weights loaded ← {path}")
         return self
 
@@ -529,13 +535,16 @@ class VahadaneNormalizer(StainNormalizerBase):
 
         Notes
         -----
-        Saves ``stain_matrix_target`` (as ``"sm"``) via
+        Saves ``stain_matrix_target`` (as ``"sm"``) and target concentration
+        scaling (as ``"maxC"``) via
         :func:`numpy.savez`. Load it back later with
         :meth:`load_weights` to reuse a fitted target without
         re-running :meth:`fit` (which, for Vahadane's sparse dictionary
         learning, can be comparatively slow).
         """
-        path = self._save_archive(path, sm=self.stain_matrix_target)
+        path = self._save_archive(
+            path, sm=self.stain_matrix_target, maxC=self._norm.maxC_target
+        )
         logger.debug(f"Vahadane | weights saved → {path}")
 
     def load_weights(self, path: Union[Path, str]) -> "VahadaneNormalizer":
@@ -559,7 +568,14 @@ class VahadaneNormalizer(StainNormalizerBase):
             If ``path`` does not exist.
         """
         path, data = self._load_archive(path, "Vahadane weights not found: {path}")
-        self.stain_matrix_target = data["sm"]
+        with data:
+            if "maxC" not in data:
+                raise ExtractionError(
+                    "Vahadane weights lack target concentration scaling. "
+                    "Retrain and save the weights with this version of RocqiPath."
+                )
+            self.stain_matrix_target = data["sm"]
+            self._norm.maxC_target = data["maxC"]
         self._norm.stain_matrix_target = self.stain_matrix_target
         logger.debug(f"Vahadane | weights loaded ← {path}")
         return self

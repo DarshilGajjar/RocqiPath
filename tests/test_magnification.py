@@ -6,12 +6,48 @@ import tempfile
 from pathlib import Path
 
 from PIL import Image
+import numpy as np
+import pytest
 
 from rocqipath.core.magnification import (
     build_magnification_plan,
     objective_magnification_from_properties,
 )
 from rocqipath.core.slide import SlideReader
+
+
+@pytest.mark.parametrize("location", [(20, 0), (0, 20), (-20, 0), (0, -20)])
+def test_pil_reader_pads_regions_entirely_outside_image(tmp_path, location):
+    path = tmp_path / "slide.png"
+    Image.new("RGB", (8, 8), "red").save(path)
+    with SlideReader(str(path)) as reader:
+        reader.configure_magnification(20, 20)
+        region = reader.read_at_magnification(location, (4, 4))
+        assert region.size == (4, 4)
+        assert np.all(np.asarray(region) == 255)
+
+
+def test_pil_reader_preserves_partial_overlap(tmp_path):
+    path = tmp_path / "slide.png"
+    Image.new("RGB", (8, 8), "red").save(path)
+    with SlideReader(str(path)) as reader:
+        reader.configure_magnification(20, 20)
+        region = np.asarray(reader.read_at_magnification((-2, -2), (4, 4)))
+        assert np.all(region[:2] == 255)
+        assert np.all(region[:, :2] == 255)
+        assert np.all(region[2:, 2:] == (255, 0, 0, 255))
+
+
+@pytest.mark.parametrize("payload", [[], None, "invalid", {"output_magnification": "inf"}])
+def test_reader_ignores_invalid_manifest_and_uses_valid_fallback(tmp_path, payload):
+    path = tmp_path / "slide.png"
+    Image.new("RGB", (8, 8), "red").save(path)
+    path.with_name("slide_manifest.json").write_text(json.dumps(payload), encoding="utf-8")
+    (tmp_path / "manifest.json").write_text(
+        json.dumps({"output_magnification": 40}), encoding="utf-8"
+    )
+    with SlideReader(str(path)) as reader:
+        assert reader.configure_magnification(20).base_magnification == 40
 
 
 class MagnificationPlanTests(unittest.TestCase):

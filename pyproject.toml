@@ -34,6 +34,19 @@ classifiers = [
 dependencies = []
 
 [project.optional-dependencies]
+# Scanner-free regression suite and static checks; no model downloads required.
+test = [
+    "pytest>=7",
+    "ruff>=0.9",
+    "numpy>=1.23",
+    "opencv-python-headless>=4.7",
+    "pillow>=10.0",
+    "tqdm>=4.65",
+    "scikit-image>=0.21",
+    "matplotlib>=3.7",
+    "openpyxl>=3.1",
+]
+
 # `pip install rocqipath[extraction]`
 # TMA core extraction + whole-slide tissue extraction pipelines.
 extraction = [

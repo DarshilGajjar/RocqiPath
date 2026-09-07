@@ -60,6 +60,31 @@ The [`how_to_use`](how_to_use/README.md) notebooks cover installation, slide ins
 extraction, alignment, patch reconstruction, stain normalization, cell counting,
 visualization, and an end-to-end H&E/CD8 workflow.
 
+## Development
+
+Use Python 3.10 or 3.11 in a virtual environment, then run:
+
+```console
+python -m pip install -e ".[test]"
+python -m pytest
+ruff check src tests
+```
+
+CI runs these checks on both supported Python versions, after checking the
+dependency-free package import and CLI help. The default suite uses synthetic
+images and does not download models or require scanner files. Tests requiring
+TIAToolbox or libvips report skips when those optional backends are absent.
+With the stain dependencies installed, `python -m pytest tests/test_stain_persistence.py`
+also checks fit/save/load/transform equivalence for all three normalizers.
+
+Feature workflows live in `src/rocqipath/{extraction,registration,stain,analysis,visualization}`.
+Their typed settings live in `config`, shared slide/magnification/output primitives
+in `core`, and focused helpers in `utils`. Add regression tests beside the relevant
+workflow tests before fixing behavior; preserve the feature package's public imports.
+
+Older Macenko weights remain loadable. Older Vahadane archives containing only
+`sm` must be retrained: they lack the concentration scaling needed for normalization.
+
 ## Safety
 
 Whole-slide images and filenames may contain patient information. Keep data outside the

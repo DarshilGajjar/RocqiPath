@@ -19,7 +19,7 @@ from .base import BaseConfig
 
 @dataclass
 class AlignmentConfig(BaseConfig):
-    """Configure paired whole-slide image discovery, registration, export, and QC.
+    r"""Configure paired whole-slide image discovery, registration, export, and QC.
 
     ``AlignmentConfig`` is the high-level configuration object for RocqiPath's
     paired-slide alignment workflow. It controls how reference and moving
@@ -856,7 +856,6 @@ class AlignmentConfig(BaseConfig):
         WSI files, inspect image metadata, discover pair folders, or execute
         registration.
         """
-
         # Convert serialized VALIS configuration back into ValisConfig.
         if isinstance(self.valis_config, dict):
             self.valis_config = ValisConfig.from_dict(

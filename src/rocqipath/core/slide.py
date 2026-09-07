@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from math import isfinite
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple
 
@@ -18,7 +19,6 @@ if TYPE_CHECKING:
 
 def _image_base_name(path: Path) -> str:
     """Return a filename without ordinary or compound image suffixes."""
-
     name = path.name
     lowered = name.lower()
 
@@ -85,7 +85,6 @@ class SlideReader:
         source_magnification: Optional[float] = None,
     ) -> MagnificationPlan:
         """Resolve and cache an exact target-magnification read plan."""
-
         if source_magnification is not None:
             base = float(source_magnification)
         else:
@@ -106,7 +105,6 @@ class SlideReader:
 
     def _manifest_magnification(self) -> Optional[float]:
         """Read output magnification recorded beside a generated image."""
-
         source = Path(self.path)
         base_name = _image_base_name(source)
 
@@ -142,6 +140,8 @@ class SlideReader:
                 payload = json.loads(
                     candidate.read_text(encoding="utf-8")
                 )
+                if not isinstance(payload, dict):
+                    continue
 
                 value = payload.get("output_magnification")
 
@@ -150,7 +150,7 @@ class SlideReader:
 
                 parsed = float(value)
 
-                if parsed > 0:
+                if parsed > 0 and isfinite(parsed):
                     return parsed
 
             except (
@@ -202,6 +202,8 @@ class SlideReader:
         iw, ih = self._pil.size
         x1, y1 = max(0, x), max(0, y)
         x2, y2 = min(iw, x + w), min(ih, y + h)
+        if x2 <= x1 or y2 <= y1:
+            return Image.new("RGBA", size, (255, 255, 255, 255))
         region = self._pil.crop((x1, y1, x2, y2))
         if region.size == size:
             return region

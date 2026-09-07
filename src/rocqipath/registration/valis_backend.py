@@ -146,7 +146,6 @@ def build_feature_detector(
     detector_kwargs: Optional[dict] = None,
 ):
     """Instantiate a VALIS feature detector by alias or class name."""
-
     if not detector_name:
         return None
 
@@ -225,7 +224,6 @@ def build_matcher(
     matcher_kwargs: Optional[dict] = None,
 ):
     """Build a VALIS detector + matcher combination."""
-
     if not detector_name:
         return None
 

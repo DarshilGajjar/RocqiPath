@@ -9,7 +9,6 @@ import re
 from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
-import pyvips
 from PIL import Image
 from tqdm.auto import tqdm
 
@@ -134,12 +133,15 @@ def _finalize_canvas(
     """Average overlapping pixels or return the direct-paste canvas."""
     if not overlapping:
         return canvas
+    canvas[counts[..., 0] == 0] = 255
     counts[counts == 0] = 1.0
     return (canvas / counts).clip(0, 255).astype(np.uint8)
 
 
 def _save_pyramid(array: np.ndarray, output_path: str) -> None:
     """Write an RGB array as a tiled pyramidal LZW TIFF."""
+    import pyvips
+
     height, width = array.shape[:2]
     vips_image = pyvips.Image.new_from_memory(array.tobytes(), width, height, 3, "uchar")
     vips_image.tiffsave(
