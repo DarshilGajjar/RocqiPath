@@ -7,7 +7,7 @@ name = "rocqipath"
 version = "1.0.0"
 description = "A Python library for whole-slide image (WSI) processing and analysis in computational pathology."
 readme = "README.md"
-requires-python = ">=3.10,<3.12"
+requires-python = ">=3.10,=<3.15"
 license = { text = "All Rights Reserved" }
 authors = [
     { name = "Darshil Gajjar" },
