@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import numpy as np
+import pytest
 
 import rocqipath.utils as utils
 from rocqipath.registration.registrar import WSIRegistrar
@@ -78,3 +79,11 @@ def test_imageio_rgb_round_trip(tmp_path: Path) -> None:
     imwrite_rgb(path, rgb)
 
     np.testing.assert_array_equal(imread_rgb(path), rgb)
+
+
+def test_imageio_reports_failed_write(tmp_path: Path, monkeypatch) -> None:
+    import cv2
+
+    monkeypatch.setattr(cv2, "imwrite", lambda *_args: False)
+    with pytest.raises(OSError, match="Could not write image"):
+        imwrite_rgb(tmp_path / "missing.png", np.zeros((2, 2, 3), dtype=np.uint8))

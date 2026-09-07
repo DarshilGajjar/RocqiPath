@@ -2,19 +2,11 @@
 
 from __future__ import annotations
 
-import sys
-from types import ModuleType
-
 import cv2
 import numpy as np
 import pytest
 
 from rocqipath.config import TMAExtractionConfig, TissueExtractionConfig
-
-try:
-    import pyvips  # noqa: F401
-except (ImportError, OSError):
-    sys.modules["pyvips"] = ModuleType("pyvips")
 
 from rocqipath.extraction import semantic
 

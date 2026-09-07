@@ -7,6 +7,8 @@ dist/
 *.egg-info/
 .eggs/
 .venv/
+.venv-*/
+.cache/
 venv/
 
 # Tool caches
