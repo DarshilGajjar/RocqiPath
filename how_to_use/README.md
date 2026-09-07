@@ -3,6 +3,10 @@
 These notebooks are the practical documentation for RocqiPath. They call the
 feature APIs directly without a dataset or experiment-management layer.
 
+For the local browser workspace, see [Using RocqiPath Studio](09_Studio_Web.md).
+Studio is under development; the guide identifies the current API entry points
+and the unfinished interface rather than assuming the complete app is ready.
+
 ## Recommended order
 
 | Notebook | Purpose | Install extra |
