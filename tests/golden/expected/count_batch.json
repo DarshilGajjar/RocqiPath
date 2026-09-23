@@ -1,0 +1,43 @@
+{
+  "files": {
+    "cell_counting/batch_cell_count_results.json": [
+      {
+        "density_per_mm2": 586.43,
+        "label": "CD8",
+        "mpp_x": 0.253,
+        "mpp_y": 0.253,
+        "slide": "case_gt.tif",
+        "tissue_area_method": "pixel_mask",
+        "tissue_area_mm2": 0.043,
+        "tissue_pixels": 667069,
+        "total_positive": 25
+      }
+    ],
+    "cell_counting/case_gt/case_gt_cell_count_results.json": {
+      "density_per_mm2": 586.43,
+      "label": "CD8",
+      "mpp_x": 0.253,
+      "mpp_y": 0.253,
+      "slide": "case_gt.tif",
+      "tissue_area_method": "pixel_mask",
+      "tissue_area_mm2": 0.043,
+      "tissue_pixels": 667069,
+      "total_positive": 25
+    }
+  },
+  "returned": {
+    "results": [
+      {
+        "density_per_mm2": 586.43,
+        "label": "CD8",
+        "mpp_x": 0.253,
+        "mpp_y": 0.253,
+        "slide": "case_gt.tif",
+        "tissue_area_method": "pixel_mask",
+        "tissue_area_mm2": 0.043,
+        "tissue_pixels": 667069,
+        "total_positive": 25
+      }
+    ]
+  }
+}

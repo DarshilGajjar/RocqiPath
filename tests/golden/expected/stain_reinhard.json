@@ -1,0 +1,54 @@
+{
+  "files": {
+    "stain_normalization/he__patch_0/patch_0.png": {
+      "mean": [
+        198.7,
+        154.4,
+        186.7
+      ],
+      "size": [
+        128,
+        128
+      ]
+    },
+    "stain_normalization/he__patch_1/patch_1.png": {
+      "mean": [
+        198.9,
+        154.0,
+        186.7
+      ],
+      "size": [
+        128,
+        128
+      ]
+    },
+    "stain_normalization/he__patch_2/patch_2.png": {
+      "mean": [
+        199.1,
+        154.0,
+        186.6
+      ],
+      "size": [
+        128,
+        128
+      ]
+    },
+    "stain_normalization/reinhard_weights.npz": {
+      "means": [
+        3
+      ],
+      "stds": [
+        3
+      ]
+    }
+  },
+  "returned": {
+    "applied": {
+      "failed": 0,
+      "processed": 3,
+      "skipped": 0,
+      "total": 3
+    },
+    "weights": "reinhard_weights.npz"
+  }
+}

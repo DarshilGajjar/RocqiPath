@@ -181,7 +181,7 @@ def extract_tissue_regions(
 
     logger.info(f"{slide_name} | {len(rel_boxes)} region(s) detected")
 
-    full_img = pyvips.Image.new_from_file(str(wsi_path), access="sequential")
+    full_img = pyvips.Image.new_from_file(str(wsi_path))
     full_w, full_h = full_img.width, full_img.height
     full_dims = {"width": full_w, "height": full_h}
     source_mag, mag_source = _resolve_vips_magnification(full_img, cfg.source_magnification)

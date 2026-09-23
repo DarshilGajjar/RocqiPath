@@ -1,0 +1,56 @@
+{
+  "files": {
+    "stain_normalization/he__patch_0/patch_0.png": {
+      "mean": [
+        99.1,
+        91.0,
+        94.3
+      ],
+      "size": [
+        128,
+        128
+      ]
+    },
+    "stain_normalization/he__patch_1/patch_1.png": {
+      "mean": [
+        98.9,
+        90.8,
+        94.2
+      ],
+      "size": [
+        128,
+        128
+      ]
+    },
+    "stain_normalization/he__patch_2/patch_2.png": {
+      "mean": [
+        98.4,
+        90.6,
+        93.8
+      ],
+      "size": [
+        128,
+        128
+      ]
+    },
+    "stain_normalization/macenko_weights.npz": {
+      "sm": [
+        2,
+        3
+      ],
+      "tc": [
+        262144,
+        2
+      ]
+    }
+  },
+  "returned": {
+    "applied": {
+      "failed": 0,
+      "processed": 3,
+      "skipped": 0,
+      "total": 3
+    },
+    "weights": "macenko_weights.npz"
+  }
+}
