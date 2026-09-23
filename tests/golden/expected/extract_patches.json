@@ -1,0 +1,879 @@
+{
+  "files": {
+    "patch_extraction/Sample_0001_CD8/Sample_0001_CD8_cd8_patch_000001.png": {
+      "mean": [
+        202.7,
+        208.7,
+        227.0
+      ],
+      "size": [
+        64,
+        64
+      ]
+    },
+    "patch_extraction/Sample_0001_CD8/Sample_0001_CD8_cd8_patch_000002.png": {
+      "mean": [
+        202.3,
+        208.4,
+        226.7
+      ],
+      "size": [
+        64,
+        64
+      ]
+    },
+    "patch_extraction/Sample_0001_CD8/Sample_0001_CD8_cd8_patch_000003.png": {
+      "mean": [
+        202.7,
+        208.8,
+        226.8
+      ],
+      "size": [
+        64,
+        64
+      ]
+    },
+    "patch_extraction/Sample_0001_CD8/Sample_0001_CD8_cd8_patch_000004.png": {
+      "mean": [
+        175.0,
+        184.9,
+        214.9
+      ],
+      "size": [
+        64,
+        64
+      ]
+    },
+    "patch_extraction/Sample_0001_CD8/Sample_0001_CD8_cd8_patch_000005.png": {
+      "mean": [
+        175.2,
+        185.2,
+        215.0
+      ],
+      "size": [
+        64,
+        64
+      ]
+    },
+    "patch_extraction/Sample_0001_CD8/Sample_0001_CD8_cd8_patch_000006.png": {
+      "mean": [
+        201.7,
+        207.6,
+        226.3
+      ],
+      "size": [
+        64,
+        64
+      ]
+    },
+    "patch_extraction/Sample_0001_CD8/Sample_0001_CD8_cd8_patch_000007.png": {
+      "mean": [
+        202.3,
+        208.5,
+        226.6
+      ],
+      "size": [
+        64,
+        64
+      ]
+    },
+    "patch_extraction/Sample_0001_CD8/Sample_0001_CD8_cd8_patch_000008.png": {
+      "mean": [
+        175.0,
+        184.9,
+        215.1
+      ],
+      "size": [
+        64,
+        64
+      ]
+    },
+    "patch_extraction/Sample_0001_CD8/Sample_0001_CD8_cd8_patch_000009.png": {
+      "mean": [
+        175.0,
+        184.9,
+        215.0
+      ],
+      "size": [
+        64,
+        64
+      ]
+    },
+    "patch_extraction/Sample_0001_CD8/Sample_0001_CD8_cd8_patch_000010.png": {
+      "mean": [
+        201.4,
+        207.5,
+        226.2
+      ],
+      "size": [
+        64,
+        64
+      ]
+    },
+    "patch_extraction/Sample_0001_CD8/Sample_0001_CD8_cd8_patch_000011.png": {
+      "mean": [
+        201.6,
+        208.0,
+        226.4
+      ],
+      "size": [
+        64,
+        64
+      ]
+    },
+    "patch_extraction/Sample_0001_CD8/Sample_0001_CD8_cd8_patch_000012.png": {
+      "mean": [
+        201.3,
+        207.6,
+        226.1
+      ],
+      "size": [
+        64,
+        64
+      ]
+    },
+    "patch_extraction/Sample_0001_CD8/Sample_0001_CD8_he_patch_000001.png": {
+      "mean": [
+        211.7,
+        163.3,
+        193.6
+      ],
+      "size": [
+        64,
+        64
+      ]
+    },
+    "patch_extraction/Sample_0001_CD8/Sample_0001_CD8_he_patch_000002.png": {
+      "mean": [
+        211.5,
+        162.8,
+        193.2
+      ],
+      "size": [
+        64,
+        64
+      ]
+    },
+    "patch_extraction/Sample_0001_CD8/Sample_0001_CD8_he_patch_000003.png": {
+      "mean": [
+        211.8,
+        163.4,
+        193.6
+      ],
+      "size": [
+        64,
+        64
+      ]
+    },
+    "patch_extraction/Sample_0001_CD8/Sample_0001_CD8_he_patch_000004.png": {
+      "mean": [
+        190.1,
+        110.2,
+        160.0
+      ],
+      "size": [
+        64,
+        64
+      ]
+    },
+    "patch_extraction/Sample_0001_CD8/Sample_0001_CD8_he_patch_000005.png": {
+      "mean": [
+        190.1,
+        109.9,
+        159.9
+      ],
+      "size": [
+        64,
+        64
+      ]
+    },
+    "patch_extraction/Sample_0001_CD8/Sample_0001_CD8_he_patch_000006.png": {
+      "mean": [
+        210.9,
+        161.2,
+        192.2
+      ],
+      "size": [
+        64,
+        64
+      ]
+    },
+    "patch_extraction/Sample_0001_CD8/Sample_0001_CD8_he_patch_000007.png": {
+      "mean": [
+        211.4,
+        162.8,
+        193.1
+      ],
+      "size": [
+        64,
+        64
+      ]
+    },
+    "patch_extraction/Sample_0001_CD8/Sample_0001_CD8_he_patch_000008.png": {
+      "mean": [
+        189.9,
+        110.2,
+        160.2
+      ],
+      "size": [
+        64,
+        64
+      ]
+    },
+    "patch_extraction/Sample_0001_CD8/Sample_0001_CD8_he_patch_000009.png": {
+      "mean": [
+        189.8,
+        110.0,
+        159.9
+      ],
+      "size": [
+        64,
+        64
+      ]
+    },
+    "patch_extraction/Sample_0001_CD8/Sample_0001_CD8_he_patch_000010.png": {
+      "mean": [
+        210.6,
+        160.4,
+        191.7
+      ],
+      "size": [
+        64,
+        64
+      ]
+    },
+    "patch_extraction/Sample_0001_CD8/Sample_0001_CD8_he_patch_000011.png": {
+      "mean": [
+        211.0,
+        161.2,
+        192.3
+      ],
+      "size": [
+        64,
+        64
+      ]
+    },
+    "patch_extraction/Sample_0001_CD8/Sample_0001_CD8_he_patch_000012.png": {
+      "mean": [
+        210.6,
+        160.5,
+        191.9
+      ],
+      "size": [
+        64,
+        64
+      ]
+    },
+    "patch_extraction/Sample_0001_CD8/Sample_0001_CD8_metadata.json": {
+      "case_id": "Sample_0001_CD8",
+      "dimensions": [
+        256,
+        256
+      ],
+      "extraction_mode": "sliding",
+      "patch_size": 64,
+      "patches": [
+        {
+          "cd8_path": "<ROOT>/out/patch_extraction/Sample_0001_CD8/Sample_0001_CD8_cd8_patch_000001.png",
+          "coordinates": [
+            64,
+            0
+          ],
+          "he_path": "<ROOT>/out/patch_extraction/Sample_0001_CD8/Sample_0001_CD8_he_patch_000001.png",
+          "id": "000001",
+          "size": [
+            64,
+            64
+          ]
+        },
+        {
+          "cd8_path": "<ROOT>/out/patch_extraction/Sample_0001_CD8/Sample_0001_CD8_cd8_patch_000002.png",
+          "coordinates": [
+            128,
+            0
+          ],
+          "he_path": "<ROOT>/out/patch_extraction/Sample_0001_CD8/Sample_0001_CD8_he_patch_000002.png",
+          "id": "000002",
+          "size": [
+            64,
+            64
+          ]
+        },
+        {
+          "cd8_path": "<ROOT>/out/patch_extraction/Sample_0001_CD8/Sample_0001_CD8_cd8_patch_000003.png",
+          "coordinates": [
+            0,
+            64
+          ],
+          "he_path": "<ROOT>/out/patch_extraction/Sample_0001_CD8/Sample_0001_CD8_he_patch_000003.png",
+          "id": "000003",
+          "size": [
+            64,
+            64
+          ]
+        },
+        {
+          "cd8_path": "<ROOT>/out/patch_extraction/Sample_0001_CD8/Sample_0001_CD8_cd8_patch_000004.png",
+          "coordinates": [
+            64,
+            64
+          ],
+          "he_path": "<ROOT>/out/patch_extraction/Sample_0001_CD8/Sample_0001_CD8_he_patch_000004.png",
+          "id": "000004",
+          "size": [
+            64,
+            64
+          ]
+        },
+        {
+          "cd8_path": "<ROOT>/out/patch_extraction/Sample_0001_CD8/Sample_0001_CD8_cd8_patch_000005.png",
+          "coordinates": [
+            128,
+            64
+          ],
+          "he_path": "<ROOT>/out/patch_extraction/Sample_0001_CD8/Sample_0001_CD8_he_patch_000005.png",
+          "id": "000005",
+          "size": [
+            64,
+            64
+          ]
+        },
+        {
+          "cd8_path": "<ROOT>/out/patch_extraction/Sample_0001_CD8/Sample_0001_CD8_cd8_patch_000006.png",
+          "coordinates": [
+            192,
+            64
+          ],
+          "he_path": "<ROOT>/out/patch_extraction/Sample_0001_CD8/Sample_0001_CD8_he_patch_000006.png",
+          "id": "000006",
+          "size": [
+            64,
+            64
+          ]
+        },
+        {
+          "cd8_path": "<ROOT>/out/patch_extraction/Sample_0001_CD8/Sample_0001_CD8_cd8_patch_000007.png",
+          "coordinates": [
+            0,
+            128
+          ],
+          "he_path": "<ROOT>/out/patch_extraction/Sample_0001_CD8/Sample_0001_CD8_he_patch_000007.png",
+          "id": "000007",
+          "size": [
+            64,
+            64
+          ]
+        },
+        {
+          "cd8_path": "<ROOT>/out/patch_extraction/Sample_0001_CD8/Sample_0001_CD8_cd8_patch_000008.png",
+          "coordinates": [
+            64,
+            128
+          ],
+          "he_path": "<ROOT>/out/patch_extraction/Sample_0001_CD8/Sample_0001_CD8_he_patch_000008.png",
+          "id": "000008",
+          "size": [
+            64,
+            64
+          ]
+        },
+        {
+          "cd8_path": "<ROOT>/out/patch_extraction/Sample_0001_CD8/Sample_0001_CD8_cd8_patch_000009.png",
+          "coordinates": [
+            128,
+            128
+          ],
+          "he_path": "<ROOT>/out/patch_extraction/Sample_0001_CD8/Sample_0001_CD8_he_patch_000009.png",
+          "id": "000009",
+          "size": [
+            64,
+            64
+          ]
+        },
+        {
+          "cd8_path": "<ROOT>/out/patch_extraction/Sample_0001_CD8/Sample_0001_CD8_cd8_patch_000010.png",
+          "coordinates": [
+            192,
+            128
+          ],
+          "he_path": "<ROOT>/out/patch_extraction/Sample_0001_CD8/Sample_0001_CD8_he_patch_000010.png",
+          "id": "000010",
+          "size": [
+            64,
+            64
+          ]
+        },
+        {
+          "cd8_path": "<ROOT>/out/patch_extraction/Sample_0001_CD8/Sample_0001_CD8_cd8_patch_000011.png",
+          "coordinates": [
+            64,
+            192
+          ],
+          "he_path": "<ROOT>/out/patch_extraction/Sample_0001_CD8/Sample_0001_CD8_he_patch_000011.png",
+          "id": "000011",
+          "size": [
+            64,
+            64
+          ]
+        },
+        {
+          "cd8_path": "<ROOT>/out/patch_extraction/Sample_0001_CD8/Sample_0001_CD8_cd8_patch_000012.png",
+          "coordinates": [
+            128,
+            192
+          ],
+          "he_path": "<ROOT>/out/patch_extraction/Sample_0001_CD8/Sample_0001_CD8_he_patch_000012.png",
+          "id": "000012",
+          "size": [
+            64,
+            64
+          ]
+        }
+      ],
+      "reference_base_magnification": 20.0,
+      "reference_channel": "he",
+      "reference_read_level": 0,
+      "stride": 64,
+      "target_base_magnification": 20.0,
+      "target_channel": "cd8",
+      "target_magnification": 20.0,
+      "target_read_level": 0
+    },
+    "rocqipath.json": {
+      "runs": {
+        "extract_patches": {
+          "config": {
+            "biomarker_folders": [
+              "CD8"
+            ],
+            "dimension_tolerance": 0.01,
+            "max_workers": 1,
+            "moving_name": "cd8",
+            "patch_size": 64,
+            "reference_name": "he",
+            "reference_pattern": "^(?P<sample_id>Sample_\\d{4})_he\\.tiff?$",
+            "reference_source_magnification": 20.0,
+            "stride": 64,
+            "target_magnification": 20.0,
+            "target_source_magnification": 20.0,
+            "tissue_threshold": 0.5
+          },
+          "inputs": [
+            "<ROOT>/patch_aligned"
+          ],
+          "items": [
+            {
+              "magnification": 20.0,
+              "meta": {
+                "case_id": "Sample_0001_CD8",
+                "coordinates": [
+                  64,
+                  0
+                ],
+                "patch_id": "000001",
+                "stain": "cd8"
+              },
+              "path": "patch_extraction/Sample_0001_CD8/Sample_0001_CD8_cd8_patch_000001.png",
+              "role": "patch",
+              "sample_id": "Sample_0001",
+              "source": null
+            },
+            {
+              "magnification": 20.0,
+              "meta": {
+                "case_id": "Sample_0001_CD8",
+                "coordinates": [
+                  64,
+                  0
+                ],
+                "patch_id": "000001",
+                "stain": "he"
+              },
+              "path": "patch_extraction/Sample_0001_CD8/Sample_0001_CD8_he_patch_000001.png",
+              "role": "patch",
+              "sample_id": "Sample_0001",
+              "source": null
+            },
+            {
+              "magnification": 20.0,
+              "meta": {
+                "case_id": "Sample_0001_CD8",
+                "coordinates": [
+                  128,
+                  0
+                ],
+                "patch_id": "000002",
+                "stain": "cd8"
+              },
+              "path": "patch_extraction/Sample_0001_CD8/Sample_0001_CD8_cd8_patch_000002.png",
+              "role": "patch",
+              "sample_id": "Sample_0001",
+              "source": null
+            },
+            {
+              "magnification": 20.0,
+              "meta": {
+                "case_id": "Sample_0001_CD8",
+                "coordinates": [
+                  128,
+                  0
+                ],
+                "patch_id": "000002",
+                "stain": "he"
+              },
+              "path": "patch_extraction/Sample_0001_CD8/Sample_0001_CD8_he_patch_000002.png",
+              "role": "patch",
+              "sample_id": "Sample_0001",
+              "source": null
+            },
+            {
+              "magnification": 20.0,
+              "meta": {
+                "case_id": "Sample_0001_CD8",
+                "coordinates": [
+                  0,
+                  64
+                ],
+                "patch_id": "000003",
+                "stain": "cd8"
+              },
+              "path": "patch_extraction/Sample_0001_CD8/Sample_0001_CD8_cd8_patch_000003.png",
+              "role": "patch",
+              "sample_id": "Sample_0001",
+              "source": null
+            },
+            {
+              "magnification": 20.0,
+              "meta": {
+                "case_id": "Sample_0001_CD8",
+                "coordinates": [
+                  0,
+                  64
+                ],
+                "patch_id": "000003",
+                "stain": "he"
+              },
+              "path": "patch_extraction/Sample_0001_CD8/Sample_0001_CD8_he_patch_000003.png",
+              "role": "patch",
+              "sample_id": "Sample_0001",
+              "source": null
+            },
+            {
+              "magnification": 20.0,
+              "meta": {
+                "case_id": "Sample_0001_CD8",
+                "coordinates": [
+                  64,
+                  64
+                ],
+                "patch_id": "000004",
+                "stain": "cd8"
+              },
+              "path": "patch_extraction/Sample_0001_CD8/Sample_0001_CD8_cd8_patch_000004.png",
+              "role": "patch",
+              "sample_id": "Sample_0001",
+              "source": null
+            },
+            {
+              "magnification": 20.0,
+              "meta": {
+                "case_id": "Sample_0001_CD8",
+                "coordinates": [
+                  64,
+                  64
+                ],
+                "patch_id": "000004",
+                "stain": "he"
+              },
+              "path": "patch_extraction/Sample_0001_CD8/Sample_0001_CD8_he_patch_000004.png",
+              "role": "patch",
+              "sample_id": "Sample_0001",
+              "source": null
+            },
+            {
+              "magnification": 20.0,
+              "meta": {
+                "case_id": "Sample_0001_CD8",
+                "coordinates": [
+                  128,
+                  64
+                ],
+                "patch_id": "000005",
+                "stain": "cd8"
+              },
+              "path": "patch_extraction/Sample_0001_CD8/Sample_0001_CD8_cd8_patch_000005.png",
+              "role": "patch",
+              "sample_id": "Sample_0001",
+              "source": null
+            },
+            {
+              "magnification": 20.0,
+              "meta": {
+                "case_id": "Sample_0001_CD8",
+                "coordinates": [
+                  128,
+                  64
+                ],
+                "patch_id": "000005",
+                "stain": "he"
+              },
+              "path": "patch_extraction/Sample_0001_CD8/Sample_0001_CD8_he_patch_000005.png",
+              "role": "patch",
+              "sample_id": "Sample_0001",
+              "source": null
+            },
+            {
+              "magnification": 20.0,
+              "meta": {
+                "case_id": "Sample_0001_CD8",
+                "coordinates": [
+                  192,
+                  64
+                ],
+                "patch_id": "000006",
+                "stain": "cd8"
+              },
+              "path": "patch_extraction/Sample_0001_CD8/Sample_0001_CD8_cd8_patch_000006.png",
+              "role": "patch",
+              "sample_id": "Sample_0001",
+              "source": null
+            },
+            {
+              "magnification": 20.0,
+              "meta": {
+                "case_id": "Sample_0001_CD8",
+                "coordinates": [
+                  192,
+                  64
+                ],
+                "patch_id": "000006",
+                "stain": "he"
+              },
+              "path": "patch_extraction/Sample_0001_CD8/Sample_0001_CD8_he_patch_000006.png",
+              "role": "patch",
+              "sample_id": "Sample_0001",
+              "source": null
+            },
+            {
+              "magnification": 20.0,
+              "meta": {
+                "case_id": "Sample_0001_CD8",
+                "coordinates": [
+                  0,
+                  128
+                ],
+                "patch_id": "000007",
+                "stain": "cd8"
+              },
+              "path": "patch_extraction/Sample_0001_CD8/Sample_0001_CD8_cd8_patch_000007.png",
+              "role": "patch",
+              "sample_id": "Sample_0001",
+              "source": null
+            },
+            {
+              "magnification": 20.0,
+              "meta": {
+                "case_id": "Sample_0001_CD8",
+                "coordinates": [
+                  0,
+                  128
+                ],
+                "patch_id": "000007",
+                "stain": "he"
+              },
+              "path": "patch_extraction/Sample_0001_CD8/Sample_0001_CD8_he_patch_000007.png",
+              "role": "patch",
+              "sample_id": "Sample_0001",
+              "source": null
+            },
+            {
+              "magnification": 20.0,
+              "meta": {
+                "case_id": "Sample_0001_CD8",
+                "coordinates": [
+                  64,
+                  128
+                ],
+                "patch_id": "000008",
+                "stain": "cd8"
+              },
+              "path": "patch_extraction/Sample_0001_CD8/Sample_0001_CD8_cd8_patch_000008.png",
+              "role": "patch",
+              "sample_id": "Sample_0001",
+              "source": null
+            },
+            {
+              "magnification": 20.0,
+              "meta": {
+                "case_id": "Sample_0001_CD8",
+                "coordinates": [
+                  64,
+                  128
+                ],
+                "patch_id": "000008",
+                "stain": "he"
+              },
+              "path": "patch_extraction/Sample_0001_CD8/Sample_0001_CD8_he_patch_000008.png",
+              "role": "patch",
+              "sample_id": "Sample_0001",
+              "source": null
+            },
+            {
+              "magnification": 20.0,
+              "meta": {
+                "case_id": "Sample_0001_CD8",
+                "coordinates": [
+                  128,
+                  128
+                ],
+                "patch_id": "000009",
+                "stain": "cd8"
+              },
+              "path": "patch_extraction/Sample_0001_CD8/Sample_0001_CD8_cd8_patch_000009.png",
+              "role": "patch",
+              "sample_id": "Sample_0001",
+              "source": null
+            },
+            {
+              "magnification": 20.0,
+              "meta": {
+                "case_id": "Sample_0001_CD8",
+                "coordinates": [
+                  128,
+                  128
+                ],
+                "patch_id": "000009",
+                "stain": "he"
+              },
+              "path": "patch_extraction/Sample_0001_CD8/Sample_0001_CD8_he_patch_000009.png",
+              "role": "patch",
+              "sample_id": "Sample_0001",
+              "source": null
+            },
+            {
+              "magnification": 20.0,
+              "meta": {
+                "case_id": "Sample_0001_CD8",
+                "coordinates": [
+                  192,
+                  128
+                ],
+                "patch_id": "000010",
+                "stain": "cd8"
+              },
+              "path": "patch_extraction/Sample_0001_CD8/Sample_0001_CD8_cd8_patch_000010.png",
+              "role": "patch",
+              "sample_id": "Sample_0001",
+              "source": null
+            },
+            {
+              "magnification": 20.0,
+              "meta": {
+                "case_id": "Sample_0001_CD8",
+                "coordinates": [
+                  192,
+                  128
+                ],
+                "patch_id": "000010",
+                "stain": "he"
+              },
+              "path": "patch_extraction/Sample_0001_CD8/Sample_0001_CD8_he_patch_000010.png",
+              "role": "patch",
+              "sample_id": "Sample_0001",
+              "source": null
+            },
+            {
+              "magnification": 20.0,
+              "meta": {
+                "case_id": "Sample_0001_CD8",
+                "coordinates": [
+                  64,
+                  192
+                ],
+                "patch_id": "000011",
+                "stain": "cd8"
+              },
+              "path": "patch_extraction/Sample_0001_CD8/Sample_0001_CD8_cd8_patch_000011.png",
+              "role": "patch",
+              "sample_id": "Sample_0001",
+              "source": null
+            },
+            {
+              "magnification": 20.0,
+              "meta": {
+                "case_id": "Sample_0001_CD8",
+                "coordinates": [
+                  64,
+                  192
+                ],
+                "patch_id": "000011",
+                "stain": "he"
+              },
+              "path": "patch_extraction/Sample_0001_CD8/Sample_0001_CD8_he_patch_000011.png",
+              "role": "patch",
+              "sample_id": "Sample_0001",
+              "source": null
+            },
+            {
+              "magnification": 20.0,
+              "meta": {
+                "case_id": "Sample_0001_CD8",
+                "coordinates": [
+                  128,
+                  192
+                ],
+                "patch_id": "000012",
+                "stain": "cd8"
+              },
+              "path": "patch_extraction/Sample_0001_CD8/Sample_0001_CD8_cd8_patch_000012.png",
+              "role": "patch",
+              "sample_id": "Sample_0001",
+              "source": null
+            },
+            {
+              "magnification": 20.0,
+              "meta": {
+                "case_id": "Sample_0001_CD8",
+                "coordinates": [
+                  128,
+                  192
+                ],
+                "patch_id": "000012",
+                "stain": "he"
+              },
+              "path": "patch_extraction/Sample_0001_CD8/Sample_0001_CD8_he_patch_000012.png",
+              "role": "patch",
+              "sample_id": "Sample_0001",
+              "source": null
+            }
+          ],
+          "summary": {
+            "cases": [
+              {
+                "case_id": "Sample_0001_CD8",
+                "n_patches": 12,
+                "status": "processed"
+              }
+            ],
+            "processed": 1,
+            "skipped": 0
+          }
+        }
+      },
+      "schema": 1
+    }
+  },
+  "returned": {
+    "summary": {
+      "cases": [
+        {
+          "case_id": "Sample_0001_CD8",
+          "n_patches": 12,
+          "status": "processed"
+        }
+      ],
+      "processed": 1,
+      "skipped": 0
+    }
+  }
+}

@@ -1,0 +1,240 @@
+"""Batch training and application workflows for stain normalization."""
+
+from __future__ import annotations
+
+from pathlib import Path
+from typing import Dict, List, Optional, Tuple
+
+import cv2 as cv
+import numpy as np
+
+from rocqipath.stain.config import StainConfig
+from rocqipath._internal.console import (
+    print_banner,
+    print_counts,
+    print_done,
+    print_error,
+    print_info,
+    print_section,
+    print_step,
+    print_summary_table,
+    print_warn,
+    track,
+)
+from rocqipath.errors import ExtractionError
+from rocqipath.io.output import OutputLayout
+from rocqipath.stain.normalizers import ReinhardNormalizer, _od_tissue_fraction, get_normalizer
+from rocqipath.io.discovery import discover_files
+from rocqipath.io.images import imread_rgb, imwrite_rgb
+
+
+def _collect_images(inputs, stains) -> List[Tuple[Path, Path]]:
+    """Pair each input image with the folder its output name is relative to.
+
+    Folders are searched recursively and filtered by ``stains``; explicitly
+    listed files are always used.
+    """
+    sources = [inputs] if isinstance(inputs, (str, Path)) else list(inputs)
+    collected: List[Tuple[Path, Path]] = []
+    for source in map(Path, sources):
+        if source.is_dir():
+            collected.extend((path, source) for path in discover_files(source, stains))
+        else:
+            collected.append((source, source.parent))
+    return collected
+
+
+def run_stain_normalization_train(
+    input_dir: str,
+    output_dir: str,
+    cfg: Optional[StainConfig] = None,
+) -> Path:
+    """Fit a normaliser on tissue patches under *input_dir* and save its weights.
+
+    Parameters
+    ----------
+    input_dir : str
+    output_dir : str
+        Weights are written to
+        ``<output_dir>/stain_normalization/<cfg.method>_weights.npz``.
+    cfg : StainConfig or None
+
+    Returns
+    -------
+    pathlib.Path
+        Path to the saved weights file.
+    """
+    if cfg is None:
+        cfg = StainConfig()
+
+    files = [path for path, _root in _collect_images(input_dir, cfg.stains)]
+    normalizer = get_normalizer(cfg.method)
+    module_dir = OutputLayout(output_dir).module_dir("stain_normalization")
+    weights = module_dir / f"{cfg.method}_weights.npz"
+    is_reinhard = isinstance(normalizer, ReinhardNormalizer)
+
+    print_banner()
+
+    if not files:
+        print_error(f"No patches found in '{input_dir}' for stains {cfg.stains}. Aborting.")
+        raise ExtractionError(f"No patches found in '{input_dir}' for stains {cfg.stains}")
+
+    print_section("Training")
+    print_summary_table(
+        [
+            ("Algorithm", cfg.method.upper()),
+            ("Input dir", input_dir),
+            ("Stains", ", ".join(cfg.stains)),
+            ("Total files", len(files)),
+            (
+                "Strategy",
+                "incremental stats"
+                if is_reinhard
+                else f"mosaic  (max {cfg.max_train_patches} patches)",
+            ),
+            ("Min tissue", f"{cfg.fit_min_tissue:.0%}"),
+            ("Weights out", str(weights)),
+        ],
+        title="Train Config",
+    )
+
+    # ── Phase 1: collect tissue patches ────────────────────────────────────
+    print_step("SCAN", f"Sampling tissue patches (min tissue ≥ {cfg.fit_min_tissue:.0%}) …")
+    picked: List[np.ndarray] = []
+    for fp in track(files, "Scanning patches"):
+        img = imread_rgb(fp)
+        if img is not None and _od_tissue_fraction(img) >= cfg.fit_min_tissue:
+            picked.append(cv.resize(img, (256, 256)))
+
+    if not picked:
+        print_error("No tissue patches passed the tissue-fraction threshold. Training aborted.")
+        raise ExtractionError("No tissue patches passed the tissue-fraction threshold.")
+
+    print_info(f"Collected {len(picked)} tissue patches from {len(files)} files.")
+
+    # ── Phase 2: fit ────────────────────────────────────────────────────────
+    print_step("FIT", f"Fitting {cfg.method.upper()} normaliser …")
+
+    if is_reinhard:
+        normalizer.fit_from_patches(picked)
+    else:
+        cap = cfg.max_train_patches
+        if len(picked) > cap:
+            rng = np.random.default_rng(seed=42)
+            picked = [picked[i] for i in rng.choice(len(picked), cap, replace=False)]
+            print_info(f"Subsampled to {cap} patches for mosaic construction.")
+
+        side = int(np.ceil(np.sqrt(len(picked))))
+        canvas = np.zeros((side * 256, side * 256, 3), dtype=np.uint8)
+        for idx, patch in enumerate(picked):
+            r, c = divmod(idx, side)
+            canvas[r * 256 : (r + 1) * 256, c * 256 : (c + 1) * 256] = patch
+        print_info(f"Mosaic built: {canvas.shape[1]}×{canvas.shape[0]} px.")
+
+        normalizer.fit(canvas)
+        del canvas
+
+    # ── Phase 3: save ─────────────────────────────────────────────────────
+    print_step("SAVE", f"Writing weights → {weights}")
+    normalizer.save_weights(weights)
+    print_done(f"Weights saved → {weights}")
+    return weights
+
+
+def run_stain_normalization_apply(
+    input_dir: str,
+    output_dir: str,
+    cfg: Optional[StainConfig] = None,
+    weights: Optional[Path] = None,
+) -> Dict[str, int]:
+    """Apply pre-fitted normaliser weights to a folder of patches.
+
+    Parameters
+    ----------
+    input_dir : str
+    output_dir : str
+        Normalised images are written under ``<output_dir>/normalized_images``,
+        mirroring the relative path of each input file.
+    cfg : StainConfig or None
+    weights : pathlib.Path, optional
+        Saved ``.npz`` weights; defaults to
+        ``<output_dir>/stain_normalization/<method>_weights.npz``.
+
+    Returns
+    -------
+    dict
+        ``{"processed": int, "skipped": int, "failed": int, "total": int}``
+    """
+    if cfg is None:
+        cfg = StainConfig()
+
+    collected = _collect_images(input_dir, cfg.stains)
+    files = [path for path, _root in collected]
+    normalizer = get_normalizer(cfg.method)
+    layout = OutputLayout(output_dir)
+    out_root = layout.module_dir("stain_normalization")
+    weights = Path(weights) if weights is not None else out_root / f"{cfg.method}_weights.npz"
+
+    print_banner()
+
+    if not files:
+        print_error(f"No patches found in '{input_dir}' for stains {cfg.stains}. Aborting.")
+        raise ExtractionError(f"No patches found in '{input_dir}' for stains {cfg.stains}")
+
+    if not weights.is_file():
+        print_error(f"Weights file not found: {weights}. Run train mode first.")
+        raise ExtractionError(f"Weights file not found: {weights}")
+
+    print_section("Applying Normalisation")
+    print_summary_table(
+        [
+            ("Algorithm", cfg.method.upper()),
+            ("Input dir", input_dir),
+            ("Weights", str(weights)),
+            ("Output dir", str(out_root)),
+            ("Patches", len(files)),
+            ("Resume", "yes" if cfg.resume else "no"),
+        ],
+        title="Apply Config",
+    )
+
+    print_step("LOAD", f"Loading weights ← {weights}")
+    normalizer.load_weights(weights)
+
+    processed = skipped = failed = 0
+
+    print_step("NORM", "Normalising patches …")
+    roots = dict(collected)
+    for fp in track(files, "Normalising"):
+        relative = fp.relative_to(roots[fp])
+        item_name = "__".join(relative.with_suffix("").parts)
+        out_path = layout.item_dir("stain_normalization", item_name) / fp.name
+
+        if cfg.resume and out_path.exists():
+            skipped += 1
+            continue
+
+        try:
+            img = imread_rgb(fp)
+            if img is None:
+                raise ValueError("imread returned None")
+            imwrite_rgb(out_path, normalizer.transform(img))
+            processed += 1
+        except Exception as exc:
+            failed += 1
+            print_warn(f"Failed [{fp.name}]: {exc}")
+
+    print_counts(ok=processed, fail=failed, label="Normalisation")
+    print_summary_table(
+        [
+            ("Total", len(files)),
+            ("Processed", processed),
+            ("Skipped", skipped),
+            ("Failed", failed),
+            ("Output", str(out_root)),
+        ],
+        title="Apply Results",
+    )
+    print_done("Normalisation complete.")
+
+    return {"processed": processed, "skipped": skipped, "failed": failed, "total": len(files)}

@@ -59,9 +59,13 @@ def open_slide(path):
     """Use OpenSlide when supported and Pillow for ordinary bounded images."""
     try:
         import openslide
-        return openslide.OpenSlide(str(path)), True
-    except (ImportError, OSError):
-        pass
+    except ImportError:
+        openslide = None
+    if openslide is not None:
+        try:
+            return openslide.OpenSlide(str(path)), True
+        except (OSError, openslide.OpenSlideError):
+            pass
     image = Image.open(path)
     if image.width * image.height > 100_000_000:
         image.close()

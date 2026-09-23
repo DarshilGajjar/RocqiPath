@@ -1,0 +1,90 @@
+site_name: RocqiPath
+site_description: Whole-slide image processing for computational pathology.
+repo_url: https://github.com/DarshilGajjar/RocqiPath
+edit_uri: edit/main/docs/
+strict: true
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: deep purple
+      accent: pink
+      toggle:
+        icon: material/weather-night
+        name: Dark mode
+    - scheme: slate
+      primary: deep purple
+      accent: pink
+      toggle:
+        icon: material/weather-sunny
+        name: Light mode
+  features:
+    - navigation.sections
+    - navigation.top
+    - content.code.copy
+    - search.suggest
+
+markdown_extensions:
+  - admonition
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.highlight
+  - pymdownx.superfences
+  - pymdownx.details
+  - pymdownx.snippets:
+      base_path: ["."]
+      check_paths: true
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [src]
+          options:
+            docstring_style: numpy
+            show_source: false
+            show_root_heading: true
+            show_signature_annotations: false
+            separate_signature: true
+            members_order: source
+            merge_init_into_class: true
+            filters: ["!^_"]
+
+not_in_nav: |
+  superpowers/**
+
+nav:
+  - Home: index.md
+  - Getting started: getting-started.md
+  - Concepts:
+      - Magnification: concepts/magnification.md
+      - Outputs and manifests: concepts/outputs-and-manifests.md
+      - Chaining workflows: concepts/chaining.md
+  - Workflows:
+      - workflows/index.md
+      - Extract tissue: workflows/extract-tissue.md
+      - Extract TMA cores: workflows/extract-tma.md
+      - Extract patch pairs: workflows/extract-patches.md
+      - Align slides: workflows/align.md
+      - Stain normalization: workflows/stain.md
+      - Count cells: workflows/count-cells.md
+      - Comparison figures: workflows/compare.md
+      - Marker overlays: workflows/overlay-markers.md
+  - Studio: studio.md
+  - API reference:
+      - rocqipath: reference/index.md
+      - Configs: reference/configs.md
+      - Results and registry: reference/results.md
+      - Slides and files (io): reference/io.md
+      - Building blocks: reference/building-blocks.md
+      - Errors: reference/errors.md
+  - Contributing:
+      - Architecture: contributing/architecture.md
+      - Adding a workflow: contributing/adding-a-workflow.md
+      - Testing: contributing/testing.md
+  - Migrating to 2.0: migration.md
+  - History:
+      - Reliability review (1.x): history/reliability-review.md

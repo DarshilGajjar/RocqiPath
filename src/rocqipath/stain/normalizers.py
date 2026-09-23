@@ -7,10 +7,10 @@ from typing import Dict, List, Optional, Union
 
 import numpy as np
 
-from rocqipath.core.console import track
-from rocqipath.core.exceptions import ConfigurationError, DependencyError, ExtractionError
-from rocqipath.core.logging import logger
-from rocqipath.core.tissue import tissue_fraction as _shared_tissue_fraction
+from rocqipath._internal.console import track
+from rocqipath.errors import ConfigurationError, DependencyError, ExtractionError
+from rocqipath._internal.logging import logger
+from rocqipath.tissue.masks import tissue_fraction as _shared_tissue_fraction
 
 
 try:
@@ -30,7 +30,7 @@ except ImportError:
         Its sole purpose is to raise a clear, actionable error at the
         point of instantiation (rather than an opaque ``ImportError``
         somewhere deep in a normalizer's ``__init__``) — see
-        :meth:`__init__`. It intentionally does not implement any of the
+        `__init__`. It intentionally does not implement any of the
         real normalizer's methods (``fit``, ``transform``, etc.), since
         it is never meant to be used beyond raising.
         """
@@ -51,7 +51,7 @@ except ImportError:
     _TIAVahadaneNormalizer = _TIAReinhardNormalizer
 
 
-def tissue_fraction(rgb: np.ndarray, thresh: float = 0.15) -> float:
+def _od_tissue_fraction(rgb: np.ndarray, thresh: float = 0.15) -> float:
     """Estimate the fraction of tissue pixels using optical-density thresholding."""
     return _shared_tissue_fraction(
         rgb,
@@ -107,7 +107,7 @@ class StainNormalizerBase:
 class ReinhardNormalizer(StainNormalizerBase):
     """Colour normalisation via Reinhard *et al.* LAB statistics matching.
 
-    Wraps :class:`tiatoolbox.tools.stainnorm.ReinhardNormalizer` and adds
+    Wraps `tiatoolbox.tools.stainnorm.ReinhardNormalizer` and adds
     ``fit_from_patches`` (aggregate statistics over many patches instead
     of a single target image) plus ``save_weights`` / ``load_weights``.
 
@@ -122,11 +122,11 @@ class ReinhardNormalizer(StainNormalizerBase):
         Raises
         ------
         DependencyError
-            If ``tiatoolbox`` is not installed. Call :meth:`fit` or
-            :meth:`fit_from_patches` (or :meth:`load_weights`) before
-            calling :meth:`transform`; ``target_means``/``target_stds``
-            start as ``None`` and :meth:`transform` raises
-            :class:`~rocqipath.core.exceptions.ExtractionError` if called too
+            If ``tiatoolbox`` is not installed. Call `fit` or
+            `fit_from_patches` (or `load_weights`) before
+            calling `transform`; ``target_means``/``target_stds``
+            start as ``None`` and `transform` raises
+            `rocqipath.errors.ExtractionError` if called too
             early.
         """
         if not _TIATOOLBOX_AVAILABLE:
@@ -231,10 +231,10 @@ class ReinhardNormalizer(StainNormalizerBase):
         -----
         Saves ``target_means`` and ``target_stds`` (each a flat
         ``(3,)`` array — one value per LAB channel) via
-        :func:`numpy.savez`. Load them back later with
-        :meth:`load_weights`, either on this same instance or a fresh
-        one, to reuse a fitted target without re-running :meth:`fit` or
-        :meth:`fit_from_patches`.
+        `numpy.savez`. Load them back later with
+        `load_weights`, either on this same instance or a fresh
+        one, to reuse a fitted target without re-running `fit` or
+        `fit_from_patches`.
         """
         path = self._save_archive(
             path,
@@ -249,7 +249,7 @@ class ReinhardNormalizer(StainNormalizerBase):
         Parameters
         ----------
         path : Path or str
-            Path to a file previously written by :meth:`save_weights`.
+            Path to a file previously written by `save_weights`.
 
         Returns
         -------
@@ -289,11 +289,11 @@ class MacenkoNormalizer(StainNormalizerBase):
         Raises
         ------
         DependencyError
-            If ``tiatoolbox`` is not installed. Call :meth:`fit` (or
-            :meth:`load_weights`) before calling :meth:`transform` or
-            :meth:`hematoxylin`; ``stain_matrix_target`` starts as
-            ``None`` and :meth:`transform` raises
-            :class:`~rocqipath.core.exceptions.ExtractionError` if called too
+            If ``tiatoolbox`` is not installed. Call `fit` (or
+            `load_weights`) before calling `transform` or
+            `hematoxylin`; ``stain_matrix_target`` starts as
+            ``None`` and `transform` raises
+            `rocqipath.errors.ExtractionError` if called too
             early.
         """
         if not _TIATOOLBOX_AVAILABLE:
@@ -384,9 +384,9 @@ class MacenkoNormalizer(StainNormalizerBase):
         Notes
         -----
         Saves ``stain_matrix_target`` (as ``"sm"``) and
-        ``target_concentrations`` (as ``"tc"``) via :func:`numpy.savez`.
-        Load them back later with :meth:`load_weights` to reuse a fitted
-        target without re-running :meth:`fit`.
+        ``target_concentrations`` (as ``"tc"``) via `numpy.savez`.
+        Load them back later with `load_weights` to reuse a fitted
+        target without re-running `fit`.
         """
         path = self._save_archive(
             path,
@@ -401,7 +401,7 @@ class MacenkoNormalizer(StainNormalizerBase):
         Parameters
         ----------
         path : Path or str
-            Path to a file previously written by :meth:`save_weights`.
+            Path to a file previously written by `save_weights`.
 
         Returns
         -------
@@ -443,11 +443,11 @@ class VahadaneNormalizer(StainNormalizerBase):
         Raises
         ------
         DependencyError
-            If ``tiatoolbox`` is not installed. Call :meth:`fit` (or
-            :meth:`load_weights`) before calling :meth:`transform` or
-            :meth:`hematoxylin`; ``stain_matrix_target`` starts as
-            ``None`` and :meth:`transform` raises
-            :class:`~rocqipath.core.exceptions.ExtractionError` if called too
+            If ``tiatoolbox`` is not installed. Call `fit` (or
+            `load_weights`) before calling `transform` or
+            `hematoxylin`; ``stain_matrix_target`` starts as
+            ``None`` and `transform` raises
+            `rocqipath.errors.ExtractionError` if called too
             early.
         """
         if not _TIATOOLBOX_AVAILABLE:
@@ -537,9 +537,9 @@ class VahadaneNormalizer(StainNormalizerBase):
         -----
         Saves ``stain_matrix_target`` (as ``"sm"``) and target concentration
         scaling (as ``"maxC"``) via
-        :func:`numpy.savez`. Load it back later with
-        :meth:`load_weights` to reuse a fitted target without
-        re-running :meth:`fit` (which, for Vahadane's sparse dictionary
+        `numpy.savez`. Load it back later with
+        `load_weights` to reuse a fitted target without
+        re-running `fit` (which, for Vahadane's sparse dictionary
         learning, can be comparatively slow).
         """
         path = self._save_archive(
@@ -553,7 +553,7 @@ class VahadaneNormalizer(StainNormalizerBase):
         Parameters
         ----------
         path : Path or str
-            Path to a file previously written by :meth:`save_weights`.
+            Path to a file previously written by `save_weights`.
 
         Returns
         -------

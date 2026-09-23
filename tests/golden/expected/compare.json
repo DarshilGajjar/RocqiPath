@@ -1,0 +1,111 @@
+{
+  "files": {
+    "comparison.png": {
+      "figure": true
+    },
+    "comparison_detail_center.png": {
+      "figure": true
+    },
+    "comparison_random_detail_roi_01.png": {
+      "figure": true
+    },
+    "comparison_random_roi_annotated.png": {
+      "figure": true
+    },
+    "comparison_random_roi_coords.json": {
+      "image_size": [
+        800,
+        800
+      ],
+      "rois": {
+        "detail": [
+          {
+            "bbox": [
+              185,
+              140,
+              441,
+              396
+            ],
+            "roi_id": "roi_01"
+          }
+        ]
+      },
+      "seed": 42
+    },
+    "rocqipath.json": {
+      "runs": {
+        "compare": {
+          "config": {
+            "dpi": 50,
+            "figure_name": "comparison.png",
+            "mpp": 0.5,
+            "random_rois": 1,
+            "regions": [
+              "center"
+            ],
+            "roi_seed": 42,
+            "scale_bars": true,
+            "title_prediction": "Pred",
+            "title_reference": "HE",
+            "title_truth": "GT",
+            "zooms": [
+              "detail:256"
+            ]
+          },
+          "inputs": [
+            "<ROOT>/compare_in/he.tif",
+            "<ROOT>/compare_in/gt.tif",
+            "<ROOT>/compare_in/pred.tif"
+          ],
+          "items": [
+            {
+              "magnification": null,
+              "meta": {},
+              "path": "comparison.png",
+              "role": "figure",
+              "sample_id": "he",
+              "source": null
+            },
+            {
+              "magnification": null,
+              "meta": {},
+              "path": "comparison_detail_center.png",
+              "role": "figure",
+              "sample_id": "he",
+              "source": null
+            },
+            {
+              "magnification": null,
+              "meta": {},
+              "path": "comparison_random_detail_roi_01.png",
+              "role": "figure",
+              "sample_id": "he",
+              "source": null
+            },
+            {
+              "magnification": null,
+              "meta": {},
+              "path": "comparison_random_roi_annotated.png",
+              "role": "figure",
+              "sample_id": "he",
+              "source": null
+            },
+            {
+              "magnification": null,
+              "meta": {},
+              "path": "comparison_random_roi_coords.json",
+              "role": "figure",
+              "sample_id": "he",
+              "source": null
+            }
+          ],
+          "summary": {
+            "figures": 5
+          }
+        }
+      },
+      "schema": 1
+    }
+  },
+  "returned": {}
+}

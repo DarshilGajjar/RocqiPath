@@ -5,8 +5,8 @@ from __future__ import annotations
 import logging
 from typing import Any, Optional, Tuple
 
-from rocqipath.core.magnification import objective_magnification_from_properties
-from rocqipath.utils.vips import vips_properties as _vips_properties
+from rocqipath.io.magnification import objective_magnification_from_properties
+from rocqipath.io.vips import vips_properties as _vips_properties
 
 for _n in ("pyvips", "VIPS", "PIL", "PIL.Image", "PIL.TiffImagePlugin", "matplotlib", "openslide"):
     logging.getLogger(_n).setLevel(logging.CRITICAL)

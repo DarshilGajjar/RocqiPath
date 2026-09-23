@@ -1,42 +1,51 @@
-# RocqiPath Studio web interface
+# RocqiPath Studio interface
 
-**Status: unfinished interface scaffold.** The Python Studio API has been
-written but is not yet verified, and this frontend is not connected to it.
+The browser interface for `rocqipath studio`: a slide library, a zoomable
+side-by-side viewer, one generated form per workflow, and job history with
+logs and results. It is a static React app; the production build is written to
+`src/rocqipath/studio/static/` and served by the Python server, so **using**
+Studio needs no Node.js:
 
-Read the [local Studio usage guide](../how_to_use/09_Studio_Web.md) for Python
-setup, backend launch, frontend development, API examples, workflow inputs,
-output locations, and troubleshooting.
+```console
+python -m pip install -e ".[studio,extraction,cellcount]"
+rocqipath studio            # then open http://127.0.0.1:8765
+```
 
-Install frontend dependencies once, from this directory:
+## Developing the interface
+
+Requires Node.js 20+ and pnpm.
 
 ```console
 pnpm install
+bash ../start-studio.sh --dev   # Python API on :8765 and Vite on :5173 with live reload
+pnpm test                       # unit tests (form generation, settings parsing)
+pnpm build                      # type-check and rebuild src/rocqipath/studio/static
 ```
 
-Then start the frontend from the repository root using **Git Bash** on Windows,
-or Bash on macOS/Linux:
+Commit the rebuilt `static/` folder together with interface changes.
 
-```bash
-bash start-studio.sh
-```
+## How the forms are generated
 
-The script locates `studio-web` relative to itself, so an absolute path to the
-script also works from another directory. It finds pnpm, installs missing
-frontend dependencies, then runs `pnpm dev` in the foreground;
-press **Ctrl+C** to stop. Extra arguments are forwarded, for example
-`bash start-studio.sh --port 3001`. Node.js and pnpm must be on your shell's PATH.
+The interface has no per-workflow code. `GET /api/workflows` returns each
+workflow's settings schema, built from its config class and docstrings, and
+`src/components/WorkflowForm.tsx` renders any schema. A new workflow registered
+in Python appears here automatically.
 
-Open the local address printed by the development server. Starting this
-preview does not start the RocqiPath backend. The generated `pnpm start`
-script uses Wrangler; it is not the final local Studio launcher.
-
-The backend entry point, from the repository root in a prepared Python
-3.10–3.11 environment, is:
+`src/test/workflows.json` is a snapshot of that endpoint used by the tests.
+After changing a config, regenerate it (a Python test fails until you do):
 
 ```console
-python -m rocqipath.studio --port 8765
+python -m rocqipath.studio.catalog > studio-web/src/test/workflows.json
 ```
 
-Its [status endpoint](http://127.0.0.1:8765/api/status) and
-[API reference](http://127.0.0.1:8765/docs) are independent of the frontend.
-See the full guide before submitting processing jobs.
+## Layout
+
+| Path | Purpose |
+|---|---|
+| `src/api.ts` | Typed client for the Studio API |
+| `src/settings.ts` | Schema to form fields to submitted settings |
+| `src/components/Library.tsx` | Folders, folder browser, slide grid and selection |
+| `src/components/Viewer.tsx` | OpenSeadragon viewer with synchronized comparison |
+| `src/components/WorkflowForm.tsx` | The generic workflow form and input pickers |
+| `src/components/Run.tsx` | Workflow list and form |
+| `src/components/Jobs.tsx` | Job history, live log, artifacts, "use as input" |

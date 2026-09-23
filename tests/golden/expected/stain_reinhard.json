@@ -1,0 +1,135 @@
+{
+  "files": {
+    "rocqipath.json": {
+      "runs": {
+        "normalize_stain": {
+          "config": {
+            "fit_min_tissue": 0.1,
+            "max_train_patches": 1000,
+            "method": "macenko",
+            "resume": false,
+            "stains": [
+              "he"
+            ]
+          },
+          "inputs": [
+            "<ROOT>/stain_in"
+          ],
+          "items": [
+            {
+              "magnification": null,
+              "meta": {},
+              "path": "stain_normalization/he__patch_0/patch_0.png",
+              "role": "normalized",
+              "sample_id": "he__patch_0",
+              "source": null
+            },
+            {
+              "magnification": null,
+              "meta": {},
+              "path": "stain_normalization/he__patch_1/patch_1.png",
+              "role": "normalized",
+              "sample_id": "he__patch_1",
+              "source": null
+            },
+            {
+              "magnification": null,
+              "meta": {},
+              "path": "stain_normalization/he__patch_2/patch_2.png",
+              "role": "normalized",
+              "sample_id": "he__patch_2",
+              "source": null
+            }
+          ],
+          "summary": {
+            "failed": 0,
+            "processed": 3,
+            "skipped": 0,
+            "total": 3
+          }
+        },
+        "train_stain_normalizer": {
+          "config": {
+            "fit_min_tissue": 0.1,
+            "max_train_patches": 1000,
+            "method": "reinhard",
+            "resume": false,
+            "stains": [
+              "he"
+            ]
+          },
+          "inputs": [
+            "<ROOT>/stain_in"
+          ],
+          "items": [
+            {
+              "magnification": null,
+              "meta": {
+                "method": "reinhard"
+              },
+              "path": "stain_normalization/reinhard_weights.npz",
+              "role": "weights",
+              "sample_id": "reinhard",
+              "source": null
+            }
+          ],
+          "summary": {
+            "method": "reinhard",
+            "weights": "<ROOT>/out/stain_normalization/reinhard_weights.npz"
+          }
+        }
+      },
+      "schema": 1
+    },
+    "stain_normalization/he__patch_0/patch_0.png": {
+      "mean": [
+        198.7,
+        154.4,
+        186.7
+      ],
+      "size": [
+        128,
+        128
+      ]
+    },
+    "stain_normalization/he__patch_1/patch_1.png": {
+      "mean": [
+        198.9,
+        154.0,
+        186.7
+      ],
+      "size": [
+        128,
+        128
+      ]
+    },
+    "stain_normalization/he__patch_2/patch_2.png": {
+      "mean": [
+        199.1,
+        154.0,
+        186.6
+      ],
+      "size": [
+        128,
+        128
+      ]
+    },
+    "stain_normalization/reinhard_weights.npz": {
+      "means": [
+        3
+      ],
+      "stds": [
+        3
+      ]
+    }
+  },
+  "returned": {
+    "applied": {
+      "failed": 0,
+      "processed": 3,
+      "skipped": 0,
+      "total": 3
+    },
+    "weights": "reinhard_weights.npz"
+  }
+}
