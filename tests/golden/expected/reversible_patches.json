@@ -435,9 +435,9 @@
     },
     "reconstructed_wsi/Sample_0001_CD8_he_pyramid.tif": {
       "mean": [
-        214.2,
-        185.6,
-        209.9
+        216.9,
+        172.3,
+        200.1
       ],
       "size": [
         256,
@@ -446,9 +446,9 @@
     },
     "reconstructed_wsi/Sample_0001_CD8_ihc_pyramid.tif": {
       "mean": [
-        214.2,
-        185.6,
-        209.9
+        208.5,
+        214.1,
+        230.8
       ],
       "size": [
         256,

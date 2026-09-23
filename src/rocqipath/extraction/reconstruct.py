@@ -66,6 +66,12 @@ def _select_patch(candidates: List[str], case_id: str, tag: str) -> str:
     """Resolve ambiguous patch filenames using the historical keyword rule."""
     if len(candidates) == 1:
         return candidates[0]
+    # Flat layouts name patches ``<case>_<stain>_patch_<id>``; every candidate
+    # contains the case ID, so the stain tag must decide first.
+    marker = f"_{tag}_patch_"
+    exact = [c for c in candidates if marker in os.path.basename(c).lower()]
+    if exact:
+        return sorted(exact)[0]
     return next(
         (
             candidate
