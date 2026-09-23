@@ -5,8 +5,8 @@ from __future__ import annotations
 import argparse
 import os
 
-from rocqipath.core.logging import configure_logging, logger
-from rocqipath.utils.manifest import load_manifest as _load_manifest
+from rocqipath._internal.logging import configure_logging, logger
+from rocqipath.io.manifest import load_manifest as _load_manifest
 
 VALID_REGIONS = ("center", "top_left", "top_right", "bottom_left", "bottom_right")
 
@@ -95,7 +95,7 @@ def _resolve_inputs(
 
 def run(args: argparse.Namespace, parser: argparse.ArgumentParser) -> int:
     """Generate all requested WSI comparison figures."""
-    from rocqipath.visualization.comparison_workflow import visualize_side_by_side
+    from rocqipath.viz.comparison import visualize_side_by_side
 
     if args.random_rois < 0:
         parser.error("--random-rois must be >= 0.")

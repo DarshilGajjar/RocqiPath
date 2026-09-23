@@ -7,10 +7,10 @@ from typing import Dict, List, Optional, Union
 
 import numpy as np
 
-from rocqipath.core.console import track
-from rocqipath.core.exceptions import ConfigurationError, DependencyError, ExtractionError
-from rocqipath.core.logging import logger
-from rocqipath.core.tissue import tissue_fraction as _shared_tissue_fraction
+from rocqipath._internal.console import track
+from rocqipath.errors import ConfigurationError, DependencyError, ExtractionError
+from rocqipath._internal.logging import logger
+from rocqipath.tissue.masks import tissue_fraction as _shared_tissue_fraction
 
 
 try:
@@ -51,7 +51,7 @@ except ImportError:
     _TIAVahadaneNormalizer = _TIAReinhardNormalizer
 
 
-def tissue_fraction(rgb: np.ndarray, thresh: float = 0.15) -> float:
+def _od_tissue_fraction(rgb: np.ndarray, thresh: float = 0.15) -> float:
     """Estimate the fraction of tissue pixels using optical-density thresholding."""
     return _shared_tissue_fraction(
         rgb,
@@ -126,7 +126,7 @@ class ReinhardNormalizer(StainNormalizerBase):
             :meth:`fit_from_patches` (or :meth:`load_weights`) before
             calling :meth:`transform`; ``target_means``/``target_stds``
             start as ``None`` and :meth:`transform` raises
-            :class:`~rocqipath.core.exceptions.ExtractionError` if called too
+            :class:`~rocqipath.errors.ExtractionError` if called too
             early.
         """
         if not _TIATOOLBOX_AVAILABLE:
@@ -293,7 +293,7 @@ class MacenkoNormalizer(StainNormalizerBase):
             :meth:`load_weights`) before calling :meth:`transform` or
             :meth:`hematoxylin`; ``stain_matrix_target`` starts as
             ``None`` and :meth:`transform` raises
-            :class:`~rocqipath.core.exceptions.ExtractionError` if called too
+            :class:`~rocqipath.errors.ExtractionError` if called too
             early.
         """
         if not _TIATOOLBOX_AVAILABLE:
@@ -447,7 +447,7 @@ class VahadaneNormalizer(StainNormalizerBase):
             :meth:`load_weights`) before calling :meth:`transform` or
             :meth:`hematoxylin`; ``stain_matrix_target`` starts as
             ``None`` and :meth:`transform` raises
-            :class:`~rocqipath.core.exceptions.ExtractionError` if called too
+            :class:`~rocqipath.errors.ExtractionError` if called too
             early.
         """
         if not _TIATOOLBOX_AVAILABLE:

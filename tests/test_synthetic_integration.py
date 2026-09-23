@@ -5,13 +5,13 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from rocqipath.extraction.patch_pipeline import (
+from rocqipath.extraction.patches import (
     PatchExtractionConfig,
     run_patch_extraction,
 )
-from rocqipath.registration.pipeline import AlignmentConfig, run_alignment
-from rocqipath.utils import discover_patch_pairs
-from rocqipath.utils.manifest import write_region_manifest, write_slide_manifest
+from rocqipath.alignment.pipeline import AlignmentConfig, run_alignment
+from rocqipath.io.discovery import discover_patch_pairs
+from rocqipath.io.manifest import write_region_manifest, write_slide_manifest
 
 
 def test_registration_dry_run_discovers_pair_without_result_object(synthetic_registration_tree):

@@ -47,7 +47,7 @@ import, function, config, and CLI flag to its replacement.
 ```
 src/rocqipath/
   __init__.py        Tier-1 public API (lazy attribute loading, see §3.1)
-  workflows.py       Workflow registry, @workflow decorator, rp.run(), Result, Item
+  registry.py        Workflow registry, @workflow decorator, rp.run(), Result, Item
   errors.py          Public exception hierarchy (was core/exceptions.py)
   io/                Reading and writing slides and files
     slide.py           SlideReader, open_slide
@@ -59,7 +59,7 @@ src/rocqipath/
     output.py          OutputLayout, safe_name
     manifest.py        region/slide manifests + run manifest (rocqipath.json)
     inputs.py          resolve_inputs(): file | folder | list | Result | manifest folder
-  tissue/            Tissue detection primitives (used by extract, count, stain)
+  tissue/            Tissue detection primitives (used by extraction, counting, stain)
     masks.py           tissue_mask, tissue_fraction (single definition), is_tissue, OD helpers
     detection.py       Otsu region detection
     semantic.py        TIAToolbox semantic masks/regions
@@ -68,7 +68,7 @@ src/rocqipath/
     regions.py         extract_tissue workflow
     tma.py             extract_tma workflow
     patches.py         extract_patches workflow (paired patches)
-    patch_single.py    single-slide patch helper
+    patch_single.py    single-slide grid patch helper
     engine.py          shared region-extraction engine
     reversible.py      ReversiblePatchExtractor (Tier 2)
     reconstruct.py     patch reconstruction and pyramid export
@@ -76,7 +76,7 @@ src/rocqipath/
     config.py          AlignConfig, OrbOptions, ValisOptions
     pipeline.py        align workflow
     registrar.py       WSIRegistrar (Tier 2; takes AlignConfig, not a dict)
-    orb/backend.py, orb/stages.py
+    orb_backend.py, orb_stages.py
     valis.py
     export.py          aligned WSI export + aligned manifest
     quality.py         QC figures
@@ -85,7 +85,7 @@ src/rocqipath/
   stain/
     config.py          StainConfig
     normalizers.py     Reinhard/Macenko/Vahadane, get_normalizer (Tier 2)
-    pipeline.py        train_stain_normalizer, normalize_stain workflows
+    batch.py           train_stain_normalizer, normalize_stain workflows
   counting/
     config.py          CountCellsConfig
     counter.py         PositiveCellCounter (Tier 2) + count_cells workflow
@@ -93,18 +93,22 @@ src/rocqipath/
   viz/
     config.py          OverlayConfig, MarkerProfile, OverlayCombo, CompareConfig
     comparison.py      compare workflow (was comparison_workflow.py)
-    overlays/          overlay_markers workflow: workflow.py, masks.py, figures.py
-    grids.py, pairs.py, thumbnails.py, roi.py   (Tier 2 plotting helpers)
-    _figure_helpers.py
+    overlays.py        overlay_markers workflow (+ overlay_masks.py, overlay_figures.py)
+    grids.py, pairs.py, thumbnails.py, roi.py, figure_helpers.py   (Tier 2 plotting helpers)
   _internal/
-    config.py          BaseConfig, field metadata helpers, docstring → field-help parser
-    console.py, logging.py, validation.py, geometry.py, reporting.py
+    base_config.py     BaseConfig, field metadata helpers, docstring → field-help parser
+    console.py, logging.py, validation.py, geometry.py, config_panel.py
   cli/               Generated from the registry (see §6)
   studio/            Uses the registry (see §7)
 ```
 
 The configs move next to their workflows, so a contributor finds everything
-about a workflow in one folder. Tier 1 re-exports them.
+about a workflow in one folder. Tier 1 re-exports them. `config.py` is the one
+filename repeated on purpose, as a per-package convention; every other module
+name is unique (enforced by `tests/test_structure.py`). The duplicated helpers
+had different semantics, so they were renamed rather than merged:
+`tissue.masks.tissue_fraction` is the shared primitive, the stain OD preset is
+private, and the bounding-box variant is `_internal.geometry.region_tissue_fraction`.
 
 Subpackages are named with nouns (`extraction`, `alignment`, `counting`) and
 workflows with verbs (`rp.align`, `rp.count_cells`). This keeps a Tier-1

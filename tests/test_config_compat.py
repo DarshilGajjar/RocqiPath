@@ -5,21 +5,14 @@ from __future__ import annotations
 import pytest
 
 import rocqipath.extraction as extraction
-import rocqipath.registration as registration
+import rocqipath.alignment as registration
 import rocqipath.stain as stain
-import rocqipath.visualization as visualization
-from rocqipath.config import (
-    AlignmentConfig,
-    IHCOverlayConfig,
-    MarkerProfile,
-    OverlayCombo,
-    PatchExtractionConfig,
-    StainNormalizationConfig,
-    TMAExtractionConfig,
-    TissueExtractionConfig,
-    ValisConfig,
-)
-from rocqipath.core.exceptions import ConfigurationError
+import rocqipath.viz as visualization
+from rocqipath.alignment.config import AlignmentConfig, ValisConfig
+from rocqipath.extraction.config import PatchExtractionConfig, TMAExtractionConfig, TissueExtractionConfig
+from rocqipath.stain.config import StainNormalizationConfig
+from rocqipath.viz.config import IHCOverlayConfig, MarkerProfile, OverlayCombo
+from rocqipath.errors import ConfigurationError
 
 
 def test_feature_packages_reexport_central_config_classes() -> None:

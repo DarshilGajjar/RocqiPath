@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import argparse
 
-from rocqipath.core.console import print_error, print_warn
-from rocqipath.core.exceptions import ConfigurationError, DependencyError, ExtractionError
+from rocqipath._internal.console import print_error, print_warn
+from rocqipath.errors import ConfigurationError, DependencyError, ExtractionError
 
 
 def configure_parser(parser: argparse.ArgumentParser) -> None:

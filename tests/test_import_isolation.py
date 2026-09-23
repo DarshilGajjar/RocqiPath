@@ -37,16 +37,19 @@ class BlockHeavyModules(importlib.abc.MetaPathFinder):
 
 sys.meta_path.insert(0, BlockHeavyModules())
 import rocqipath
-import rocqipath.core
-import rocqipath.utils
-import rocqipath.utils.discovery
-import rocqipath.utils.geometry
-import rocqipath.utils.imageio
-import rocqipath.utils.manifest
-import rocqipath.utils.naming
-import rocqipath.utils.reporting
-import rocqipath.utils.validation
-import rocqipath.utils.vips
+import rocqipath.errors
+import rocqipath.io
+import rocqipath.tissue
+import rocqipath._internal.console
+import rocqipath._internal.logging
+import rocqipath.io.discovery
+import rocqipath._internal.geometry
+import rocqipath.io.images
+import rocqipath.io.manifest
+import rocqipath.io.naming
+import rocqipath._internal.config_panel
+import rocqipath._internal.validation
+import rocqipath.io.vips
 loaded = {{name.split(".", 1)[0] for name in sys.modules}}
 unexpected = sorted(set(blocked) & loaded)
 if unexpected:

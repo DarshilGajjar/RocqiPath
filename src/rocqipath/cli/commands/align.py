@@ -29,7 +29,7 @@ def configure_parser(parser: argparse.ArgumentParser) -> None:
 
 def run(args: argparse.Namespace, parser: argparse.ArgumentParser) -> int:
     """Run alignment from parsed command-line arguments."""
-    from rocqipath.registration import AlignmentConfig, run_alignment
+    from rocqipath.alignment import AlignmentConfig, run_alignment
 
     config = AlignmentConfig(
         input_dir=args.input_dir,

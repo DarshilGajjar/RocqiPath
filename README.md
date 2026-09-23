@@ -81,10 +81,11 @@ TIAToolbox or libvips report skips when those optional backends are absent.
 With the stain dependencies installed, `python -m pytest tests/test_stain_persistence.py`
 also checks fit/save/load/transform equivalence for all three normalizers.
 
-Feature workflows live in `src/rocqipath/{extraction,registration,stain,analysis,visualization}`.
-Their typed settings live in `config`, shared slide/magnification/output primitives
-in `core`, and focused helpers in `utils`. Add regression tests beside the relevant
-workflow tests before fixing behavior; preserve the feature package's public imports.
+Feature workflows live in `src/rocqipath/{extraction,alignment,stain,counting,viz}`.
+Each keeps its typed settings in its own `config.py`. Slide reading, magnification,
+discovery and output layout live in `io`, tissue masks in `tissue`, and private helpers
+in `_internal`. Tests mirror this layout; `tests/golden` snapshots every workflow's
+outputs and must keep passing.
 
 Older Macenko weights remain loadable. Older Vahadane archives containing only
 `sm` must be retrained: they lack the concentration scaling needed for normalization.

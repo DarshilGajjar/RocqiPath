@@ -10,11 +10,11 @@ from typing import Dict, List, Optional, Tuple
 
 from tqdm.auto import tqdm
 
-from rocqipath.core.magnification import DEFAULT_TARGET_MAGNIFICATION
-from rocqipath.core.output import OutputLayout
-from rocqipath.core.slide import SlideReader as _SlideReader
-from rocqipath.core.tissue import pil_is_tissue as _pil_is_tissue
-from rocqipath.extraction.reconstruction import (
+from rocqipath.io.magnification import DEFAULT_TARGET_MAGNIFICATION
+from rocqipath.io.output import OutputLayout
+from rocqipath.io.slide import SlideReader as _SlideReader
+from rocqipath.tissue.masks import pil_is_tissue as _pil_is_tissue
+from rocqipath.extraction.reconstruct import (
     _assemble_canvas,
     _finalize_canvas,
     _index_patch_files,
@@ -22,7 +22,7 @@ from rocqipath.extraction.reconstruction import (
     _patch_directory,
     _save_pyramid,
 )
-from rocqipath.utils.discovery import find_aligned_wsi
+from rocqipath.io.discovery import find_aligned_wsi
 
 
 class ReversiblePatchExtractor:

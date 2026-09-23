@@ -100,7 +100,7 @@ Steps:
 
 ## Phase 2 — Public API, registry, config simplification
 
-- [ ] **Registry.** Add `rocqipath/workflows.py`:
+- [ ] **Registry.** Add `rocqipath/registry.py`:
   - `Item`, `Result`, `InputSpec`, and the `Workflow` record;
   - the `@workflow(name, config, extra, inputs)` decorator;
   - `WORKFLOWS`, `run()`, and `list_workflows()`.
