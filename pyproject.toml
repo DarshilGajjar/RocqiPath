@@ -142,7 +142,7 @@ rocqipath = "rocqipath.cli:main"
 where = ["src"]
 
 [tool.setuptools.package-data]
-rocqipath = ["py.typed"]
+rocqipath = ["py.typed", "studio/static/*", "studio/static/assets/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

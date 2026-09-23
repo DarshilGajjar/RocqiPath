@@ -13,6 +13,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field, ConfigDict
 
 from rocqipath import __version__
+from rocqipath.io.inputs import resolve_inputs
 from . import slides
 from .store import Store
 from . import catalog as workflow_catalog
@@ -161,6 +162,7 @@ def create_app(workspace: Path, static_dir: Path | None = None):
             raise HTTPException(409, str(exc)) from exc
         inputs = [resolve(ref) for ref in body.inputs]
         options = {name: resolve(ref) for name, ref in body.options.items()}
+        resolve_inputs(inputs, workflow.inputs.roles)  # explain role mismatches before queueing
         return store.submit(workflow.name, inputs, {"options": options, "settings": body.settings})
 
     @app.get("/api/jobs/{job_id}")

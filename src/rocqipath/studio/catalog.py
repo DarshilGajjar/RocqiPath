@@ -112,3 +112,14 @@ def validate(name: str, settings: Dict[str, Any], options: List[str]) -> Workflo
 
 
 __all__ = ["build_config", "catalog", "describe", "validate"]
+
+
+if __name__ == "__main__":  # pragma: no cover - developer tool
+    # Regenerate the frontend test fixture:
+    #   python -m rocqipath.studio.catalog > studio-web/src/test/workflows.json
+    import json
+
+    entries = catalog()
+    for entry in entries:
+        entry["available"], entry["missing"] = True, []
+    print(json.dumps(entries, indent=1, default=str))

@@ -24,18 +24,20 @@ from rocqipath.io.manifest import RUN_MANIFEST, read_run_manifest
 INPUT_ROLE = "input"
 
 
-def _items_from(value: Any) -> tuple[List[Any], bool]:
-    """Items for one input element and whether they came from a recorded run."""
+def _items_from(value: Any) -> tuple[List[Any], str | None]:
+    """Items for one input element, and a description when they come from a run."""
     from rocqipath.registry import Item, Result
 
     if isinstance(value, Result):
-        return list(value.items), True
+        return list(value.items), f"the {value.workflow} result"
     if isinstance(value, Item):
-        return [value], True
+        return [value], f"the {value.role} item"
     path = Path(value).expanduser()
     if path.is_dir() and (path / RUN_MANIFEST).is_file():
-        return [item for result in read_run_manifest(path) for item in result.items], True
-    return [Item(sample_id=path.stem, role=INPUT_ROLE, path=path.resolve())], False
+        results = read_run_manifest(path)
+        names = " and ".join(result.workflow for result in results) or "an empty"
+        return [item for result in results for item in result.items], f"the {names} output"
+    return [Item(sample_id=path.stem, role=INPUT_ROLE, path=path.resolve())], None
 
 
 def resolve_inputs(inputs: Any, roles: Sequence[str] = ()) -> List[Any]:
@@ -73,8 +75,8 @@ def resolve_inputs(inputs: Any, roles: Sequence[str] = ()) -> List[Any]:
             if not accepted:
                 found = sorted({item.role for item in items}) or ["nothing"]
                 raise ValueError(
-                    f"{element if not isinstance(element, Result) else element.workflow + ' result'} "
-                    f"holds {', '.join(found)}; expected one of: {', '.join(roles)}"
+                    f"{recorded} holds {', '.join(found)} files; this workflow needs "
+                    f"one of: {', '.join(roles)}"
                 )
             items = accepted
         missing = [str(item.path) for item in items if not Path(item.path).exists()]
