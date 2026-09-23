@@ -1,0 +1,125 @@
+"""Local Studio API integration and containment regressions."""
+
+import time
+
+import pytest
+from PIL import Image
+
+pytest.importorskip("fastapi")
+from fastapi.testclient import TestClient
+from rocqipath.studio.server import create_app
+
+
+@pytest.fixture
+def client(tmp_path):
+    with TestClient(create_app(tmp_path / "workspace"), base_url="http://127.0.0.1") as session:
+        yield session
+
+
+def test_folder_scan_metadata_and_tile(client, tmp_path):
+    folder = tmp_path / "slides"
+    folder.mkdir()
+    Image.new("RGB", (640, 480), (170, 100, 130)).save(folder / "example.tif")
+    response = client.post("/api/folders", json={"path": str(folder)})
+    assert response.status_code == 200, response.text
+    slides = client.get("/api/slides").json()
+    assert len(slides) == 1
+    info = client.get(f"/api/slides/{slides[0]['id']}/info").json()
+    assert (info["width"], info["height"]) == (640, 480)
+    tile = client.get(f"/api/slides/{slides[0]['id']}/tiles/10/0/0.jpg")
+    assert tile.status_code == 200
+    assert tile.headers["content-type"] == "image/jpeg"
+    assert client.get("/api/slides/not-registered/thumbnail").status_code == 404
+
+
+def test_cross_origin_mutations_and_unknown_workflows_rejected(client):
+    assert client.post("/api/demo", headers={"origin": "https://evil.example"}, json={}).status_code == 403
+    assert client.post("/api/jobs", json={"workflow": "shell", "inputs": []}).status_code == 422
+    unknown = client.post(
+        "/api/jobs", json={"workflow": "shell", "inputs": [{"kind": "slide", "id": "x"}]}
+    )
+    assert unknown.status_code == 404
+
+
+def _one_slide(client, tmp_path):
+    folder = tmp_path / "slides"
+    folder.mkdir()
+    Image.new("RGB", (128, 128), (110, 70, 35)).save(folder / "sample.tif")
+    client.post("/api/folders", json={"path": str(folder)})
+    return client.get("/api/slides").json()[0]
+
+
+def test_workflow_schema_lists_every_registered_workflow(client):
+    import rocqipath as rp
+
+    described = {w["name"]: w for w in client.get("/api/workflows").json()}
+    assert set(described) == {w.name for w in rp.list_workflows()}
+    count = described["count_cells"]
+    names = {f["name"] for f in count["settings"]}
+    assert {"label", "patch_size", "min_cell_area"} <= names
+    assert [o["name"] for o in count["options"]] == ["compare_to"]
+    align_fields = {f["name"] for f in described["align"]["settings"]}
+    assert "qc_output_dir" not in align_fields  # local paths never reach the browser
+
+
+def test_local_only_and_invalid_settings_are_rejected(client, tmp_path):
+    slide = _one_slide(client, tmp_path)
+    ref = {"kind": "slide", "id": slide["id"]}
+    path_setting = client.post(
+        "/api/jobs",
+        json={"workflow": "align", "inputs": [ref, ref], "settings": {"qc_output_dir": "/etc"}},
+    )
+    assert path_setting.status_code == 422
+    assert "qc_output_dir" in path_setting.text
+    invalid = client.post(
+        "/api/jobs",
+        json={"workflow": "count_cells", "inputs": [ref], "settings": {"tissue_threshold": 5}},
+    )
+    assert invalid.status_code == 422
+
+
+def test_real_count_job_and_artifact_containment(client, tmp_path):
+    slide = _one_slide(client, tmp_path)
+    result = client.post("/api/jobs", json={
+        "workflow": "count_cells",
+        "inputs": [{"kind": "slide", "id": slide["id"]}],
+        "settings": {"source_magnification": 20, "target_magnification": 20},
+    })
+    assert result.status_code == 200, result.text
+    job_id = result.json()["id"]
+    for _ in range(100):
+        job = client.get(f"/api/jobs/{job_id}").json()
+        if job["status"] not in {"queued", "running"}:
+            break
+        time.sleep(0.1)
+    assert job["status"] == "succeeded", job
+    assert any(a["name"].endswith(".json") for a in job["artifacts"])
+    assert client.get(f"/api/jobs/{job_id}/artifact?path=../../studio.sqlite").status_code == 403
+    artifact = job["artifacts"][0]
+    assert client.get(f"/api/jobs/{job_id}/artifact", params={"path": artifact["path"]}).status_code == 200
+
+
+def test_chained_job_uses_earlier_output_and_explains_role_mismatch(client, tmp_path):
+    slide = _one_slide(client, tmp_path)
+    first = client.post("/api/jobs", json={
+        "workflow": "count_cells",
+        "inputs": [{"kind": "slide", "id": slide["id"]}],
+        "settings": {"source_magnification": 20},
+    }).json()
+    for _ in range(100):
+        if client.get(f"/api/jobs/{first['id']}").json()["status"] not in {"queued", "running"}:
+            break
+        time.sleep(0.1)
+    chained = client.post("/api/jobs", json={
+        "workflow": "extract_tissue", "inputs": [{"kind": "job", "id": first["id"]}],
+    })
+    assert chained.status_code == 422
+    assert "the count_cells output holds count files" in chained.text
+
+
+def test_history_survives_restart(tmp_path):
+    workspace = tmp_path / "work"
+    with TestClient(create_app(workspace)) as client:
+        client.post("/api/folders", json={"path": str(tmp_path)})
+    with TestClient(create_app(workspace)) as client:
+        assert len(client.get("/api/folders").json()) == 1

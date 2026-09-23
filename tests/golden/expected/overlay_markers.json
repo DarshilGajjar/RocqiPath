@@ -1,0 +1,94 @@
+{
+  "files": {
+    "rocqipath.json": {
+      "runs": {
+        "overlay_markers": {
+          "config": {
+            "base_marker": "he",
+            "base_render_mode": "mask",
+            "combinations": [
+              {
+                "base": "he",
+                "overlays": [
+                  "cd8"
+                ]
+              }
+            ],
+            "dpi": 50,
+            "markers": {
+              "cd8": {
+                "color": [
+                  255,
+                  0,
+                  0
+                ],
+                "hue_range": [
+                  5,
+                  20
+                ],
+                "label": "cd8",
+                "sat_min": 30
+              },
+              "he": {
+                "color": [
+                  0,
+                  0,
+                  255
+                ],
+                "hue_range": [
+                  5,
+                  20
+                ],
+                "label": "he",
+                "sat_min": 30
+              }
+            },
+            "max_workers": 1,
+            "patches_per_case": 0,
+            "plot_mode": "composite",
+            "show_plot": false,
+            "skip_existing": true
+          },
+          "inputs": [
+            "<ROOT>/overlay_in/case01"
+          ],
+          "items": [
+            {
+              "magnification": null,
+              "meta": {},
+              "path": "visualization/case01/p0_he_cd8_composite.png",
+              "role": "figure",
+              "sample_id": "case01",
+              "source": null
+            },
+            {
+              "magnification": null,
+              "meta": {},
+              "path": "visualization/case01/p1_he_cd8_composite.png",
+              "role": "figure",
+              "sample_id": "case01",
+              "source": null
+            }
+          ],
+          "summary": {
+            "figures_saved": 2,
+            "patches_processed": 2
+          }
+        }
+      },
+      "schema": 1
+    },
+    "visualization/case01/p0_he_cd8_composite.png": {
+      "figure": true
+    },
+    "visualization/case01/p1_he_cd8_composite.png": {
+      "figure": true
+    }
+  },
+  "returned": {
+    "result": {
+      "figures_saved": 2,
+      "patches_processed": 2
+    }
+  }
+}

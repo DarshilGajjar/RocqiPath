@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 from urllib.parse import urlsplit
 
 from fastapi import FastAPI, HTTPException, Request
@@ -13,45 +13,39 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field, ConfigDict
 
 from rocqipath import __version__
+from rocqipath.io.inputs import resolve_inputs
 from . import slides
 from .store import Store
-from .workflows import WORKFLOWS, capabilities
+from . import catalog as workflow_catalog
 
 
 class FolderRequest(BaseModel):
     """An explicitly selected local folder."""
+
     path: str
 
 
-class Parameters(BaseModel):
-    """Allowlisted numeric and enum workflow controls."""
-    model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
-    source_magnification: float | None = Field(None, gt=0, le=200)
-    moving_source_magnification: float | None = Field(None, gt=0, le=200)
-    target_magnification: float = Field(20, gt=0, le=200)
-    detection_magnification: float = Field(1.25, gt=0, le=20)
-    min_area_fraction: float = Field(0.005, ge=0, le=1)
-    tissue_threshold: float = Field(0.1, ge=0, le=1)
-    min_cell_area: int = Field(50, ge=1, le=1000000)
-    patch_size: int = Field(512, ge=64, le=4096)
-    dpi: int = Field(150, ge=72, le=600)
-    algorithm: Literal["reinhard", "macenko", "vahadane"] = "reinhard"
-    detector: Literal["otsu", "semantic"] = "otsu"
-    method: Literal["orb", "valis"] = "orb"
+class InputRef(BaseModel):
+    """A registered slide or folder, or a previous job's outputs."""
+
+    model_config = ConfigDict(extra="forbid")
+    kind: Literal["slide", "folder", "job"]
+    id: str = Field(min_length=1, max_length=64)
 
 
 class JobRequest(BaseModel):
-    """A workflow plus registered image selections."""
-    model_config = ConfigDict(extra="forbid")
-    workflow: Literal["extract", "align", "stain", "count", "compare"]
-    slide_ids: list[str] = Field(min_length=1, max_length=3)
-    parameters: Parameters = Field(default_factory=Parameters)
+    """A workflow, its inputs, and settings validated against its config."""
+
+    model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
+    workflow: str = Field(min_length=1, max_length=64)
+    inputs: list[InputRef] = Field(min_length=1, max_length=50)
+    options: dict[str, InputRef] = Field(default_factory=dict)
+    settings: dict[str, Any] = Field(default_factory=dict)
 
 
 def create_app(workspace: Path, static_dir: Path | None = None):
     """Create the local application without starting it during import."""
     store = Store(Path(workspace))
-    available = capabilities()
 
     @asynccontextmanager
     async def lifespan(_app):
@@ -97,7 +91,11 @@ def create_app(workspace: Path, static_dir: Path | None = None):
 
     @app.get("/api/status")
     def status():
-        return {"version": __version__, "workspace": str(store.root), "workflows": available}
+        return {"version": __version__, "workspace": str(store.root)}
+
+    @app.get("/api/workflows")
+    def workflows():
+        return workflow_catalog.catalog()
 
     @app.get("/api/browse")
     def browse(path: str | None = None):
@@ -145,19 +143,27 @@ def create_app(workspace: Path, static_dir: Path | None = None):
     def jobs():
         return sorted(store.list("job"), key=lambda j: j["created"], reverse=True)
 
+    def resolve(ref: InputRef) -> str:
+        """Turn a browser reference into a contained local path."""
+        if ref.kind == "slide":
+            return str(slides.resolve_slide(store, ref.id))
+        if ref.kind == "folder":
+            return str(Path(store.get("folder", ref.id)["path"]).resolve(strict=True))
+        job = store.get("job", ref.id)
+        if job["status"] != "succeeded":
+            raise ValueError("Only a succeeded job's outputs can be used as input.")
+        return str(Path(job["output_dir"]).resolve(strict=True))
+
     @app.post("/api/jobs")
     def submit(body: JobRequest):
-        capability = available[body.workflow]
-        if not capability["available"]:
-            raise HTTPException(409, "Missing dependencies: " + ", ".join(capability["missing"]))
-        if len(body.slide_ids) != WORKFLOWS[body.workflow]["inputs"]:
-            raise ValueError(f"This workflow requires {WORKFLOWS[body.workflow]['inputs']} selected image(s).")
-        if body.parameters.method == "valis" and body.workflow == "align" and not capability["valis"]:
-            raise HTTPException(409, "Install rocqipath[valis] to enable VALIS alignment.")
-        if body.parameters.detector == "semantic" and body.workflow == "extract" and not capability["semantic"]:
-            raise HTTPException(409, "Install rocqipath[extraction,semantic] to enable semantic detection.")
-        paths = [str(slides.resolve_slide(store, slide_id)) for slide_id in body.slide_ids]
-        return store.submit(body.workflow, paths, body.parameters.model_dump(exclude_none=True))
+        try:
+            workflow = workflow_catalog.validate(body.workflow, body.settings, list(body.options))
+        except RuntimeError as exc:
+            raise HTTPException(409, str(exc)) from exc
+        inputs = [resolve(ref) for ref in body.inputs]
+        options = {name: resolve(ref) for name, ref in body.options.items()}
+        resolve_inputs(inputs, workflow.inputs.roles)  # explain role mismatches before queueing
+        return store.submit(workflow.name, inputs, {"options": options, "settings": body.settings})
 
     @app.get("/api/jobs/{job_id}")
     def job_detail(job_id: str):

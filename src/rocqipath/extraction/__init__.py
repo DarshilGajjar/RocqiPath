@@ -1,19 +1,20 @@
-"""Tissue, core/TMA, and paired-patch extraction pipelines."""
+"""Tissue-region, TMA-core and paired-patch extraction.
 
-from .patches import PatchExtractionConfig, ReversiblePatchExtractor, run_patch_extraction
-from .tissue import TissueExtractionConfig, extract_tissue_regions, run_tissue_pipeline
-from .tma import (
-    TMAExtractionConfig,
-    run_tma_extraction_pipeline,
+Most users call `rocqipath.extract_tissue`, `rocqipath.extract_tma`
+and `rocqipath.extract_patches`. This package also exposes the building
+blocks those workflows use.
+"""
+
+from rocqipath._internal.lazy import lazy_exports
+
+__getattr__, __dir__, __all__ = lazy_exports(
+    __name__,
+    {
+        "ExtractPatchesConfig": ".config",
+        "ExtractTMAConfig": ".config",
+        "ExtractTissueConfig": ".config",
+        "ReversiblePatchExtractor": ".reversible",
+        "extract_patches_single": ".patch_single",
+        "extract_tissue_regions": ".regions",
+    },
 )
-
-__all__ = [
-    "PatchExtractionConfig",
-    "ReversiblePatchExtractor",
-    "TMAExtractionConfig",
-    "TissueExtractionConfig",
-    "extract_tissue_regions",
-    "run_patch_extraction",
-    "run_tma_extraction_pipeline",
-    "run_tissue_pipeline",
-]

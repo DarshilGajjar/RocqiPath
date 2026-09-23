@@ -62,11 +62,15 @@ class Store:
         return json.loads(row[0])
 
     def submit(self, workflow, inputs, parameters):
-        """Persist a queued job before returning its identifier."""
+        """Persist a queued job before returning its identifier.
+
+        ``parameters`` holds ``options`` (extra input paths such as
+        ``reference``) and ``settings`` (config fields).
+        """
         job_id = uuid.uuid4().hex
         directory = self.root / "jobs" / job_id
         directory.mkdir(parents=True)
-        payload = {"workflow": workflow, "inputs": inputs, "parameters": parameters}
+        payload = {"workflow": workflow, "inputs": inputs, **parameters}
         (directory / "request.json").write_text(json.dumps(payload), encoding="utf-8")
         return self.save("job", {
             "id": job_id, "workflow": workflow, "status": "queued", "created": now(),

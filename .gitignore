@@ -53,3 +53,8 @@ logs/
 !tests/**/*.tif
 !tests/**/*.tiff
 *.npz
+
+# Package-manager caches
+.pnpm-store/
+node_modules/
+notebook_demo_outputs/

@@ -5,54 +5,49 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from rocqipath.extraction.patch_pipeline import (
-    PatchExtractionConfig,
-    run_patch_extraction,
-)
-from rocqipath.registration.pipeline import AlignmentConfig, run_alignment
-from rocqipath.utils import discover_patch_pairs
-from rocqipath.utils.manifest import write_region_manifest, write_slide_manifest
+import rocqipath as rp
+from rocqipath.io import discover_patch_pairs
+from rocqipath.io.manifest import write_region_manifest, write_slide_manifest
 
 
-def test_registration_dry_run_discovers_pair_without_result_object(synthetic_registration_tree):
+def test_registration_dry_run_discovers_pair_without_registering(synthetic_registration_tree):
     fixture = synthetic_registration_tree
-    results = run_alignment(
-        AlignmentConfig(
-            input_dir=str(fixture["root"]),
-            output_dir=str(fixture["output"]),
-            pair_folders=["CD8"],
-            reference_name="he",
-            moving_name="cd8",
-            dry_run=True,
-        )
+    result = rp.align(
+        fixture["root"],
+        fixture["output"],
+        pair_folders=["CD8"],
+        reference_name="he",
+        moving_name="cd8",
+        dry_run=True,
     )
 
-    # The current implementation counts and logs dry-run pairs but does not
-    # append AlignedCaseResult objects. Characterize that behavior unchanged.
-    assert results == []
+    # Dry runs log the discovered pairs but produce no aligned slides.
+    assert len(result) == 0
+    assert result.summary == {"cases": []}
 
 
 def test_patch_extraction_manifest_and_pair_discovery(synthetic_patch_dataset):
     fixture = synthetic_patch_dataset
-    summary = run_patch_extraction(
-        PatchExtractionConfig(
-            he_dir=str(fixture["reference_root"]),
-            aligned_dir=str(fixture["aligned_root"]),
-            output_dir=str(fixture["output"]),
-            biomarker_folders=["CD8"],
-            reference_pattern=r"^(?P<sample_id>Sample_\d{4})_he\.tiff?$",
-            moving_name="cd8",
-            patch_size=4,
-            stride=4,
-            tissue_threshold=0.5,
-            reference_source_magnification=20.0,
-            target_source_magnification=20.0,
-        )
+    result = rp.extract_patches(
+        fixture["aligned_root"],
+        fixture["output"],
+        reference=fixture["reference_root"],
+        biomarker_folders=["CD8"],
+        reference_pattern=r"^(?P<sample_id>Sample_\d{4})_he\.tiff?$",
+        moving_name="cd8",
+        patch_size=4,
+        stride=4,
+        tissue_threshold=0.5,
+        reference_source_magnification=20.0,
+        target_source_magnification=20.0,
     )
+    summary = result.summary
 
     assert summary["processed"] == 1
     assert summary["skipped"] == 0
     assert summary["cases"][0]["n_patches"] == 4
+    assert len(result.by_role("patch")) == 8
+    assert {item.meta["stain"] for item in result} == {"he", "cd8"}
 
     case_dir = fixture["output"] / "patch_extraction" / "Sample_0001_CD8"
     manifest = json.loads((case_dir / "Sample_0001_CD8_metadata.json").read_text(encoding="utf-8"))

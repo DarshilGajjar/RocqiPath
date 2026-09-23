@@ -1,0 +1,425 @@
+{
+  "files": {
+    "rocqipath.json": {
+      "runs": {
+        "extract_tissue": {
+          "config": {
+            "detection_magnification": 1.25,
+            "detector": "otsu",
+            "min_area_fraction": 0.005,
+            "preview_scale": 0.2,
+            "semantic_batch_size": 4,
+            "semantic_device": "auto",
+            "semantic_model": "fcn-tissue_mask",
+            "semantic_num_workers": 0,
+            "semantic_source_mpp": null,
+            "semantic_weights_path": null,
+            "skip_existing": true,
+            "source_magnification": 20.0,
+            "target_magnification": 5.0,
+            "tif_compression": "lzw",
+            "tif_pyramid": true,
+            "tif_quality": 99,
+            "tif_tile": true
+          },
+          "inputs": [
+            "<ROOT>/tissue_in"
+          ],
+          "items": [
+            {
+              "magnification": 5.0,
+              "meta": {
+                "absolute_box": {
+                  "h": 512,
+                  "w": 608,
+                  "x": 144,
+                  "y": 144
+                },
+                "region_number": 1,
+                "relative_box": {
+                  "rh": 0.427,
+                  "rw": 0.38,
+                  "rx": 0.09,
+                  "ry": 0.12
+                },
+                "status": "saved"
+              },
+              "path": "tissue_extraction/slideA/region_001.tif",
+              "role": "region",
+              "sample_id": "slideA",
+              "source": "<ROOT>/tissue_in/slideA.tif"
+            },
+            {
+              "magnification": 5.0,
+              "meta": {
+                "absolute_box": {
+                  "h": 512,
+                  "w": 512,
+                  "x": 944,
+                  "y": 544
+                },
+                "region_number": 2,
+                "relative_box": {
+                  "rh": 0.427,
+                  "rw": 0.32,
+                  "rx": 0.59,
+                  "ry": 0.453
+                },
+                "status": "saved"
+              },
+              "path": "tissue_extraction/slideA/region_002.tif",
+              "role": "region",
+              "sample_id": "slideA",
+              "source": "<ROOT>/tissue_in/slideA.tif"
+            },
+            {
+              "magnification": 5.0,
+              "meta": {
+                "absolute_box": {
+                  "h": 816,
+                  "w": 992,
+                  "x": 304,
+                  "y": 192
+                },
+                "region_number": 1,
+                "relative_box": {
+                  "rh": 0.68,
+                  "rw": 0.62,
+                  "rx": 0.19,
+                  "ry": 0.16
+                },
+                "status": "saved"
+              },
+              "path": "tissue_extraction/slideB/region_001.tif",
+              "role": "region",
+              "sample_id": "slideB",
+              "source": "<ROOT>/tissue_in/slideB.tif"
+            }
+          ],
+          "summary": {
+            "regions": {
+              "slideA": [
+                {
+                  "absolute_box": {
+                    "h": 512,
+                    "w": 608,
+                    "x": 144,
+                    "y": 144
+                  },
+                  "region_number": 1,
+                  "region_tag": "region_001",
+                  "relative_box": {
+                    "rh": 0.427,
+                    "rw": 0.38,
+                    "rx": 0.09,
+                    "ry": 0.12
+                  },
+                  "status": "saved"
+                },
+                {
+                  "absolute_box": {
+                    "h": 512,
+                    "w": 512,
+                    "x": 944,
+                    "y": 544
+                  },
+                  "region_number": 2,
+                  "region_tag": "region_002",
+                  "relative_box": {
+                    "rh": 0.427,
+                    "rw": 0.32,
+                    "rx": 0.59,
+                    "ry": 0.453
+                  },
+                  "status": "saved"
+                }
+              ],
+              "slideB": [
+                {
+                  "absolute_box": {
+                    "h": 816,
+                    "w": 992,
+                    "x": 304,
+                    "y": 192
+                  },
+                  "region_number": 1,
+                  "region_tag": "region_001",
+                  "relative_box": {
+                    "rh": 0.68,
+                    "rw": 0.62,
+                    "rx": 0.19,
+                    "ry": 0.16
+                  },
+                  "status": "saved"
+                }
+              ]
+            }
+          }
+        }
+      },
+      "schema": 1
+    },
+    "tissue_extraction/slideA/region_001.tif": {
+      "mean": [
+        203.8,
+        143.2,
+        181.0
+      ],
+      "size": [
+        152,
+        128
+      ]
+    },
+    "tissue_extraction/slideA/region_001_manifest.json": {
+      "coordinates": {
+        "absolute_pixels": {
+          "h": 512,
+          "w": 608,
+          "x": 144,
+          "y": 144
+        },
+        "relative": {
+          "rh": 0.427,
+          "rw": 0.38,
+          "rx": 0.09,
+          "ry": 0.12
+        }
+      },
+      "detection_source": "otsu",
+      "full_slide_dims": {
+        "height": 1200,
+        "width": 1600
+      },
+      "magnification_source": "fallback",
+      "output_magnification": 5.0,
+      "pipeline": "tissue",
+      "region_number": 1,
+      "sample_id": "slideA",
+      "source_file": "slideA.tif",
+      "source_magnification": 20.0
+    },
+    "tissue_extraction/slideA/region_001_preview.jpg": {
+      "size": [
+        30,
+        26
+      ]
+    },
+    "tissue_extraction/slideA/region_002.tif": {
+      "mean": [
+        204.2,
+        144.3,
+        181.7
+      ],
+      "size": [
+        128,
+        128
+      ]
+    },
+    "tissue_extraction/slideA/region_002_manifest.json": {
+      "coordinates": {
+        "absolute_pixels": {
+          "h": 512,
+          "w": 512,
+          "x": 944,
+          "y": 544
+        },
+        "relative": {
+          "rh": 0.427,
+          "rw": 0.32,
+          "rx": 0.59,
+          "ry": 0.453
+        }
+      },
+      "detection_source": "otsu",
+      "full_slide_dims": {
+        "height": 1200,
+        "width": 1600
+      },
+      "magnification_source": "fallback",
+      "output_magnification": 5.0,
+      "pipeline": "tissue",
+      "region_number": 2,
+      "sample_id": "slideA",
+      "source_file": "slideA.tif",
+      "source_magnification": 20.0
+    },
+    "tissue_extraction/slideA/region_002_preview.jpg": {
+      "size": [
+        26,
+        26
+      ]
+    },
+    "tissue_extraction/slideA/slideA_manifest.json": {
+      "n_regions": 2,
+      "pipeline": "tissue",
+      "regions": [
+        {
+          "absolute_box": {
+            "h": 512,
+            "w": 608,
+            "x": 144,
+            "y": 144
+          },
+          "region_number": 1,
+          "region_tag": "region_001",
+          "relative_box": {
+            "rh": 0.427,
+            "rw": 0.38,
+            "rx": 0.09,
+            "ry": 0.12
+          },
+          "status": "saved"
+        },
+        {
+          "absolute_box": {
+            "h": 512,
+            "w": 512,
+            "x": 944,
+            "y": 544
+          },
+          "region_number": 2,
+          "region_tag": "region_002",
+          "relative_box": {
+            "rh": 0.427,
+            "rw": 0.32,
+            "rx": 0.59,
+            "ry": 0.453
+          },
+          "status": "saved"
+        }
+      ],
+      "sample_id": "slideA",
+      "source_file": "slideA.tif"
+    },
+    "tissue_extraction/slideB/region_001.tif": {
+      "mean": [
+        202.7,
+        140.7,
+        179.5
+      ],
+      "size": [
+        248,
+        204
+      ]
+    },
+    "tissue_extraction/slideB/region_001_manifest.json": {
+      "coordinates": {
+        "absolute_pixels": {
+          "h": 816,
+          "w": 992,
+          "x": 304,
+          "y": 192
+        },
+        "relative": {
+          "rh": 0.68,
+          "rw": 0.62,
+          "rx": 0.19,
+          "ry": 0.16
+        }
+      },
+      "detection_source": "otsu",
+      "full_slide_dims": {
+        "height": 1200,
+        "width": 1600
+      },
+      "magnification_source": "fallback",
+      "output_magnification": 5.0,
+      "pipeline": "tissue",
+      "region_number": 1,
+      "sample_id": "slideB",
+      "source_file": "slideB.tif",
+      "source_magnification": 20.0
+    },
+    "tissue_extraction/slideB/region_001_preview.jpg": {
+      "size": [
+        50,
+        41
+      ]
+    },
+    "tissue_extraction/slideB/slideB_manifest.json": {
+      "n_regions": 1,
+      "pipeline": "tissue",
+      "regions": [
+        {
+          "absolute_box": {
+            "h": 816,
+            "w": 992,
+            "x": 304,
+            "y": 192
+          },
+          "region_number": 1,
+          "region_tag": "region_001",
+          "relative_box": {
+            "rh": 0.68,
+            "rw": 0.62,
+            "rx": 0.19,
+            "ry": 0.16
+          },
+          "status": "saved"
+        }
+      ],
+      "sample_id": "slideB",
+      "source_file": "slideB.tif"
+    },
+    "tissue_extraction/tissue_extraction.log": {}
+  },
+  "returned": {
+    "regions": {
+      "slideA": [
+        {
+          "absolute_box": {
+            "h": 512,
+            "w": 608,
+            "x": 144,
+            "y": 144
+          },
+          "region_number": 1,
+          "region_tag": "region_001",
+          "relative_box": {
+            "rh": 0.427,
+            "rw": 0.38,
+            "rx": 0.09,
+            "ry": 0.12
+          },
+          "status": "saved"
+        },
+        {
+          "absolute_box": {
+            "h": 512,
+            "w": 512,
+            "x": 944,
+            "y": 544
+          },
+          "region_number": 2,
+          "region_tag": "region_002",
+          "relative_box": {
+            "rh": 0.427,
+            "rw": 0.32,
+            "rx": 0.59,
+            "ry": 0.453
+          },
+          "status": "saved"
+        }
+      ],
+      "slideB": [
+        {
+          "absolute_box": {
+            "h": 816,
+            "w": 992,
+            "x": 304,
+            "y": 192
+          },
+          "region_number": 1,
+          "region_tag": "region_001",
+          "relative_box": {
+            "rh": 0.68,
+            "rw": 0.62,
+            "rx": 0.19,
+            "ry": 0.16
+          },
+          "status": "saved"
+        }
+      ]
+    }
+  }
+}

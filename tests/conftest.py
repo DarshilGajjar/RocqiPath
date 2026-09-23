@@ -26,3 +26,12 @@ def synthetic_patch_dataset(tmp_path: Path) -> dict[str, Path]:
 def synthetic_tissue_rgb() -> np.ndarray:
     """A 10x10 RGB tile with exactly 25 tissue pixels."""
     return make_tissue_rgb()
+
+
+def pytest_addoption(parser):
+    parser.addoption(
+        "--update-golden",
+        action="store_true",
+        default=False,
+        help="Rewrite tests/golden/expected snapshots instead of comparing.",
+    )

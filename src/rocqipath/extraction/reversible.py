@@ -10,11 +10,11 @@ from typing import Dict, List, Optional, Tuple
 
 from tqdm.auto import tqdm
 
-from rocqipath.core.magnification import DEFAULT_TARGET_MAGNIFICATION
-from rocqipath.core.output import OutputLayout
-from rocqipath.core.slide import SlideReader as _SlideReader
-from rocqipath.core.tissue import pil_is_tissue as _pil_is_tissue
-from rocqipath.extraction.reconstruction import (
+from rocqipath.io.magnification import DEFAULT_TARGET_MAGNIFICATION
+from rocqipath.io.output import OutputLayout
+from rocqipath.io.slide import SlideReader as _SlideReader
+from rocqipath.tissue.masks import pil_is_tissue as _pil_is_tissue
+from rocqipath.extraction.reconstruct import (
     _assemble_canvas,
     _finalize_canvas,
     _index_patch_files,
@@ -22,7 +22,7 @@ from rocqipath.extraction.reconstruction import (
     _patch_directory,
     _save_pyramid,
 )
-from rocqipath.utils.discovery import find_aligned_wsi
+from rocqipath.io.discovery import find_aligned_wsi
 
 
 class ReversiblePatchExtractor:
@@ -32,7 +32,7 @@ class ReversiblePatchExtractor:
     convention ``Sample_NNNN_he.tif``/``.tiff``), locates the
     corresponding aligned IHC OME-TIFF under ``aligned_root``, then walks
     a sliding window across the H&E slide at ``patch_size``/``stride``,
-    keeping only tissue-containing patches (per :meth:`_is_tissue`), and
+    keeping only tissue-containing patches (per `_is_tissue`), and
     saves matching H&E and IHC patches side by side with a JSON metadata
     manifest recording each patch's coordinates. "Reversible" refers to
     the companion re-assembly capability (see ``reassemble_from_patches``
@@ -74,7 +74,7 @@ class ReversiblePatchExtractor:
               both channels. Defaults to ``20.0``. Legacy ``"magnification"``
               is accepted as a physical-value alias.
             - ``"tissue_threshold"`` (float) — minimum fraction of
-              non-background pixels (see :meth:`_is_tissue`) for a patch
+              non-background pixels (see `_is_tissue`) for a patch
               to be kept. Defaults to ``0.9``.
 
         Raises
@@ -94,7 +94,7 @@ class ReversiblePatchExtractor:
         -----
         Creates ``output_dir`` if it doesn't exist, prints a startup
         summary of the resolved configuration, and calls
-        :meth:`_debug_folders` to list the biomarker subfolders actually
+        `_debug_folders` to list the biomarker subfolders actually
         found on disk (useful for catching path/naming mismatches before
         a long batch run starts).
         """
@@ -136,7 +136,7 @@ class ReversiblePatchExtractor:
     def _debug_folders(self):
         """Print the biomarker subfolders actually found under he_root/aligned_root.
 
-        A diagnostic aid called once from :meth:`__init__`: lists the
+        A diagnostic aid called once from `__init__`: lists the
         immediate subdirectories of ``self.he_root`` and
         ``self.aligned_root`` (if those roots exist) so a mismatch
         between the configured ``biomarker_folders`` and what's actually
@@ -229,7 +229,7 @@ class ReversiblePatchExtractor:
         ----------
         sample_id : str
             Sample identifier, e.g. ``"Sample_0001"``, as returned by
-            :meth:`_scan_he_cases`.
+            `_scan_he_cases`.
         biomarker : str
             Biomarker label; used to build the expected case directory
             path and, if disambiguation is needed, as a keyword hint
@@ -254,7 +254,7 @@ class ReversiblePatchExtractor:
         keyword that narrows the candidates down to exactly one match
         wins. If ambiguity remains even after all three keywords are
         tried, a warning is printed and the first match (alphabetically,
-        via :func:`sorted`) is used as a last resort rather than failing
+        via `sorted`) is used as a last resort rather than failing
         the whole run.
         """
 
@@ -397,25 +397,25 @@ class ReversiblePatchExtractor:
         """Extract patches for every H&E/IHC case found under the configured roots.
 
         The main batch entry point. For each H&E slide discovered by
-        :meth:`_scan_he_cases`, attempts to locate its matching aligned
-        IHC slide via :meth:`_find_aligned_ihc`; cases without a match
+        `_scan_he_cases`, attempts to locate its matching aligned
+        IHC slide via `_find_aligned_ihc`; cases without a match
         are skipped (not treated as fatal errors, since a partially
         processed/aligned dataset is common). For each matched pair,
         delegates the actual patch extraction to
-        :meth:`extract_from_case`.
+        `extract_from_case`.
 
         Returns
         -------
         None
             Progress and a final summary line
             (``processed``/``skipped`` counts) are printed; nothing is
-            returned. If :meth:`_scan_he_cases` finds no H&E files at
+            returned. If `_scan_he_cases` finds no H&E files at
             all, an error is printed and the method returns immediately
             without attempting any extraction.
 
         Notes
         -----
-        Iterates cases with a :mod:`tqdm` progress bar
+        Iterates cases with a `tqdm` progress bar
         (``desc="Processing Cases"``). Per-case status (skip/info
         messages) is written via ``tqdm.write`` rather than plain
         ``print`` so it doesn't corrupt the progress bar's rendering.
