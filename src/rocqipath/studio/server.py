@@ -20,11 +20,13 @@ from .workflows import WORKFLOWS, capabilities
 
 class FolderRequest(BaseModel):
     """An explicitly selected local folder."""
+
     path: str
 
 
 class Parameters(BaseModel):
     """Allowlisted numeric and enum workflow controls."""
+
     model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
     source_magnification: float | None = Field(None, gt=0, le=200)
     moving_source_magnification: float | None = Field(None, gt=0, le=200)
@@ -42,6 +44,7 @@ class Parameters(BaseModel):
 
 class JobRequest(BaseModel):
     """A workflow plus registered image selections."""
+
     model_config = ConfigDict(extra="forbid")
     workflow: Literal["extract", "align", "stain", "count", "compare"]
     slide_ids: list[str] = Field(min_length=1, max_length=3)

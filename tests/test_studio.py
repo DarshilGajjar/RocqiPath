@@ -1,7 +1,6 @@
 """Local Studio API integration and containment regressions."""
 
 import time
-from pathlib import Path
 
 import pytest
 from PIL import Image
@@ -13,7 +12,7 @@ from rocqipath.studio.server import create_app
 
 @pytest.fixture
 def client(tmp_path):
-    with TestClient(create_app(tmp_path / "workspace")) as session:
+    with TestClient(create_app(tmp_path / "workspace"), base_url="http://127.0.0.1") as session:
         yield session
 
 
