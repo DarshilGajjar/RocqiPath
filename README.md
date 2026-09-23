@@ -37,23 +37,20 @@ libvips.
 
 ## Use
 
-The CLI maps directly to the five feature workflows:
-
-```console
-rocqipath align --help
-rocqipath extract --help
-rocqipath stain --help
-rocqipath count --help
-rocqipath compare --help
-```
-
-Python usage is equally direct:
+Every workflow is one function with the same shape, and one command:
 
 ```python
-from rocqipath.extraction import TissueExtractionConfig, run_tissue_pipeline
+import rocqipath as rp
 
-config = TissueExtractionConfig(target_magnification=20.0)
-run_tissue_pipeline("/path/to/slides", "/path/to/output", config)
+regions = rp.extract_tissue("/path/to/slides", "/path/to/output", target_magnification=20)
+aligned = rp.align("/path/to/pairs", "/path/to/output", backend="orb")
+counts = rp.count_cells("/path/to/cd8_slides", "/path/to/output", label="CD8")
+```
+
+```console
+rocqipath list                 # every workflow and whether its extra is installed
+rocqipath extract-tissue --help
+rocqipath align /path/to/pairs /path/to/output --backend orb
 ```
 
 The [`how_to_use`](how_to_use/README.md) notebooks cover installation, slide inspection,

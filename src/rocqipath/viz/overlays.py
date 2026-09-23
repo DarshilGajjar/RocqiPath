@@ -10,7 +10,7 @@ from typing import Any, Dict, List, Optional, Union
 import numpy as np
 from PIL import Image
 
-from rocqipath.viz.config import IHCOverlayConfig, MarkerProfile, OverlayCombo
+from rocqipath.viz.config import OverlayConfig
 from rocqipath.errors import ExtractionError
 from rocqipath.io.output import OutputLayout
 from rocqipath.viz.overlay_figures import (
@@ -19,12 +19,7 @@ from rocqipath.viz.overlay_figures import (
 )
 from rocqipath.viz.overlay_masks import _build_composite, _marker_mask
 
-__all__ = [
-    "MarkerProfile",
-    "OverlayCombo",
-    "IHCOverlayConfig",
-    "process_ihc_overlay",
-]
+__all__ = ["process_ihc_overlay"]
 
 _IMAGE_EXTENSIONS = (".png", ".tif", ".tiff", ".jpg", ".jpeg")
 
@@ -82,20 +77,24 @@ def _looks_like_case_dir(path: str, marker_keys: List[str]) -> bool:
     return any(k.lower() in existing for k in marker_keys)
 
 
-def _process_single_case(case_id: str, case_dir: str, cfg: IHCOverlayConfig) -> Dict[str, Any]:
+def _process_single_case(
+    case_id: str, case_dir: str, cfg: OverlayConfig, output_dir: str
+) -> Dict[str, Any]:
     """Generate overlay figures for every patch in one case directory.
 
     Parameters
     ----------
     case_id : str
         Identifier for this case, used to name the output subdirectory
-        (``cfg.save_dir/<case_id>/``).
+        (``<output_dir>/visualization/<case_id>/``).
     case_dir : str
         Directory containing one subfolder per marker (see the module
         docstring's "Expected data structure" section).
-    cfg : IHCOverlayConfig
+    cfg : OverlayConfig
         Full configuration — markers, combinations, rendering and output
         options.
+    output_dir : str
+        Output root.
 
     Returns
     -------
@@ -144,7 +143,7 @@ def _process_single_case(case_id: str, case_dir: str, cfg: IHCOverlayConfig) -> 
     if cfg.patches_per_case and cfg.patches_per_case < len(common):
         common = sorted(random.sample(common, cfg.patches_per_case))
 
-    case_save_dir = str(OutputLayout(cfg.save_dir).item_dir("visualization", case_id))
+    case_save_dir = str(OutputLayout(output_dir).item_dir("visualization", case_id))
 
     patches_processed = 0
     figures_saved = 0
@@ -187,7 +186,8 @@ def _process_single_case(case_id: str, case_dir: str, cfg: IHCOverlayConfig) -> 
 
 def process_ihc_overlay(
     data_in: str,
-    cfg: IHCOverlayConfig,
+    cfg: OverlayConfig,
+    output_dir: str,
     mode: str = "patch_dir",
 ) -> Union[Dict[str, Any], Dict[str, Dict[str, Any]]]:
     """Generate multi-marker overlay figures for a single case or a batch of cases.
@@ -203,9 +203,11 @@ def process_ihc_overlay(
     data_in : str
         Either a single case directory, or a parent directory containing
         multiple case subdirectories.
-    cfg : IHCOverlayConfig
+    cfg : OverlayConfig
         Full configuration — markers, combinations, rendering and output
         options.
+    output_dir : str
+        Output root; figures go to ``<output_dir>/visualization/<case>/``.
     mode : str, optional
         Accepted for interface clarity/future extension but currently
         does not change behaviour — auto-detection (single case vs.
@@ -244,7 +246,7 @@ def process_ihc_overlay(
 
     if _looks_like_case_dir(data_in, marker_keys):
         case_id = os.path.basename(os.path.normpath(data_in))
-        return _process_single_case(case_id, data_in, cfg)
+        return _process_single_case(case_id, data_in, cfg, output_dir)
 
     if not os.path.isdir(data_in):
         raise ExtractionError(f"data_in does not exist: {data_in}")
@@ -265,13 +267,13 @@ def process_ihc_overlay(
     if cfg.max_workers > 1 and len(case_dirs) > 1:
         with concurrent.futures.ThreadPoolExecutor(max_workers=cfg.max_workers) as pool:
             futures = {
-                pool.submit(_process_single_case, cid, cdir, cfg): cid for cid, cdir in case_dirs
+                pool.submit(_process_single_case, cid, cdir, cfg, output_dir): cid for cid, cdir in case_dirs
             }
             for future in concurrent.futures.as_completed(futures):
                 cid = futures[future]
                 results[cid] = future.result()
     else:
         for cid, cdir in case_dirs:
-            results[cid] = _process_single_case(cid, cdir, cfg)
+            results[cid] = _process_single_case(cid, cdir, cfg, output_dir)
 
     return results

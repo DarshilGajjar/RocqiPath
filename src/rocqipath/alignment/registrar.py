@@ -3,7 +3,7 @@
 
 Provides two public classes:
 
-``ValisConfig``
+``ValisOptions``
     Typed dataclass of VALIS hyper-parameters.  Pass to ``WSIRegistrar``
     to tune registration quality without touching internal defaults.
 
@@ -33,12 +33,13 @@ Registration methods
 Author  : Darshil Gajjar
 """
 
-__all__ = ["ValisConfig", "WSIRegistrar"]
+__all__ = ["WSIRegistrar", "registrar_settings"]
 
 import os
+from pathlib import Path
 import shutil
 import tempfile
-from typing import Optional, Tuple
+from typing import Union, Optional, Tuple
 
 
 try:
@@ -52,7 +53,7 @@ except (ImportError, OSError):
 # ── VALIS (optional) ───────────────────────────────────────────────────────────
 # VALIS is imported lazily so the rest of the pipeline can still run
 # (e.g. ORB fallback or reference-only mode) without a VALIS installation.
-from rocqipath.alignment.config import ValisConfig
+from rocqipath.alignment.config import AlignConfig, ValisOptions
 from rocqipath._internal.logging import logger
 from rocqipath.io.magnification import (
     DEFAULT_TARGET_MAGNIFICATION,
@@ -85,6 +86,39 @@ from rocqipath.alignment.valis import (
     build_matcher,  # noqa: F401 - compatibility for prior internal imports
 )
 from rocqipath._internal.geometry import transform_coords
+
+
+def registrar_settings(config: AlignConfig, output_dir: Union[str, Path], item_name: Optional[str] = None) -> dict:
+    """Translate an :class:`AlignConfig` into the settings a registrar reads.
+
+    Parameters
+    ----------
+    config : AlignConfig
+        Alignment settings.
+    output_dir : str or pathlib.Path
+        Output root; the case folder is ``<output_dir>/alignment/<item_name>``.
+    item_name : str, optional
+        Case folder name. Defaults to the reference slide's name.
+
+    Returns
+    -------
+    dict
+        Keys consumed by the registrar, its export, QC and ORB helpers.
+    """
+    settings = {
+        "patch_size": config.patch_size,
+        "grid_density": config.grid_density,
+        "base_output_dir": str(output_dir),
+        "target_magnification": config.target_magnification,
+        "reference_source_magnification": config.reference_source_magnification,
+        "moving_source_magnification": config.moving_source_magnification,
+        "max_physical_field_ratio": config.max_physical_field_ratio,
+        "keep_valis_diagnostics": config.valis.keep_diagnostics,
+        **config.orb.registrar_settings(),
+    }
+    if item_name is not None:
+        settings["output_item_name"] = item_name
+    return settings
 
 
 #: Objective powers a scanner is plausibly reporting. Used to snap a magnification
@@ -191,8 +225,8 @@ class WSIRegistrar:
           - overlay_max_px    : int   — (optional) max edge for QC overlay images
           - orb_thumb_size    : int   — (optional) thumbnail size for ORB fallback
           - ransac_threshold  : float — (optional) RANSAC reprojection threshold
-    valis_cfg : ValisConfig, optional
-        Fine-grained VALIS parameters. Defaults to ``ValisConfig()``.
+    valis_cfg : ValisOptions, optional
+        Fine-grained VALIS parameters. Defaults to ``ValisOptions()``.
     """
 
     # ──────────────────────────────────────────────────────────────────────────
@@ -217,8 +251,10 @@ class WSIRegistrar:
         self,
         path_ref: str,
         path_tgt: Optional[str],
-        config: dict,
-        valis_cfg: Optional[ValisConfig] = None,
+        config: Union[AlignConfig, dict, None] = None,
+        valis_cfg: Optional[ValisOptions] = None,
+        *,
+        output_dir: Union[str, Path, None] = None,
     ) -> None:
         """Open the reference (and optional target) slide and initialise state.
 
@@ -234,14 +270,18 @@ class WSIRegistrar:
             registrar in reference-only (single-slide) mode — in which
             case ``self.slide_tgt`` stays ``None`` and no target-slide
             operations (registration, aligned-WSI export) are available.
-        config : dict
-            Pipeline configuration dict — see the class docstring above
-            for the full list of expected keys (``patch_size``,
-            ``grid_density``, ``base_output_dir``, etc.). Stored verbatim
-            on ``self.config``; not validated at construction time.
-        valis_cfg : ValisConfig, optional
-            Fine-grained VALIS hyperparameters. When omitted, a default
-            ``ValisConfig()`` is constructed.
+        config : AlignConfig or dict, optional
+            Alignment settings. An :class:`AlignConfig` (default
+            ``AlignConfig()``) is translated with :func:`registrar_settings`;
+            its ``valis`` options are used unless ``valis_cfg`` is given.
+            A dict of registrar settings (``patch_size``, ``grid_density``,
+            ``base_output_dir``, ...) is stored verbatim for low-level use.
+        valis_cfg : ValisOptions, optional
+            Fine-grained VALIS hyperparameters overriding ``config.valis``.
+        output_dir : str or pathlib.Path, optional
+            Output root when ``config`` is an :class:`AlignConfig`
+            (default: the current directory). Outputs go to
+            ``<output_dir>/alignment/<reference name>/``.
 
         Attributes
         ----------
@@ -277,6 +317,11 @@ class WSIRegistrar:
         :class:`openslide.OpenSlideError`). Callers should call
         :meth:`close` when finished to release these file handles.
         """
+        if config is None:
+            config = AlignConfig()
+        if isinstance(config, AlignConfig):
+            valis_cfg = valis_cfg or config.valis
+            config = registrar_settings(config, output_dir or ".")
         self._initialize_state(path_ref, path_tgt, config, valis_cfg)
         self._open_slides()
         self._initialize_magnification()
@@ -289,11 +334,11 @@ class WSIRegistrar:
         path_ref: str,
         path_tgt: Optional[str],
         config: dict,
-        valis_cfg: Optional[ValisConfig],
+        valis_cfg: Optional[ValisOptions],
     ) -> None:
         """Initialize paths and empty backend state without opening slides."""
         self.config = config
-        self.valis_cfg = valis_cfg or ValisConfig()
+        self.valis_cfg = valis_cfg or ValisOptions()
         self.path_ref = os.path.abspath(path_ref)
         self.path_tgt = os.path.abspath(path_tgt) if path_tgt else None
         self.method: Optional[str] = None

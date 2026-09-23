@@ -34,18 +34,56 @@ def test_folder_scan_metadata_and_tile(client, tmp_path):
 
 def test_cross_origin_mutations_and_unknown_workflows_rejected(client):
     assert client.post("/api/demo", headers={"origin": "https://evil.example"}, json={}).status_code == 403
-    assert client.post("/api/jobs", json={"workflow": "shell", "slide_ids": []}).status_code == 422
+    assert client.post("/api/jobs", json={"workflow": "shell", "inputs": []}).status_code == 422
+    unknown = client.post(
+        "/api/jobs", json={"workflow": "shell", "inputs": [{"kind": "slide", "id": "x"}]}
+    )
+    assert unknown.status_code == 404
 
 
-def test_real_count_job_and_artifact_containment(client, tmp_path):
+def _one_slide(client, tmp_path):
     folder = tmp_path / "slides"
     folder.mkdir()
     Image.new("RGB", (128, 128), (110, 70, 35)).save(folder / "sample.tif")
     client.post("/api/folders", json={"path": str(folder)})
-    slide = client.get("/api/slides").json()[0]
+    return client.get("/api/slides").json()[0]
+
+
+def test_workflow_schema_lists_every_registered_workflow(client):
+    import rocqipath as rp
+
+    described = {w["name"]: w for w in client.get("/api/workflows").json()}
+    assert set(described) == {w.name for w in rp.list_workflows()}
+    count = described["count_cells"]
+    names = {f["name"] for f in count["settings"]}
+    assert {"label", "patch_size", "min_cell_area"} <= names
+    assert [o["name"] for o in count["options"]] == ["compare_to"]
+    align_fields = {f["name"] for f in described["align"]["settings"]}
+    assert "qc_output_dir" not in align_fields  # local paths never reach the browser
+
+
+def test_local_only_and_invalid_settings_are_rejected(client, tmp_path):
+    slide = _one_slide(client, tmp_path)
+    ref = {"kind": "slide", "id": slide["id"]}
+    path_setting = client.post(
+        "/api/jobs",
+        json={"workflow": "align", "inputs": [ref, ref], "settings": {"qc_output_dir": "/etc"}},
+    )
+    assert path_setting.status_code == 422
+    assert "qc_output_dir" in path_setting.text
+    invalid = client.post(
+        "/api/jobs",
+        json={"workflow": "count_cells", "inputs": [ref], "settings": {"tissue_threshold": 5}},
+    )
+    assert invalid.status_code == 422
+
+
+def test_real_count_job_and_artifact_containment(client, tmp_path):
+    slide = _one_slide(client, tmp_path)
     result = client.post("/api/jobs", json={
-        "workflow": "count", "slide_ids": [slide["id"]],
-        "parameters": {"source_magnification": 20, "target_magnification": 20},
+        "workflow": "count_cells",
+        "inputs": [{"kind": "slide", "id": slide["id"]}],
+        "settings": {"source_magnification": 20, "target_magnification": 20},
     })
     assert result.status_code == 200, result.text
     job_id = result.json()["id"]

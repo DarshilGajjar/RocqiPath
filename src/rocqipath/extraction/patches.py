@@ -11,7 +11,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from PIL import Image
 from tqdm.auto import tqdm
 
-from rocqipath.extraction.config import PatchExtractionConfig
+from rocqipath.extraction.config import ExtractPatchesConfig
 from rocqipath.io.output import OutputLayout
 from rocqipath.io.slide import SlideReader as _SlideReader
 from rocqipath.tissue.masks import pil_is_tissue as _pil_is_tissue
@@ -128,7 +128,12 @@ def _patch_is_tissue(image_pil: "Image.Image", tissue_threshold: float) -> bool:
 
 
 def _extract_case_patches(
-    case_id: str, reference_path: str, target_path: str, biomarker: str, cfg: PatchExtractionConfig
+    case_id: str,
+    reference_path: str,
+    target_path: str,
+    biomarker: str,
+    cfg: ExtractPatchesConfig,
+    output_dir: str,
 ) -> Dict[str, Any]:
     """Run sliding-window extraction for a single reference/target case.
 
@@ -144,9 +149,11 @@ def _extract_case_patches(
     biomarker : str
         Biomarker label for this case, used to build the output
         directory path.
-    cfg : PatchExtractionConfig
+    cfg : ExtractPatchesConfig
         Supplies ``patch_size``, ``stride``, ``tissue_threshold``,
-        ``reference_name``, ``moving_name``, and ``output_dir``.
+        ``reference_name`` and ``moving_name``.
+    output_dir : str
+        Root beneath which the case's ``patch_extraction`` folder is created.
 
     Returns
     -------
@@ -250,7 +257,7 @@ def _extract_case_patches(
                 f"(tolerance={cfg.dimension_tolerance:.1%})."
             )
 
-        case_dir = OutputLayout(cfg.output_dir).item_dir("patch_extraction", case_id)
+        case_dir = OutputLayout(output_dir).item_dir("patch_extraction", case_id)
 
         metadata: Dict[str, Any] = {
             "case_id": case_id,
@@ -307,13 +314,19 @@ def _extract_case_patches(
         target_reader.close()
 
 
-def run_patch_extraction(cfg: PatchExtractionConfig) -> Dict[str, Any]:
+def run_patch_extraction(
+    reference_dir: str,
+    aligned_dir: str,
+    output_dir: str,
+    cfg: ExtractPatchesConfig,
+) -> Dict[str, Any]:
     """Run the generalized, config-driven sliding-window patch extraction pipeline.
 
-    For every reference-channel file discovered under ``cfg.he_dir``
+    For every reference-channel file discovered under ``reference_dir``
     (matching ``cfg.reference_pattern``), and for every biomarker in
-    ``cfg.biomarker_folders``, attempts to locate the corresponding
-    aligned target-channel file under ``cfg.aligned_dir``. Cases without
+    ``cfg.biomarker_folders`` (every subfolder of ``aligned_dir`` when
+    empty), attempts to locate the corresponding aligned target-channel
+    file under ``aligned_dir``. Cases without
     a match are recorded as skipped rather than treated as fatal errors,
     since a partially processed/aligned dataset is common. Matched cases
     are extracted via :func:`_extract_case_patches`, either sequentially
@@ -321,9 +334,15 @@ def run_patch_extraction(cfg: PatchExtractionConfig) -> Dict[str, Any]:
 
     Parameters
     ----------
-    cfg : PatchExtractionConfig
+    reference_dir : str
+        Folder searched recursively for reference slides.
+    aligned_dir : str
+        Folder holding ``<biomarker>/<sample>_<reference_name>/`` aligned slides.
+    output_dir : str
+        Root beneath which ``patch_extraction/<case>/`` folders are written.
+    cfg : ExtractPatchesConfig
         Fully validated configuration (validation happens in
-        :meth:`PatchExtractionConfig.__post_init__` at construction
+        :meth:`ExtractPatchesConfig.__post_init__` at construction
         time, not here).
 
     Returns
@@ -354,28 +373,31 @@ def run_patch_extraction(cfg: PatchExtractionConfig) -> Dict[str, Any]:
     the single unified :mod:`tqdm` bar the sequential path provides.
     """
     pattern = re.compile(cfg.reference_pattern, re.IGNORECASE)
-    reference_files = _discover_reference_files(cfg.he_dir, pattern)
+    reference_files = _discover_reference_files(reference_dir, pattern)
+    biomarkers = list(cfg.biomarker_folders) or sorted(
+        entry.name for entry in os.scandir(aligned_dir) if entry.is_dir()
+    )
 
     if not reference_files:
         print(
-            f"[ERROR] No reference-channel files found under {cfg.he_dir} "
+            f"[ERROR] No reference-channel files found under {reference_dir} "
             f"matching pattern: {cfg.reference_pattern}"
         )
         return {"processed": 0, "skipped": 0, "cases": []}
 
     print(
         f"[INFO] Found {len(reference_files)} reference file(s); "
-        f"checking {len(cfg.biomarker_folders)} biomarker(s) each.\n"
+        f"checking {len(biomarkers)} biomarker(s) each.\n"
     )
 
     to_process: List[Tuple[str, str, str, str]] = []
     results: List[Dict[str, Any]] = []
 
     for sample_id, ref_path in reference_files:
-        for biomarker in cfg.biomarker_folders:
+        for biomarker in biomarkers:
             case_id = f"{sample_id}_{biomarker}"
             target_path = _find_aligned_target(
-                cfg.aligned_dir, biomarker, sample_id, cfg.reference_name
+                aligned_dir, biomarker, sample_id, cfg.reference_name
             )
             if target_path is None:
                 print(f"[SKIP] {case_id}: aligned target not found")
@@ -389,7 +411,13 @@ def run_patch_extraction(cfg: PatchExtractionConfig) -> Dict[str, Any]:
         with concurrent.futures.ThreadPoolExecutor(max_workers=cfg.max_workers) as pool:
             futures = {
                 pool.submit(
-                    _extract_case_patches, case_id, ref_path, target_path, biomarker, cfg
+                    _extract_case_patches,
+                    case_id,
+                    ref_path,
+                    target_path,
+                    biomarker,
+                    cfg,
+                    output_dir,
                 ): case_id
                 for case_id, ref_path, target_path, biomarker in to_process
             }
@@ -407,7 +435,9 @@ def run_patch_extraction(cfg: PatchExtractionConfig) -> Dict[str, Any]:
             to_process, desc="Processing Cases", unit="case"
         ):
             try:
-                result = _extract_case_patches(case_id, ref_path, target_path, biomarker, cfg)
+                result = _extract_case_patches(
+                    case_id, ref_path, target_path, biomarker, cfg, output_dir
+                )
                 tqdm.write(f"[OK] {result['case_id']}: {result['n_patches']} patches saved")
                 results.append(result)
             except Exception as e:

@@ -37,50 +37,44 @@ REQUIRES: Dict[str, Tuple[str, ...]] = {
 
 
 def extract_tissue(root: Path) -> Tuple[Path, dict]:
-    from rocqipath.extraction import TissueExtractionConfig, run_tissue_pipeline
+    import rocqipath as rp
 
-    out = root / "out"
-    results = run_tissue_pipeline(
-        str(D.make_tissue_slides(root)),
-        str(out),
-        TissueExtractionConfig(source_magnification=D.SOURCE_MAG, target_magnification=5.0),
+    result = rp.extract_tissue(
+        D.make_tissue_slides(root),
+        root / "out",
+        source_magnification=D.SOURCE_MAG,
+        target_magnification=5.0,
     )
-    return out, {"regions": results}
+    return result.output_dir, {"regions": result.summary["regions"]}
 
 
 def extract_tma(root: Path) -> Tuple[Path, dict]:
-    from rocqipath.extraction import TMAExtractionConfig, run_tma_extraction_pipeline
+    import rocqipath as rp
 
-    out = root / "out"
-    run_tma_extraction_pipeline(
-        str(D.make_tma(root)),
-        str(out),
-        TMAExtractionConfig(source_magnification=D.SOURCE_MAG, target_magnification=5.0),
+    result = rp.extract_tma(
+        D.make_tma(root), root / "out", source_magnification=D.SOURCE_MAG, target_magnification=5.0
     )
-    return out, {}
+    return result.output_dir, {}
 
 
 def extract_patches(root: Path) -> Tuple[Path, dict]:
-    from rocqipath.extraction import PatchExtractionConfig, run_patch_extraction
+    import rocqipath as rp
 
     data = D.make_patch_pairs(root)
-    out = root / "out"
-    summary = run_patch_extraction(
-        PatchExtractionConfig(
-            he_dir=str(data["reference_root"]),
-            aligned_dir=str(data["aligned_root"]),
-            output_dir=str(out),
-            biomarker_folders=["CD8"],
-            reference_pattern=r"^(?P<sample_id>Sample_\d{4})_he\.tiff?$",
-            moving_name="cd8",
-            patch_size=64,
-            stride=64,
-            tissue_threshold=0.5,
-            reference_source_magnification=D.SOURCE_MAG,
-            target_source_magnification=D.SOURCE_MAG,
-        )
+    result = rp.extract_patches(
+        data["aligned_root"],
+        root / "out",
+        reference=data["reference_root"],
+        biomarker_folders=["CD8"],
+        reference_pattern=r"^(?P<sample_id>Sample_\d{4})_he\.tiff?$",
+        moving_name="cd8",
+        patch_size=64,
+        stride=64,
+        tissue_threshold=0.5,
+        reference_source_magnification=D.SOURCE_MAG,
+        target_source_magnification=D.SOURCE_MAG,
     )
-    return out, {"summary": summary}
+    return result.output_dir, {"summary": result.summary}
 
 
 def reversible_patches(root: Path) -> Tuple[Path, dict]:
@@ -110,37 +104,35 @@ def reversible_patches(root: Path) -> Tuple[Path, dict]:
 
 
 def align_orb(root: Path) -> Tuple[Path, dict]:
-    from rocqipath.alignment import AlignmentConfig, run_alignment
+    import rocqipath as rp
 
-    out = root / "out"
-    results = run_alignment(
-        AlignmentConfig(
-            input_dir=str(D.make_alignment_pair(root)),
-            output_dir=str(out),
-            pair_folders=["CD8"],
-            reference_name="he",
-            moving_name="cd8",
-            alignment_method="orb",
-            reference_source_magnification=D.SOURCE_MAG,
-            moving_source_magnification=D.SOURCE_MAG,
-            target_magnification=D.SOURCE_MAG,
-            qc_enabled=True,
-        )
+    result = rp.align(
+        D.make_alignment_pair(root),
+        root / "out",
+        pair_folders=["CD8"],
+        reference_name="he",
+        moving_name="cd8",
+        backend="orb",
+        reference_source_magnification=D.SOURCE_MAG,
+        moving_source_magnification=D.SOURCE_MAG,
+        target_magnification=D.SOURCE_MAG,
+        qc_enabled=True,
     )
+    references = {item.meta["case_id"]: item for item in result.by_role("reference")}
     returned = [
         {
-            "case_id": r.case.case_id,
-            "sample_id": r.case.sample_id,
-            "pair_name": r.case.pair_name,
-            "valid_grids": list(r.valid_grids),
-            "aligned": Path(r.aligned_moving_path).name,
-            "residual_shift_px": _residual_shift(r.case.reference_file, r.aligned_moving_path),
+            "case_id": item.meta["case_id"],
+            "sample_id": item.sample_id,
+            "pair_name": item.meta["pair"],
+            "valid_grids": item.meta["valid_grids"],
+            "aligned": item.path.name,
+            "residual_shift_px": _residual_shift(
+                str(references[item.meta["case_id"]].path), str(item.path)
+            ),
         }
-        for r in results
+        for item in result.by_role("aligned")
     ]
-    for r in results:
-        r.registrar.close()
-    return out, {"cases": returned}
+    return result.output_dir, {"cases": returned}
 
 
 def _residual_shift(reference: str, aligned: str) -> list:
@@ -156,18 +148,15 @@ def _residual_shift(reference: str, aligned: str) -> list:
 
 
 def _stain(root: Path, method: str) -> Tuple[Path, dict]:
-    from rocqipath.stain import (
-        StainNormalizationConfig,
-        run_stain_normalization_apply,
-        run_stain_normalization_train,
-    )
+    import rocqipath as rp
 
     src = D.make_stain_patches(root)
-    out = root / "out"
-    cfg = StainNormalizationConfig(n_type=method, stains=["he"])
-    weights = run_stain_normalization_train(str(src), str(out), cfg)
-    applied = run_stain_normalization_apply(str(src), str(out), cfg)
-    return out, {"weights": Path(weights).name, "applied": applied}
+    weights = rp.train_stain_normalizer(src, root / "out", method=method, stains=["he"])
+    applied = rp.normalize_stain(src, root / "out", normalizer=weights, stains=["he"])
+    return applied.output_dir, {
+        "weights": weights.by_role("weights")[0].path.name,
+        "applied": applied.summary,
+    }
 
 
 def stain_reinhard(root: Path) -> Tuple[Path, dict]:
@@ -178,80 +167,74 @@ def stain_macenko(root: Path) -> Tuple[Path, dict]:
     return _stain(root, "macenko")
 
 
-def _counter(root: Path):
-    from rocqipath.counting import CellCountingConfig, PositiveCellCounter
-
-    return PositiveCellCounter(
-        CellCountingConfig(
-            output_dir=str(root / "out"),
-            source_magnification=D.SOURCE_MAG,
-            paired_source_magnification=D.SOURCE_MAG,
-            target_magnification=D.SOURCE_MAG,
-            patch_size=256,
-            min_cell_area=20,
-        )
-    )
+_COUNT_SETTINGS = dict(
+    label="CD8",
+    source_magnification=D.SOURCE_MAG,
+    paired_source_magnification=D.SOURCE_MAG,
+    target_magnification=D.SOURCE_MAG,
+    patch_size=256,
+    min_cell_area=20,
+)
 
 
 def count_single(root: Path) -> Tuple[Path, dict]:
+    import rocqipath as rp
+
     slides = D.make_count_slides(root)
-    return root / "out", {"result": _counter(root).count_slide(str(slides["gt"]), label="CD8")}
+    result = rp.count_cells(slides["gt"], root / "out", **_COUNT_SETTINGS)
+    return result.output_dir, {"result": result.summary["results"][0]}
 
 
 def count_batch(root: Path) -> Tuple[Path, dict]:
+    import rocqipath as rp
+
     slides = D.make_count_slides(root)
-    return root / "out", {"results": _counter(root).count_batch(str(slides["dir"]), label="CD8")}
+    result = rp.count_cells(slides["dir"], root / "out", **_COUNT_SETTINGS)
+    return result.output_dir, {"results": result.summary["results"]}
 
 
 def count_pair(root: Path) -> Tuple[Path, dict]:
+    import rocqipath as rp
+
     slides = D.make_count_slides(root)
-    result = _counter(root).count_slide_pair(
-        str(slides["gt"]), str(slides["pred"]), label="CD8", dpi=50, max_plots=2
+    result = rp.count_cells(
+        slides["gt"], root / "out", compare_to=slides["pred"], dpi=50, max_plots=2, **_COUNT_SETTINGS
     )
-    return root / "out", {"result": result}
+    return result.output_dir, {"result": result.summary["result"]}
 
 
 def overlay_markers(root: Path) -> Tuple[Path, dict]:
-    from rocqipath.viz import (
-        IHCOverlayConfig,
-        MarkerProfile,
-        OverlayCombo,
-        process_ihc_overlay,
-    )
+    import rocqipath as rp
 
-    out = root / "out"
-    cfg = IHCOverlayConfig(
-        markers={"he": MarkerProfile(color=(0, 0, 255)), "cd8": MarkerProfile(color=(255, 0, 0))},
-        combinations=[OverlayCombo(base="he", overlays=["cd8"])],
+    result = rp.overlay_markers(
+        D.make_overlay_case(root),
+        root / "out",
+        markers={"he": rp.MarkerProfile(color=(0, 0, 255)), "cd8": rp.MarkerProfile(color=(255, 0, 0))},
+        combinations=[rp.OverlayCombo(base="he", overlays=["cd8"])],
         base_marker="he",
-        save_dir=str(out),
         dpi=50,
     )
-    return out, {"result": process_ihc_overlay(str(D.make_overlay_case(root)), cfg)}
+    return result.output_dir, {"result": result.summary}
 
 
 def compare(root: Path) -> Tuple[Path, dict]:
-    from rocqipath.viz.comparison import visualize_side_by_side
+    import rocqipath as rp
 
     slides = D.make_compare_slides(root)
-    out = root / "out"
-    out.mkdir(parents=True)
-    visualize_side_by_side(
-        str(slides["he"]),
-        str(slides["gt"]),
-        str(slides["pred"]),
-        str(out / "comparison.png"),
+    result = rp.compare(
+        [slides["he"], slides["gt"], slides["pred"]],
+        root / "out",
         dpi=50,
-        title_he="HE",
-        title_gt="GT",
-        title_pred="Pred",
+        title_reference="HE",
+        title_truth="GT",
+        title_prediction="Pred",
         regions=["center"],
-        zoom_sizes=[("detail", 256)],
-        n_random_rois=1,
-        add_scale_bars=True,
+        zooms=["detail:256"],
+        random_rois=1,
+        scale_bars=True,
         mpp=0.5,
     )
-    return out, {}
+    return result.output_dir, {}
 
 
 def grid_map(root: Path) -> Tuple[Path, dict]:

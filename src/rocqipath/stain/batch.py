@@ -3,12 +3,12 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 import cv2 as cv
 import numpy as np
 
-from rocqipath.stain.config import StainNormalizationConfig
+from rocqipath.stain.config import StainConfig
 from rocqipath._internal.console import (
     print_banner,
     print_counts,
@@ -28,10 +28,26 @@ from rocqipath.io.discovery import discover_files
 from rocqipath.io.images import imread_rgb, imwrite_rgb
 
 
+def _collect_images(inputs, stains) -> List[Tuple[Path, Path]]:
+    """Pair each input image with the folder its output name is relative to.
+
+    Folders are searched recursively and filtered by ``stains``; explicitly
+    listed files are always used.
+    """
+    sources = [inputs] if isinstance(inputs, (str, Path)) else list(inputs)
+    collected: List[Tuple[Path, Path]] = []
+    for source in map(Path, sources):
+        if source.is_dir():
+            collected.extend((path, source) for path in discover_files(source, stains))
+        else:
+            collected.append((source, source.parent))
+    return collected
+
+
 def run_stain_normalization_train(
     input_dir: str,
     output_dir: str,
-    cfg: Optional[StainNormalizationConfig] = None,
+    cfg: Optional[StainConfig] = None,
 ) -> Path:
     """Fit a normaliser on tissue patches under *input_dir* and save its weights.
 
@@ -39,9 +55,9 @@ def run_stain_normalization_train(
     ----------
     input_dir : str
     output_dir : str
-        Weights are written to ``<output_dir>/<cfg.n_type>_weights.npz``
-        unless ``cfg.weights_path`` is set.
-    cfg : StainNormalizationConfig or None
+        Weights are written to
+        ``<output_dir>/stain_normalization/<cfg.method>_weights.npz``.
+    cfg : StainConfig or None
 
     Returns
     -------
@@ -49,14 +65,12 @@ def run_stain_normalization_train(
         Path to the saved weights file.
     """
     if cfg is None:
-        cfg = StainNormalizationConfig()
+        cfg = StainConfig()
 
-    files = discover_files(input_dir, cfg.stains)
-    normalizer = get_normalizer(cfg.n_type)
+    files = [path for path, _root in _collect_images(input_dir, cfg.stains)]
+    normalizer = get_normalizer(cfg.method)
     module_dir = OutputLayout(output_dir).module_dir("stain_normalization")
-    weights = (
-        Path(cfg.weights_path) if cfg.weights_path else module_dir / f"{cfg.n_type}_weights.npz"
-    )
+    weights = module_dir / f"{cfg.method}_weights.npz"
     is_reinhard = isinstance(normalizer, ReinhardNormalizer)
 
     print_banner()
@@ -68,7 +82,7 @@ def run_stain_normalization_train(
     print_section("Training")
     print_summary_table(
         [
-            ("Algorithm", cfg.n_type.upper()),
+            ("Algorithm", cfg.method.upper()),
             ("Input dir", input_dir),
             ("Stains", ", ".join(cfg.stains)),
             ("Total files", len(files)),
@@ -99,7 +113,7 @@ def run_stain_normalization_train(
     print_info(f"Collected {len(picked)} tissue patches from {len(files)} files.")
 
     # ── Phase 2: fit ────────────────────────────────────────────────────────
-    print_step("FIT", f"Fitting {cfg.n_type.upper()} normaliser …")
+    print_step("FIT", f"Fitting {cfg.method.upper()} normaliser …")
 
     if is_reinhard:
         normalizer.fit_from_patches(picked)
@@ -130,7 +144,8 @@ def run_stain_normalization_train(
 def run_stain_normalization_apply(
     input_dir: str,
     output_dir: str,
-    cfg: Optional[StainNormalizationConfig] = None,
+    cfg: Optional[StainConfig] = None,
+    weights: Optional[Path] = None,
 ) -> Dict[str, int]:
     """Apply pre-fitted normaliser weights to a folder of patches.
 
@@ -140,7 +155,10 @@ def run_stain_normalization_apply(
     output_dir : str
         Normalised images are written under ``<output_dir>/normalized_images``,
         mirroring the relative path of each input file.
-    cfg : StainNormalizationConfig or None
+    cfg : StainConfig or None
+    weights : pathlib.Path, optional
+        Saved ``.npz`` weights; defaults to
+        ``<output_dir>/stain_normalization/<method>_weights.npz``.
 
     Returns
     -------
@@ -148,13 +166,14 @@ def run_stain_normalization_apply(
         ``{"processed": int, "skipped": int, "failed": int, "total": int}``
     """
     if cfg is None:
-        cfg = StainNormalizationConfig()
+        cfg = StainConfig()
 
-    files = discover_files(input_dir, cfg.stains)
-    normalizer = get_normalizer(cfg.n_type)
+    collected = _collect_images(input_dir, cfg.stains)
+    files = [path for path, _root in collected]
+    normalizer = get_normalizer(cfg.method)
     layout = OutputLayout(output_dir)
     out_root = layout.module_dir("stain_normalization")
-    weights = Path(cfg.weights_path) if cfg.weights_path else out_root / f"{cfg.n_type}_weights.npz"
+    weights = Path(weights) if weights is not None else out_root / f"{cfg.method}_weights.npz"
 
     print_banner()
 
@@ -169,7 +188,7 @@ def run_stain_normalization_apply(
     print_section("Applying Normalisation")
     print_summary_table(
         [
-            ("Algorithm", cfg.n_type.upper()),
+            ("Algorithm", cfg.method.upper()),
             ("Input dir", input_dir),
             ("Weights", str(weights)),
             ("Output dir", str(out_root)),
@@ -185,8 +204,9 @@ def run_stain_normalization_apply(
     processed = skipped = failed = 0
 
     print_step("NORM", "Normalising patches …")
+    roots = dict(collected)
     for fp in track(files, "Normalising"):
-        relative = fp.relative_to(input_dir)
+        relative = fp.relative_to(roots[fp])
         item_name = "__".join(relative.with_suffix("").parts)
         out_path = layout.item_dir("stain_normalization", item_name) / fp.name
 

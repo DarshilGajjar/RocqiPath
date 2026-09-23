@@ -1,166 +1,144 @@
-"""Lock the documented RocqiPath import surface before structural changes."""
+"""Lock the public import surface: Tier 1 (``rocqipath``) and Tier 2 packages."""
 
 from __future__ import annotations
 
-import rocqipath.counting as analysis
-import rocqipath.extraction as extraction
-import rocqipath.alignment as registration
-import rocqipath.stain as stain
-import rocqipath.viz as visualization
-from rocqipath.counting import CellCountingConfig, PositiveCellCounter
-from rocqipath.io.magnification import DEFAULT_TARGET_MAGNIFICATION, MagnificationPlan
-from rocqipath.io.output import OutputLayout
-from rocqipath.errors import (
-    ConfigurationError,
-    DependencyError,
-    ExtractionError,
-    RegistrationError,
-    RegistrationQualityError,
-    SlideNotFoundError,
-    UnsupportedFormatError,
-    WSIProcessingError,
-)
-from rocqipath.extraction import (
-    PatchExtractionConfig,
-    ReversiblePatchExtractor,
-    TMAExtractionConfig,
-    TissueExtractionConfig,
-    extract_tissue_regions,
-    run_patch_extraction,
-    run_tma_extraction_pipeline,
-    run_tissue_pipeline,
-)
-from rocqipath.alignment import (
-    AlignmentConfig,
-    AlignedCaseResult,
-    OrbConfig,
-    ValisConfig,
-    WSIRegistrar,
-    run_alignment,
-)
-from rocqipath.stain import (
-    MacenkoNormalizer,
-    ReinhardNormalizer,
-    StainNormalizationConfig,
-    VahadaneNormalizer,
-    get_normalizer,
-    run_stain_normalization_apply,
-    run_stain_normalization_train,
-)
-from rocqipath.viz import (
-    IHCOverlayConfig,
-    MarkerProfile,
-    OverlayCombo,
-    plot_selector_map,
-    process_ihc_overlay,
-    view_pairs,
-)
+import importlib
+import inspect
 
-EXPECTED_PUBLIC_SYMBOLS = {
-    "analysis": {"CellCountingConfig", "PositiveCellCounter"},
-    "extraction": {
-        "PatchExtractionConfig",
+import pytest
+
+import rocqipath as rp
+
+TIER_1 = {
+    "__version__",
+    # workflows
+    "align",
+    "compare",
+    "count_cells",
+    "extract_patches",
+    "extract_tissue",
+    "extract_tma",
+    "normalize_stain",
+    "overlay_markers",
+    "train_stain_normalizer",
+    # running and results
+    "run",
+    "list_workflows",
+    "Result",
+    "Item",
+    "open_slide",
+    "set_log_level",
+    # configs
+    "AlignConfig",
+    "OrbOptions",
+    "ValisOptions",
+    "CompareConfig",
+    "CountCellsConfig",
+    "ExtractPatchesConfig",
+    "ExtractTMAConfig",
+    "ExtractTissueConfig",
+    "MarkerProfile",
+    "OverlayCombo",
+    "OverlayConfig",
+    "StainConfig",
+    # errors
+    "ConfigurationError",
+    "DependencyError",
+    "ExtractionError",
+    "RegistrationError",
+    "RegistrationQualityError",
+    "RocqiPathError",
+    "SlideNotFoundError",
+    "UnsupportedFormatError",
+}
+
+TIER_2 = {
+    "rocqipath.alignment": {"AlignConfig", "AlignedCaseResult", "OrbOptions", "ValisOptions", "WSIRegistrar"},
+    "rocqipath.counting": {"CountCellsConfig", "PositiveCellCounter"},
+    "rocqipath.extraction": {
+        "ExtractPatchesConfig",
+        "ExtractTMAConfig",
+        "ExtractTissueConfig",
         "ReversiblePatchExtractor",
-        "TMAExtractionConfig",
-        "TissueExtractionConfig",
+        "extract_patches_single",
         "extract_tissue_regions",
-        "run_patch_extraction",
-        "run_tma_extraction_pipeline",
-        "run_tissue_pipeline",
     },
-    "registration": {
-        "AlignmentConfig",
-        "AlignedCaseResult",
-        "OrbConfig",
-        "ValisConfig",
-        "WSIRegistrar",
-        "run_alignment",
-    },
-    "stain": {
+    "rocqipath.stain": {
         "MacenkoNormalizer",
         "ReinhardNormalizer",
-        "StainNormalizationConfig",
+        "StainConfig",
         "VahadaneNormalizer",
         "get_normalizer",
-        "run_stain_normalization_apply",
-        "run_stain_normalization_train",
     },
-    "visualization": {
-        "IHCOverlayConfig",
+    "rocqipath.viz": {
+        "CompareConfig",
         "MarkerProfile",
         "OverlayCombo",
+        "OverlayConfig",
+        "export_grid_map",
+        "export_paired_grid_maps",
+        "export_wsi_thumbnails",
         "plot_selector_map",
-        "process_ihc_overlay",
         "view_pairs",
     },
 }
 
 
-def test_documented_imports_resolve() -> None:
-    """Assert every documented public import resolves to a concrete object."""
-    imported = [
-        DEFAULT_TARGET_MAGNIFICATION,
-        MagnificationPlan,
-        OutputLayout,
-        TissueExtractionConfig,
-        PatchExtractionConfig,
-        ReversiblePatchExtractor,
-        TMAExtractionConfig,
-        run_tissue_pipeline,
-        run_patch_extraction,
-        run_tma_extraction_pipeline,
-        extract_tissue_regions,
-        AlignmentConfig,
-        AlignedCaseResult,
-        run_alignment,
-        ValisConfig,
-        WSIRegistrar,
-        StainNormalizationConfig,
-        ReinhardNormalizer,
-        MacenkoNormalizer,
-        VahadaneNormalizer,
-        get_normalizer,
-        run_stain_normalization_train,
-        run_stain_normalization_apply,
-        PositiveCellCounter,
-        CellCountingConfig,
-        OrbConfig,
-        IHCOverlayConfig,
-        MarkerProfile,
-        OverlayCombo,
-        plot_selector_map,
-        process_ihc_overlay,
-        view_pairs,
-        WSIProcessingError,
-    ]
-    assert all(symbol is not None for symbol in imported)
+def test_tier_one_surface_is_exact() -> None:
+    assert set(rp.__all__) == TIER_1
+    assert set(dir(rp)) >= TIER_1 - {"__version__"}
 
 
-def test_subpackage_all_contracts_are_exact() -> None:
-    """Assert feature subpackages export only their documented symbols."""
-    packages = {
-        "analysis": analysis,
-        "extraction": extraction,
-        "registration": registration,
-        "stain": stain,
-        "visualization": visualization,
-    }
-    assert {
-        name: set(package.__all__) for name, package in packages.items()
-    } == EXPECTED_PUBLIC_SYMBOLS
+@pytest.mark.parametrize("name", sorted(TIER_1 - {"__version__"}))
+def test_tier_one_names_resolve(name: str) -> None:
+    assert getattr(rp, name) is not None
+
+
+@pytest.mark.parametrize("package", sorted(TIER_2))
+def test_tier_two_surfaces_are_exact_and_resolve(package: str) -> None:
+    module = importlib.import_module(package)
+    assert set(module.__all__) == TIER_2[package]
+    for name in module.__all__:
+        assert getattr(module, name) is not None
+
+
+def test_workflows_share_one_calling_convention() -> None:
+    for workflow in rp.list_workflows():
+        parameters = list(inspect.signature(workflow.function).parameters.values())
+        assert [p.name for p in parameters[:3]] == ["inputs", "output_dir", "config"]
+        assert parameters[-1].kind is inspect.Parameter.VAR_KEYWORD
+        assert getattr(rp, workflow.name) is workflow.function
+
+
+def test_unknown_keyword_suggests_a_field(tmp_path) -> None:
+    with pytest.raises(TypeError, match="did you mean 'target_magnification'"):
+        rp.extract_tissue(tmp_path, tmp_path / "out", target_magnificaton=10)
+
+
+def test_config_without_defaults_explains_what_is_missing(tmp_path) -> None:
+    with pytest.raises(TypeError, match="OverlayConfig has no default for markers"):
+        rp.overlay_markers(tmp_path, tmp_path / "out")
+
+
+def test_run_accepts_command_spelling(tmp_path) -> None:
+    with pytest.raises(KeyError, match="Did you mean 'count_cells'"):
+        rp.run("count-cell", tmp_path, tmp_path / "out")
 
 
 def test_exception_hierarchy_is_stable() -> None:
-    """Assert every domain exception remains catchable via the public base."""
     direct = [
-        ConfigurationError,
-        SlideNotFoundError,
-        UnsupportedFormatError,
-        RegistrationError,
-        ExtractionError,
-        DependencyError,
+        rp.ConfigurationError,
+        rp.SlideNotFoundError,
+        rp.UnsupportedFormatError,
+        rp.RegistrationError,
+        rp.ExtractionError,
+        rp.DependencyError,
     ]
-    assert all(issubclass(error, WSIProcessingError) for error in direct)
-    assert issubclass(RegistrationQualityError, RegistrationError)
-    assert issubclass(SlideNotFoundError, FileNotFoundError)
-    assert issubclass(DependencyError, ImportError)
+    assert all(issubclass(error, rp.RocqiPathError) for error in direct)
+    assert issubclass(rp.RegistrationQualityError, rp.RegistrationError)
+    assert issubclass(rp.SlideNotFoundError, FileNotFoundError)
+
+
+def test_open_slide_reports_missing_files(tmp_path) -> None:
+    with pytest.raises(rp.SlideNotFoundError):
+        rp.open_slide(tmp_path / "missing.svs")

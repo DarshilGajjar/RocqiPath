@@ -11,7 +11,7 @@ Use this module when a slide contains multiple circular tissue regions.
 For a slide containing a single contiguous tissue section, use
 rocqipath.extraction.regions instead.
 
-TMA-specific parameters in TMAExtractionConfig
+TMA-specific parameters in ExtractTMAConfig
 --------------------------------------------------
 - only_circles / min_circularity   — filter out non-circular blobs
 - per_stain_detection              — run Otsu independently per stain
@@ -23,26 +23,22 @@ None of these apply to single-region whole-slide images.
 
 Quickstart
 ----------
-::
+This module is the engine behind :func:`rocqipath.extract_tma`::
 
-    from rocqipath.extraction import TMAExtractionConfig, run_tma_extraction_pipeline
+    import rocqipath as rp
 
-    run_tma_extraction_pipeline(
-        input_dir     = "./data/cores",
-        output_root   = "./data/cores/extracted",
-        cfg           = TMAExtractionConfig(
-            only_circles    = True,
-            min_circularity = 0.60,
-            ihc_enhance     = True,
-        ),
-        target_stains = ["H&E", "marker_A"],
+    rp.extract_tma(
+        "./data/cores",
+        "./data/cores/extracted",
+        min_circularity=0.60,
+        stains=["H&E", "marker_A"],
     )
 """
 
 from __future__ import annotations
 
 __all__ = [
-    "TMAExtractionConfig",
+    "ExtractTMAConfig",
     "run_tma_extraction_pipeline",
     "discover_pairs",
     "get_reference_boxes",
@@ -59,7 +55,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import cv2
 import numpy as np
 
-from rocqipath.extraction.config import TMAExtractionConfig
+from rocqipath.extraction.config import ExtractTMAConfig
 from rocqipath.tissue.detection import _detect_regions, _load_thumbnail
 from rocqipath.extraction.engine import (
     SUPPORTED_EXTENSIONS,
@@ -106,7 +102,7 @@ _IHC_KEYWORDS: Tuple[str, ...] = (
 # ══════════════════════════════════════════════════════════════════════════════
 
 
-def enhance_ihc_thumbnail(rgb: np.ndarray, cfg: TMAExtractionConfig) -> np.ndarray:
+def enhance_ihc_thumbnail(rgb: np.ndarray, cfg: ExtractTMAConfig) -> np.ndarray:
     """CLAHE + DAB saturation boost to improve IHC core/background separation.
 
     1. Convert RGB → LAB, apply CLAHE to L*, convert back.
@@ -115,7 +111,7 @@ def enhance_ihc_thumbnail(rgb: np.ndarray, cfg: TMAExtractionConfig) -> np.ndarr
     Parameters
     ----------
     rgb : np.ndarray   uint8 RGB, shape (H, W, 3)
-    cfg : TMAExtractionConfig
+    cfg : ExtractTMAConfig
 
     Returns
     -------
@@ -242,7 +238,7 @@ def discover_pairs(
 
 
 def get_reference_boxes(
-    he_path: Path, cfg: TMAExtractionConfig
+    he_path: Path, cfg: ExtractTMAConfig
 ) -> Tuple[List[Dict[str, float]], np.ndarray, List[Dict[str, Any]]]:
     """Detect tissue cores on the H&E reference slide.
 
@@ -281,7 +277,7 @@ def extract_stain_cores(
     sample_id: str,
     he_rel_boxes: List[Dict[str, float]],
     stain_out_dir: str,
-    cfg: TMAExtractionConfig,
+    cfg: ExtractTMAConfig,
     cached_rgb: Optional[np.ndarray] = None,
 ) -> Tuple[int, int, List[Dict[str, Any]]]:
     """Extract and save every core from one stain slide.
@@ -291,7 +287,7 @@ def extract_stain_cores(
     wsi_path, stain_label, sample_id : identifiers
     he_rel_boxes : reference boxes from H&E detection
     stain_out_dir : root output dir for this stain
-    cfg : TMAExtractionConfig
+    cfg : ExtractTMAConfig
     cached_rgb : pre-loaded H&E thumbnail (pass for H&E slides, None for IHC)
 
     Returns
@@ -420,7 +416,7 @@ def extract_stain_cores(
     return saved, skipped, manifests
 
 
-def _print_config_panel(cfg: TMAExtractionConfig, input_dir: str, output_dir: str) -> None:
+def _print_config_panel(cfg: ExtractTMAConfig, input_dir: str, output_dir: str) -> None:
     """Render a Rich table summarising the resolved run configuration.
 
     Printed once at the start of :func:`run_tma_extraction_pipeline` so
@@ -429,7 +425,7 @@ def _print_config_panel(cfg: TMAExtractionConfig, input_dir: str, output_dir: st
 
     Parameters
     ----------
-    cfg : TMAExtractionConfig
+    cfg : ExtractTMAConfig
         The configuration whose fields are displayed.
     input_dir : str
         Input directory path, shown as the first row (not part of
@@ -477,8 +473,7 @@ def _print_config_panel(cfg: TMAExtractionConfig, input_dir: str, output_dir: st
 def run_tma_extraction_pipeline(
     input_dir: str,
     output_root: str,
-    cfg: Optional[TMAExtractionConfig] = None,
-    target_stains: Optional[List[str]] = None,
+    cfg: Optional[ExtractTMAConfig] = None,
 ) -> None:
     """Discover paired H&E/IHC slides and extract tissue cores.
 
@@ -486,20 +481,19 @@ def run_tma_extraction_pipeline(
     ----------
     input_dir : str
     output_root : str
-    cfg : TMAExtractionConfig or None
-    target_stains : list[str] or None   e.g. ["H&E", "marker_A"], or None for all
+    cfg : ExtractTMAConfig or None
     """
     if not _PYVIPS_AVAILABLE:
         raise ImportError("pyvips required. pip install rocqipath[extraction]")
     if cfg is None:
-        cfg = TMAExtractionConfig()
+        cfg = ExtractTMAConfig()
 
     def normalize_label(label: str) -> str:
         """Normalize H&E aliases and remove punctuation for comparisons."""
         token = re.sub(r"[^a-z0-9]", "", label.lower())
         return "he" if token in {"he", "hne"} else token
 
-    target_stains = target_stains or ["all"]
+    target_stains = list(cfg.stains) or ["all"]
     target_norm = {normalize_label(s) for s in target_stains}
     process_all = "all" in target_norm
 

@@ -1,17 +1,18 @@
-"""Whole-slide alignment and registration."""
+"""Whole-slide registration of a moving slide onto a reference slide.
 
-from __future__ import annotations
+Most users call :func:`rocqipath.align`. :class:`WSIRegistrar` registers and
+exports one slide pair directly for finer control.
+"""
 
-from .config import AlignmentConfig, OrbConfig, ValisConfig
-from .models import AlignedCaseResult
-from .pipeline import run_alignment
-from .registrar import WSIRegistrar
+from rocqipath._internal.lazy import lazy_exports
 
-__all__ = [
-    "AlignmentConfig",
-    "AlignedCaseResult",
-    "OrbConfig",
-    "ValisConfig",
-    "WSIRegistrar",
-    "run_alignment",
-]
+__getattr__, __dir__, __all__ = lazy_exports(
+    __name__,
+    {
+        "AlignConfig": ".config",
+        "AlignedCaseResult": ".models",
+        "OrbOptions": ".config",
+        "ValisOptions": ".config",
+        "WSIRegistrar": ".registrar",
+    },
+)

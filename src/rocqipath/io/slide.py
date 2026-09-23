@@ -225,3 +225,53 @@ class SlideReader:
     def __exit__(self, *_exc: object) -> None:
         """Close the reader when leaving a context-manager block."""
         self.close()
+
+
+def open_slide(
+    path: str | Path,
+    *,
+    target_magnification: Optional[float] = None,
+    source_magnification: Optional[float] = None,
+) -> SlideReader:
+    """Open a whole-slide image (or ordinary image) for inspection and reading.
+
+    OpenSlide is used for scanner formats when installed; other images
+    fall back to Pillow. Use the result as a context manager so the file is
+    closed afterwards.
+
+    Parameters
+    ----------
+    path : str or pathlib.Path
+        Slide or image file.
+    target_magnification : float, optional
+        When given, :meth:`SlideReader.configure_magnification` is called so
+        :meth:`SlideReader.read_at_magnification` reads at this objective.
+    source_magnification : float, optional
+        Objective the slide was scanned at, for files whose metadata does
+        not say (plain TIFFs). Only used with ``target_magnification``.
+
+    Returns
+    -------
+    SlideReader
+        An open reader exposing ``dimensions``, ``properties``,
+        ``level_downsamples`` and magnification-aware reads.
+
+    Raises
+    ------
+    rocqipath.errors.SlideNotFoundError
+        If ``path`` does not exist.
+
+    Examples
+    --------
+    >>> import rocqipath as rp
+    >>> with rp.open_slide("slide.svs", target_magnification=20) as slide:  # doctest: +SKIP
+    ...     tile = slide.read_at_magnification((0, 0), (512, 512))
+    """
+    from rocqipath.errors import SlideNotFoundError
+
+    if not Path(path).exists():
+        raise SlideNotFoundError(f"Slide not found: {path}")
+    reader = SlideReader(str(path))
+    if target_magnification is not None:
+        reader.configure_magnification(target_magnification, source_magnification)
+    return reader

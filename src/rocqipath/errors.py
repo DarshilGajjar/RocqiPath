@@ -1,21 +1,21 @@
 """Define the custom RocqiPath exception hierarchy.
 
-All library-specific errors inherit from :class:`WSIProcessingError` so
+All library-specific errors inherit from :class:`RocqiPathError` so
 callers can catch every error the library raises with a single ``except``
 clause::
 
-    from rocqipath.errors import WSIProcessingError
+    import rocqipath as rp
 
     try:
-        run_alignment(cfg)
-    except WSIProcessingError as exc:
-        logger.error("Pipeline failed: %s", exc)
+        rp.align("pairs/", "results/")
+    except rp.RocqiPathError as exc:
+        print(f"Alignment failed: {exc}")
 
 Hierarchy
 ---------
 ::
 
-    WSIProcessingError
+    RocqiPathError
     ├── ConfigurationError          bad or missing config values
     ├── SlideNotFoundError          a WSI path does not exist
     ├── UnsupportedFormatError      format OpenSlide cannot read
@@ -28,7 +28,7 @@ Hierarchy
 from __future__ import annotations
 
 __all__ = [
-    "WSIProcessingError",
+    "RocqiPathError",
     "ConfigurationError",
     "SlideNotFoundError",
     "UnsupportedFormatError",
@@ -39,11 +39,11 @@ __all__ = [
 ]
 
 
-class WSIProcessingError(Exception):
+class RocqiPathError(Exception):
     """Base class for all ``rocqipath`` exceptions."""
 
 
-class ConfigurationError(WSIProcessingError):
+class ConfigurationError(RocqiPathError):
     """Raised when a configuration value is missing, invalid, or inconsistent.
 
     Examples
@@ -52,7 +52,7 @@ class ConfigurationError(WSIProcessingError):
     """
 
 
-class SlideNotFoundError(WSIProcessingError, FileNotFoundError):
+class SlideNotFoundError(RocqiPathError, FileNotFoundError):
     """Raised when a WSI file path does not exist on disk.
 
     Inherits from :class:`FileNotFoundError` so existing code that catches
@@ -60,14 +60,14 @@ class SlideNotFoundError(WSIProcessingError, FileNotFoundError):
     """
 
 
-class UnsupportedFormatError(WSIProcessingError):
+class UnsupportedFormatError(RocqiPathError):
     """Report a WSI format that the available backend cannot open.
 
     This includes unrecognised extensions and backend decoding failures.
     """
 
 
-class RegistrationError(WSIProcessingError):
+class RegistrationError(RocqiPathError):
     """Raised when slide registration fails to produce a valid transform."""
 
 
@@ -112,11 +112,11 @@ class RegistrationQualityError(RegistrationError):
         )
 
 
-class ExtractionError(WSIProcessingError):
+class ExtractionError(RocqiPathError):
     """Raised when patch or core extraction fails for a slide."""
 
 
-class DependencyError(WSIProcessingError, ImportError):
+class DependencyError(RocqiPathError, ImportError):
     """Report a missing optional dependency.
 
     Inherits from :class:`ImportError` so existing ``except ImportError``

@@ -6,14 +6,14 @@ import json
 import re
 import traceback
 from pathlib import Path
-from typing import List, Union
+from typing import Callable, List, Optional, Union
 
-from rocqipath.alignment.config import AlignmentConfig
+from rocqipath.alignment.config import AlignConfig
 from rocqipath._internal.logging import logger
 from rocqipath.io.output import OutputLayout
 from rocqipath.alignment.models import AlignedCaseResult, CaseContext
 from rocqipath.alignment.quality import qc_center_patch_side_by_side
-from rocqipath.alignment.registrar import ValisConfig, WSIRegistrar
+from rocqipath.alignment.registrar import WSIRegistrar, registrar_settings
 from rocqipath.io.discovery import (
     build_sample_pairs,
     discover_pair_folders,
@@ -24,7 +24,7 @@ from rocqipath.io.discovery import (
 from rocqipath.io.naming import build_filename_pattern, parse_wsi_filename
 
 __all__ = [
-    "AlignmentConfig",
+    "AlignConfig",
     "CaseContext",
     "AlignedCaseResult",
     "build_filename_pattern",
@@ -187,7 +187,7 @@ class AlignmentProcessor:
 
     Parameters
     ----------
-    config : AlignmentConfig
+    config : AlignConfig
         Typed configuration object.  Use :func:`run_alignment` as the
         normal entry point rather than instantiating this class directly.
 
@@ -198,12 +198,22 @@ class AlignmentProcessor:
         if ``config.pair_folders`` is empty).
     """
 
-    def __init__(self, config: AlignmentConfig) -> None:
+    def __init__(
+        self,
+        input_dir: Union[str, Path, None],
+        output_dir: Union[str, Path],
+        config: AlignConfig,
+    ) -> None:
         """Resolve directories, compile the filename pattern, and discover pair folders.
 
         Parameters
         ----------
-        config : AlignmentConfig
+        input_dir : str or pathlib.Path or None
+            Existing folder containing the pair folders. ``None`` skips
+            discovery, for aligning explicit pairs with :meth:`process_case`.
+        output_dir : str or pathlib.Path
+            Output root; created when missing.
+        config : AlignConfig
             Typed configuration object — see the class docstring above.
             Stored on ``self.cfg`` for later use by :meth:`align_case`
             and :meth:`run`.
@@ -213,15 +223,15 @@ class AlignmentProcessor:
         Construction performs real filesystem work, not just attribute
         assignment:
 
-        - ``config.input_dir`` is resolved via :func:`ensure_directory`
+        - ``input_dir`` is resolved via :func:`ensure_directory`
           with ``create=False`` — it must already exist, or this raises
           :class:`FileNotFoundError`.
-        - ``config.output_dir`` is resolved via :func:`ensure_directory`
+        - ``output_dir`` is resolved via :func:`ensure_directory`
           with ``create=True`` — it is created if missing.
         - ``config.filename_pattern`` is compiled once into
           ``self._pattern`` (already resolved and validated for its
           required named groups by
-          :meth:`AlignmentConfig.__post_init__`, so no further
+          :meth:`AlignConfig.__post_init__`, so no further
           validation happens here).
         - ``self.pair_folders`` is resolved from
           ``config.pair_folders`` if non-empty, otherwise
@@ -235,11 +245,13 @@ class AlignmentProcessor:
         """
         self.cfg = config
 
-        self.input_dir = ensure_directory(config.input_dir, create=False)
-        self.output_dir = ensure_directory(config.output_dir, create=True)
-
-        # Compile filename pattern once
+        self.output_dir = ensure_directory(output_dir, create=True)
         self._pattern = re.compile(config.filename_pattern, re.IGNORECASE)
+        if input_dir is None:
+            self.input_dir = None
+            self.pair_folders: List[str] = []
+            return
+        self.input_dir = ensure_directory(input_dir, create=False)
 
         # Resolve pair-folder list
         configured = config.pair_folders or []
@@ -259,47 +271,6 @@ class AlignmentProcessor:
 
     # ── internal helpers ──────────────────────────────────────────────────────
 
-    def _make_valis_config(self) -> ValisConfig:
-        """Build a ``ValisConfig`` from this processor's ``AlignmentConfig``.
-
-        Currently forwards only ``valis_max_error_um`` — the rest of
-        ``ValisConfig``'s fields are left at their library defaults. Used
-        internally by :meth:`align_case` when constructing each
-        :class:`~rocqipath.alignment.registrar.WSIRegistrar`.
-
-        Returns
-        -------
-        ValisConfig
-            A config instance with ``max_acceptable_error_um`` set from
-            ``self.cfg.valis_max_error_um``.
-
-        """
-        # New API: explicit ValisConfig wins.
-        if self.cfg.valis_config is not None:
-            return self.cfg.valis_config
-
-        # Legacy API remains completely functional.
-        return ValisConfig(
-            max_acceptable_error_um=(
-                self.cfg.valis_max_error_um
-            ),
-            max_non_rigid_reg_dim_px=(
-                self.cfg.valis_non_rigid_dim
-            ),
-            feature_detector=(
-                self.cfg.valis_feature_detector
-            ),
-            num_features=(
-                self.cfg.valis_num_features
-            ),
-            check_for_reflections=(
-                self.cfg.valis_check_reflections
-            ),
-            norm_method=(
-                self.cfg.valis_norm_method
-            ),
-        )
-
     def _make_registrar_cfg(self, output_root: Path, item_name: str) -> dict:
         """Build the plain-dict config expected by ``WSIRegistrar``'s constructor.
 
@@ -318,19 +289,9 @@ class AlignmentProcessor:
             physical magnification fields populated from ``self.cfg``. See
             :class:`~rocqipath.alignment.registrar.WSIRegistrar` for the
             full set of keys it accepts — this helper supplies only the
-            subset ``AlignmentConfig`` exposes.
+            subset ``AlignConfig`` exposes.
         """
-        return {
-            "patch_size": self.cfg.patch_size,
-            "grid_density": self.cfg.grid_density,
-            "base_output_dir": str(output_root),
-            "output_item_name": item_name,
-            "target_magnification": self.cfg.target_magnification,
-            "reference_source_magnification": self.cfg.reference_source_magnification,
-            "moving_source_magnification": self.cfg.moving_source_magnification,
-            "max_physical_field_ratio": self.cfg.max_physical_field_ratio,
-            "keep_valis_diagnostics": self.cfg.keep_valis_diagnostics,
-        }
+        return registrar_settings(self.cfg, output_root, item_name)
 
     # ── per-case alignment ────────────────────────────────────────────────────
 
@@ -362,10 +323,10 @@ class AlignmentProcessor:
             case.reference_file,
             case.moving_file,
             self._make_registrar_cfg(Path(output_root), case.case_id),
-            valis_cfg=self._make_valis_config(),
+            valis_cfg=self.cfg.valis,
         )
 
-        registrar.register_slides(method=self.cfg.alignment_method)
+        registrar.register_slides(method=self.cfg.backend)
 
         thumb, valid_grids = registrar.generate_grid_map()
 
@@ -414,6 +375,62 @@ class AlignmentProcessor:
             aligned_moving_path=aligned_path,
             manifest_path=manifest_path,
         )
+
+    def process_case(
+        self,
+        case: CaseContext,
+        on_status: Optional[Callable[[str], None]] = None,
+    ) -> AlignedCaseResult:
+        """Register, export and (optionally) QC one pair, then close its slides.
+
+        Parameters
+        ----------
+        case : CaseContext
+            The pair to align.
+        on_status : callable, optional
+            Receives short progress labels (``"qc"``).
+
+        Returns
+        -------
+        AlignedCaseResult
+            The aligned pair; its registrar is already closed.
+
+        Raises
+        ------
+        Exception
+            Whatever registration or export raised. QC failures are only
+            logged.
+        """
+        registrar = None
+        try:
+            aligned = self.align_case(case, self.output_dir)
+            registrar = aligned.registrar
+            if self.cfg.qc_enabled and registrar is not None:
+                try:
+                    if on_status is not None:
+                        on_status("qc")
+                    qc_root = Path(self.cfg.qc_output_dir or str(Path(registrar.output_dir)))
+                    moving_qc = aligned.aligned_moving_path or case.moving_file
+                    qc_center_patch_side_by_side(
+                        reference_path=case.reference_file,
+                        moving_path=str(moving_qc),
+                        out_png=str(qc_root / f"{case.case_id}_center_qc.png"),
+                        reference_level=self.cfg.qc_reference_level,
+                        patch_size=self.cfg.qc_patch_size,
+                        reference_read_level=self.cfg.qc_reference_read_level,
+                        moving_read_level=self.cfg.qc_moving_read_level,
+                        title=case.case_id,
+                        dpi=self.cfg.qc_dpi,
+                    )
+                except Exception as qc_err:
+                    logger.warning(f"[QC WARN] {case.case_id}: {qc_err}")
+            return aligned
+        finally:
+            if registrar is not None:
+                try:
+                    registrar.close()
+                except Exception:
+                    pass
 
     # ── main loop ─────────────────────────────────────────────────────────────
 
@@ -482,50 +499,19 @@ class AlignmentProcessor:
                         ok += 1
                         continue
 
-                    registrar = None
                     try:
                         pbar.set_postfix(status="registering")
-                        aligned = self.align_case(case, self.output_dir)
-                        registrar = aligned.registrar
+                        aligned = self.process_case(
+                            case, on_status=lambda status: pbar.set_postfix(status=status)
+                        )
                         all_results.append(aligned)
                         ok += 1
                         logger.info(f"[OK] {case_id}")
-
-                        # Optional QC
-                        if self.cfg.qc_enabled and registrar is not None:
-                            try:
-                                pbar.set_postfix(status="qc")
-                                qc_root = Path(
-                                    self.cfg.qc_output_dir or str(Path(registrar.output_dir))
-                                )
-                                moving_qc = aligned.aligned_moving_path or case.moving_file
-                                qc_center_patch_side_by_side(
-                                    reference_path=case.reference_file,
-                                    moving_path=str(moving_qc),
-                                    out_png=str(qc_root / f"{case_id}_center_qc.png"),
-                                    reference_level=self.cfg.qc_reference_level,
-                                    patch_size=self.cfg.qc_patch_size,
-                                    reference_read_level=self.cfg.qc_reference_read_level,
-                                    moving_read_level=self.cfg.qc_moving_read_level,
-                                    title=case_id,
-                                    dpi=self.cfg.qc_dpi,
-                                )
-                            except Exception as qc_err:
-                                logger.warning(f"[QC WARN] {case_id}: {qc_err}")
-
                     except Exception as exc:
-                        # The previous handler logged only str(exc), leaving a
-                        # single sentence to diagnose a failed case from.
-                        # format_exc() works with stdlib logging and loguru
-                        # alike, unlike logger.exception().
+                        # format_exc() works with stdlib logging and loguru alike.
                         logger.error(f"[FAIL] {case_id}: {exc}\n{traceback.format_exc()}")
                         fail += 1
                     finally:
-                        if registrar is not None:
-                            try:
-                                registrar.close()
-                            except Exception:
-                                pass
                         pbar.set_postfix(status="done")
 
             total_ok += ok
@@ -536,28 +522,62 @@ class AlignmentProcessor:
         return all_results
 
 
-def run_alignment(config: AlignmentConfig) -> List[AlignedCaseResult]:
-    """
-    Run the full alignment pipeline from a typed ``AlignmentConfig``.
-
-    This is the **primary entry point** for programmatic use:
-
-        from rocqipath.alignment import run_alignment, AlignmentConfig
-
-        results = run_alignment(AlignmentConfig(
-            input_dir  = "./data/wsi",
-            output_dir = "./data/wsi/aligned",
-        ))
+def run_alignment(
+    input_dir: Union[str, Path], output_dir: Union[str, Path], config: AlignConfig
+) -> List[AlignedCaseResult]:
+    """Register every discovered pair; the engine behind :func:`rocqipath.align`.
 
     Parameters
     ----------
-    config : AlignmentConfig
+    input_dir : str or pathlib.Path
+        Folder containing the pair folders.
+    output_dir : str or pathlib.Path
+        Output root.
+    config : AlignConfig
+        Alignment settings.
 
     Returns
     -------
-    List[AlignedCaseResult]
+    list of AlignedCaseResult
+        One entry per successfully registered pair.
     """
     from rocqipath._internal.console import print_banner
 
     print_banner()
-    return AlignmentProcessor(config).run()
+    return AlignmentProcessor(input_dir, output_dir, config).run()
+
+
+def align_pair(
+    reference: Union[str, Path],
+    moving: Union[str, Path],
+    output_dir: Union[str, Path],
+    config: AlignConfig,
+) -> AlignedCaseResult:
+    """Register one moving slide onto one reference slide.
+
+    The sample ID comes from ``filename_pattern`` when the reference name
+    matches it, otherwise from the text before the reference file's first
+    underscore. Outputs go to ``<output_dir>/alignment/<sample>_<moving_name>/``.
+
+    Parameters
+    ----------
+    reference, moving : str or pathlib.Path
+        The fixed and moving slides.
+    output_dir : str or pathlib.Path
+        Output root.
+    config : AlignConfig
+        Alignment settings; ``pair_folders`` is ignored.
+
+    Returns
+    -------
+    AlignedCaseResult
+        The aligned pair.
+    """
+    processor = AlignmentProcessor(None, output_dir, config)
+    parsed = parse_wsi_filename(Path(reference).name, processor._pattern)
+    sample_id = parsed[0] if parsed else None
+    case = CaseContext.from_paths(str(reference), str(moving), config.moving_name, sample_id=sample_id)
+    if config.dry_run:
+        logger.info(f"[DRY RUN] {case.case_id}  reference={reference}  moving={moving}")
+        return AlignedCaseResult(case=case, registrar=None, thumb=None, valid_grids=[])
+    return processor.process_case(case)

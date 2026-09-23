@@ -31,7 +31,10 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Medical Science Apps.",
 ]
 
-dependencies = []
+dependencies = [
+    # TOML config files (`--config`, `Config.from_toml`) on Python 3.10.
+    "tomli>=2.0; python_version < '3.11'",
+]
 
 [project.optional-dependencies]
 # Scanner-free regression suite and static checks; no model downloads required.
@@ -123,6 +126,13 @@ viz = [
     "opencv-python-headless>=4.7",
     "matplotlib>=3.7",
     "pillow>=10.0",
+]
+
+# `pip install rocqipath[studio]`
+# Local browser workspace (`rocqipath studio`).
+studio = [
+    "fastapi>=0.110",
+    "uvicorn>=0.29",
 ]
 
 [project.scripts]

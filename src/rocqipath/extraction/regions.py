@@ -10,34 +10,30 @@ no per-stain registration, no IHC enhancement.
 
 Quickstart
 ----------
-Batch (whole directory)::
+Most users call the workflow::
 
-    from rocqipath.extraction import TissueExtractionConfig, run_tissue_pipeline
+    import rocqipath as rp
 
-    run_tissue_pipeline(
-        input_dir  = "./data/wsi",
-        output_dir = "./data/wsi/extracted",
-        cfg        = TissueExtractionConfig(detection_magnification=1.25),
-    )
+    result = rp.extract_tissue("./data/wsi", "./data/extracted", detection_magnification=1.25)
 
-Single slide::
+This module is its engine. One slide can also be processed directly::
 
-    from rocqipath.extraction.regions import TissueExtractionConfig, extract_tissue_regions
+    from rocqipath.extraction import ExtractTissueConfig, extract_tissue_regions
 
-    regions = extract_tissue_regions("./slide_01.svs", "./out")
+    regions = extract_tissue_regions("./slide_01.svs", "./out", ExtractTissueConfig())
 """
 
 from __future__ import annotations
 
 __all__ = [
-    "TissueExtractionConfig",
+    "ExtractTissueConfig",
     "extract_tissue_regions",
     "run_tissue_pipeline",
 ]
 
 from pathlib import Path
-from typing import Any, Dict, List, Optional
-from rocqipath.extraction.config import TissueExtractionConfig
+from typing import Any, Dict, List, Optional, Sequence, Union
+from rocqipath.extraction.config import ExtractTissueConfig
 from rocqipath.tissue.detection import _detect_regions, _load_thumbnail
 from rocqipath.extraction.engine import (
     SUPPORTED_EXTENSIONS,
@@ -68,7 +64,7 @@ _log = get_logger("tissue_extraction")
 # ══════════════════════════════════════════════════════════════════════════════
 
 
-def _print_config_panel(cfg: TissueExtractionConfig, input_dir: str, output_dir: str) -> None:
+def _print_config_panel(cfg: ExtractTissueConfig, input_dir: str, output_dir: str) -> None:
     """Print the resolved run configuration.
 
     Printed once at the start of :func:`run_tissue_pipeline` so the
@@ -77,7 +73,7 @@ def _print_config_panel(cfg: TissueExtractionConfig, input_dir: str, output_dir:
 
     Parameters
     ----------
-    cfg : TissueExtractionConfig
+    cfg : ExtractTissueConfig
         The configuration whose fields are displayed.
     input_dir : str
         Input directory path, shown as the first row (not part of
@@ -117,7 +113,7 @@ def _print_config_panel(cfg: TissueExtractionConfig, input_dir: str, output_dir:
 def extract_tissue_regions(
     wsi_path: str,
     output_dir: str,
-    cfg: Optional[TissueExtractionConfig] = None,
+    cfg: Optional[ExtractTissueConfig] = None,
 ) -> List[Dict[str, Any]]:
     """Detect and extract all tissue regions from a single whole-slide image.
 
@@ -126,7 +122,7 @@ def extract_tissue_regions(
     wsi_path : str
     output_dir : str
         A subdirectory named after the slide stem is created inside it.
-    cfg : TissueExtractionConfig or None
+    cfg : ExtractTissueConfig or None
 
     Returns
     -------
@@ -144,7 +140,7 @@ def extract_tissue_regions(
     if not Path(wsi_path).is_file():
         raise FileNotFoundError(f"WSI not found: {wsi_path}")
     if cfg is None:
-        cfg = TissueExtractionConfig()
+        cfg = ExtractTissueConfig()
 
     slide_name = Path(wsi_path).stem
     slide_dir = OutputLayout(output_dir).item_dir("tissue_extraction", slide_name)
@@ -263,17 +259,19 @@ def extract_tissue_regions(
 
 
 def run_tissue_pipeline(
-    input_dir: str,
+    input_dir: Union[str, Path, Sequence[Union[str, Path]]],
     output_dir: str,
-    cfg: Optional[TissueExtractionConfig] = None,
+    cfg: Optional[ExtractTissueConfig] = None,
 ) -> Dict[str, List[Dict[str, Any]]]:
-    """Detect and extract tissue regions from all WSI files in input_dir.
+    """Detect and extract tissue regions from whole-slide images.
 
     Parameters
     ----------
-    input_dir : str
+    input_dir : str, pathlib.Path or sequence of paths
+        A folder whose supported slides are processed, or a list of slide
+        files and folders.
     output_dir : str
-    cfg : TissueExtractionConfig or None
+    cfg : ExtractTissueConfig or None
 
     Returns
     -------
@@ -282,17 +280,25 @@ def run_tissue_pipeline(
     if not _PYVIPS_AVAILABLE:
         raise ImportError("pyvips required. pip install rocqipath[extraction]")
     if cfg is None:
-        cfg = TissueExtractionConfig()
+        cfg = ExtractTissueConfig()
 
+    sources = [input_dir] if isinstance(input_dir, (str, Path)) else list(input_dir)
     module_dir = OutputLayout(output_dir).module_dir("tissue_extraction")
     configure_logging(save_dir=str(module_dir), log_filename="tissue_extraction.log")
-    _print_config_panel(cfg, input_dir, str(module_dir))
+    _print_config_panel(cfg, ", ".join(map(str, sources)), str(module_dir))
 
-    wsi_files = sorted(
-        p
-        for p in Path(input_dir).iterdir()
-        if p.is_file() and p.suffix.lower() in SUPPORTED_EXTENSIONS
-    )
+    wsi_files = []
+    for source in map(Path, sources):
+        if source.is_dir():
+            wsi_files.extend(
+                sorted(
+                    p
+                    for p in source.iterdir()
+                    if p.is_file() and p.suffix.lower() in SUPPORTED_EXTENSIONS
+                )
+            )
+        else:
+            wsi_files.append(source)
     if not wsi_files:
         logger.warning(f"No WSI files found in {input_dir}")
         return {}
