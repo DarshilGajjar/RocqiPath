@@ -99,6 +99,24 @@ def test_real_count_job_and_artifact_containment(client, tmp_path):
     assert client.get(f"/api/jobs/{job_id}/artifact", params={"path": artifact["path"]}).status_code == 200
 
 
+def test_chained_job_uses_earlier_output_and_explains_role_mismatch(client, tmp_path):
+    slide = _one_slide(client, tmp_path)
+    first = client.post("/api/jobs", json={
+        "workflow": "count_cells",
+        "inputs": [{"kind": "slide", "id": slide["id"]}],
+        "settings": {"source_magnification": 20},
+    }).json()
+    for _ in range(100):
+        if client.get(f"/api/jobs/{first['id']}").json()["status"] not in {"queued", "running"}:
+            break
+        time.sleep(0.1)
+    chained = client.post("/api/jobs", json={
+        "workflow": "extract_tissue", "inputs": [{"kind": "job", "id": first["id"]}],
+    })
+    assert chained.status_code == 422
+    assert "the count_cells output holds count files" in chained.text
+
+
 def test_history_survives_restart(tmp_path):
     workspace = tmp_path / "work"
     with TestClient(create_app(workspace)) as client:

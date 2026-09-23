@@ -80,7 +80,7 @@ def test_moved_output_folder_still_resolves(aligned, tmp_path):
 
 
 def test_wrong_roles_are_explained(aligned, tmp_path):
-    with pytest.raises(ValueError, match="expected one of: patch, region, core"):
+    with pytest.raises(ValueError, match="the align result holds aligned, figure, reference files; this workflow needs one of: patch, region, core"):
         rp.normalize_stain(aligned, tmp_path, normalizer=tmp_path / "w.npz")
 
 

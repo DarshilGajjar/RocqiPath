@@ -44,3 +44,30 @@ jobs:
 
       - name: Lint source and tests
         run: ruff check src tests
+
+  studio-web:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: studio-web
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: studio-web/pnpm-lock.yaml
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Test
+        run: pnpm test
+
+      - name: Build
+        run: pnpm build

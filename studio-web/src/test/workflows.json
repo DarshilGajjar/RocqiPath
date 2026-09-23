@@ -1,0 +1,1885 @@
+[
+ {
+  "name": "extract_tissue",
+  "label": "Extract tissue",
+  "summary": "Cut each separate piece of tissue out of whole-slide images.",
+  "extra": "extraction",
+  "available": true,
+  "missing": [],
+  "inputs": {
+   "kind": "whole-slide images or folders of them",
+   "help": "Slide files and/or folders of slides (``.svs``, ``.ndpi``, ``.tif``, ...), or an earlier result (e.g. from :func:`align`) whose ``\"aligned\"`` slides are used. Folders are not searched recursively."
+  },
+  "options": [],
+  "settings": [
+   {
+    "name": "target_magnification",
+    "type": "float",
+    "default": 20.0,
+    "required": false,
+    "choices": null,
+    "advanced": false,
+    "local_only": false,
+    "help": "Physical objective magnification of saved regions.",
+    "doc": "Physical objective magnification of saved regions."
+   },
+   {
+    "name": "detection_magnification",
+    "type": "float",
+    "default": 1.25,
+    "required": false,
+    "choices": null,
+    "advanced": false,
+    "local_only": false,
+    "help": "Physical objective magnification used for contour detection.",
+    "doc": "Physical objective magnification used for contour detection."
+   },
+   {
+    "name": "source_magnification",
+    "type": "float",
+    "default": null,
+    "required": false,
+    "choices": null,
+    "advanced": false,
+    "local_only": false,
+    "help": "Objective fallback when slide metadata is absent.",
+    "doc": "Objective fallback when slide metadata is absent."
+   },
+   {
+    "name": "preview_scale",
+    "type": "float",
+    "default": 0.2,
+    "required": false,
+    "choices": null,
+    "advanced": true,
+    "local_only": false,
+    "help": "Preview dimensions as a fraction of extracted-region dimensions.",
+    "doc": "Preview dimensions as a fraction of extracted-region dimensions."
+   },
+   {
+    "name": "min_area_fraction",
+    "type": "float",
+    "default": 0.005,
+    "required": false,
+    "choices": null,
+    "advanced": false,
+    "local_only": false,
+    "help": "Minimum contour area as a fraction of the detection thumbnail. Smaller specks are ignored. Default ``0.005``.",
+    "doc": "Minimum contour area as a fraction of the detection thumbnail.\nSmaller specks are ignored. Default ``0.005``."
+   },
+   {
+    "name": "tif_tile",
+    "type": "bool",
+    "default": true,
+    "required": false,
+    "choices": null,
+    "advanced": true,
+    "local_only": false,
+    "help": "Enable tiled and pyramidal TIFF output.",
+    "doc": "Enable tiled and pyramidal TIFF output."
+   },
+   {
+    "name": "tif_pyramid",
+    "type": "bool",
+    "default": true,
+    "required": false,
+    "choices": null,
+    "advanced": true,
+    "local_only": false,
+    "help": "Enable tiled and pyramidal TIFF output.",
+    "doc": "Enable tiled and pyramidal TIFF output."
+   },
+   {
+    "name": "tif_compression",
+    "type": "str",
+    "default": "lzw",
+    "required": false,
+    "choices": null,
+    "advanced": true,
+    "local_only": false,
+    "help": "libvips TIFF compression name.",
+    "doc": "libvips TIFF compression name."
+   },
+   {
+    "name": "tif_quality",
+    "type": "int",
+    "default": 99,
+    "required": false,
+    "choices": null,
+    "advanced": true,
+    "local_only": false,
+    "help": "TIFF encoder quality in ``[1, 100]``.",
+    "doc": "TIFF encoder quality in ``[1, 100]``."
+   },
+   {
+    "name": "skip_existing",
+    "type": "bool",
+    "default": true,
+    "required": false,
+    "choices": null,
+    "advanced": false,
+    "local_only": false,
+    "help": "Skip regions whose TIFF, preview, and manifest all exist.",
+    "doc": "Skip regions whose TIFF, preview, and manifest all exist."
+   },
+   {
+    "name": "detector",
+    "type": "choice",
+    "default": "otsu",
+    "required": false,
+    "choices": [
+     "otsu",
+     "semantic"
+    ],
+    "advanced": false,
+    "local_only": false,
+    "help": "Tissue detector. ``\"otsu\"`` thresholds a low-magnification thumbnail and needs no model. ``\"semantic\"`` runs a TIAToolbox tissue-segmentation model (install the ``semantic`` extra).",
+    "doc": "Tissue detector. ``\"otsu\"`` thresholds a low-magnification\nthumbnail and needs no model. ``\"semantic\"`` runs a TIAToolbox\ntissue-segmentation model (install the ``semantic`` extra)."
+   },
+   {
+    "name": "semantic_model",
+    "type": "str",
+    "default": "fcn-tissue_mask",
+    "required": false,
+    "choices": null,
+    "advanced": true,
+    "local_only": false,
+    "help": "TIAToolbox pretrained model name used when ``detector=\"semantic\"``.",
+    "doc": "TIAToolbox pretrained model name used when ``detector=\"semantic\"``."
+   },
+   {
+    "name": "semantic_device",
+    "type": "choice",
+    "default": "auto",
+    "required": false,
+    "choices": [
+     "auto",
+     "cpu",
+     "cuda"
+    ],
+    "advanced": true,
+    "local_only": false,
+    "help": "Inference device; ``\"auto\"`` uses CUDA when available.",
+    "doc": "Inference device; ``\"auto\"`` uses CUDA when available."
+   },
+   {
+    "name": "semantic_batch_size",
+    "type": "int",
+    "default": 4,
+    "required": false,
+    "choices": null,
+    "advanced": true,
+    "local_only": false,
+    "help": "Tiles per inference batch.",
+    "doc": "Tiles per inference batch."
+   },
+   {
+    "name": "semantic_num_workers",
+    "type": "int",
+    "default": 0,
+    "required": false,
+    "choices": null,
+    "advanced": true,
+    "local_only": false,
+    "help": "Data-loader worker processes for inference.",
+    "doc": "Data-loader worker processes for inference."
+   },
+   {
+    "name": "semantic_source_mpp",
+    "type": "float",
+    "default": null,
+    "required": false,
+    "choices": null,
+    "advanced": true,
+    "local_only": false,
+    "help": "Microns-per-pixel fallback when the slide has no MPP metadata.",
+    "doc": "Microns-per-pixel fallback when the slide has no MPP metadata."
+   }
+  ]
+ },
+ {
+  "name": "extract_tma",
+  "label": "Extract tma",
+  "summary": "Cut tissue-microarray cores out of H&E slides and their matching IHC slides.",
+  "extra": "extraction",
+  "available": true,
+  "missing": [],
+  "inputs": {
+   "kind": "a folder of H&E and IHC TMA slides",
+   "help": "Folder searched recursively for TMA slides."
+  },
+  "options": [],
+  "settings": [
+   {
+    "name": "target_magnification",
+    "type": "float",
+    "default": 20.0,
+    "required": false,
+    "choices": null,
+    "advanced": false,
+    "local_only": false,
+    "help": "Physical objective magnification of saved regions.",
+    "doc": "Physical objective magnification of saved regions."
+   },
+   {
+    "name": "detection_magnification",
+    "type": "float",
+    "default": 1.25,
+    "required": false,
+    "choices": null,
+    "advanced": false,
+    "local_only": false,
+    "help": "Physical objective magnification used for contour detection.",
+    "doc": "Physical objective magnification used for contour detection."
+   },
+   {
+    "name": "source_magnification",
+    "type": "float",
+    "default": null,
+    "required": false,
+    "choices": null,
+    "advanced": false,
+    "local_only": false,
+    "help": "Objective fallback when slide metadata is absent.",
+    "doc": "Objective fallback when slide metadata is absent."
+   },
+   {
+    "name": "preview_scale",
+    "type": "float",
+    "default": 0.2,
+    "required": false,
+    "choices": null,
+    "advanced": true,
+    "local_only": false,
+    "help": "Preview dimensions as a fraction of extracted-region dimensions.",
+    "doc": "Preview dimensions as a fraction of extracted-region dimensions."
+   },
+   {
+    "name": "min_area_fraction",
+    "type": "float",
+    "default": 0.0005,
+    "required": false,
+    "choices": null,
+    "advanced": false,
+    "local_only": false,
+    "help": "Minimum contour area as a fraction of the detection thumbnail.",
+    "doc": "Minimum contour area as a fraction of the detection thumbnail."
+   },
+   {
+    "name": "tif_tile",
+    "type": "bool",
+    "default": true,
+    "required": false,
+    "choices": null,
+    "advanced": true,
+    "local_only": false,
+    "help": "Enable tiled and pyramidal TIFF output.",
+    "doc": "Enable tiled and pyramidal TIFF output."
+   },
+   {
+    "name": "tif_pyramid",
+    "type": "bool",
+    "default": true,
+    "required": false,
+    "choices": null,
+    "advanced": true,
+    "local_only": false,
+    "help": "Enable tiled and pyramidal TIFF output.",
+    "doc": "Enable tiled and pyramidal TIFF output."
+   },
+   {
+    "name": "tif_compression",
+    "type": "str",
+    "default": "lzw",
+    "required": false,
+    "choices": null,
+    "advanced": true,
+    "local_only": false,
+    "help": "libvips TIFF compression name.",
+    "doc": "libvips TIFF compression name."
+   },
+   {
+    "name": "tif_quality",
+    "type": "int",
+    "default": 99,
+    "required": false,
+    "choices": null,
+    "advanced": true,
+    "local_only": false,
+    "help": "TIFF encoder quality in ``[1, 100]``.",
+    "doc": "TIFF encoder quality in ``[1, 100]``."
+   },
+   {
+    "name": "skip_existing",
+    "type": "bool",
+    "default": true,
+    "required": false,
+    "choices": null,
+    "advanced": false,
+    "local_only": false,
+    "help": "Skip regions whose TIFF, preview, and manifest all exist.",
+    "doc": "Skip regions whose TIFF, preview, and manifest all exist."
+   },
+   {
+    "name": "detector",
+    "type": "choice",
+    "default": "otsu",
+    "required": false,
+    "choices": [
+     "otsu",
+     "semantic"
+    ],
+    "advanced": false,
+    "local_only": false,
+    "help": "Tissue detector. ``\"otsu\"`` thresholds a low-magnification thumbnail and needs no model. ``\"semantic\"`` runs a TIAToolbox tissue-segmentation model (install the ``semantic`` extra).",
+    "doc": "Tissue detector. ``\"otsu\"`` thresholds a low-magnification\nthumbnail and needs no model. ``\"semantic\"`` runs a TIAToolbox\ntissue-segmentation model (install the ``semantic`` extra)."
+   },
+   {
+    "name": "semantic_model",
+    "type": "str",
+    "default": "fcn-tissue_mask",
+    "required": false,
+    "choices": null,
+    "advanced": true,
+    "local_only": false,
+    "help": "TIAToolbox pretrained model name used when ``detector=\"semantic\"``.",
+    "doc": "TIAToolbox pretrained model name used when ``detector=\"semantic\"``."
+   },
+   {
+    "name": "semantic_device",
+    "type": "choice",
+    "default": "auto",
+    "required": false,
+    "choices": [
+     "auto",
+     "cpu",
+     "cuda"
+    ],
+    "advanced": true,
+    "local_only": false,
+    "help": "Inference device; ``\"auto\"`` uses CUDA when available.",
+    "doc": "Inference device; ``\"auto\"`` uses CUDA when available."
+   },
+   {
+    "name": "semantic_batch_size",
+    "type": "int",
+    "default": 4,
+    "required": false,
+    "choices": null,
+    "advanced": true,
+    "local_only": false,
+    "help": "Tiles per inference batch.",
+    "doc": "Tiles per inference batch."
+   },
+   {
+    "name": "semantic_num_workers",
+    "type": "int",
+    "default": 0,
+    "required": false,
+    "choices": null,
+    "advanced": true,
+    "local_only": false,
+    "help": "Data-loader worker processes for inference.",
+    "doc": "Data-loader worker processes for inference."
+   },
+   {
+    "name": "semantic_source_mpp",
+    "type": "float",
+    "default": null,
+    "required": false,
+    "choices": null,
+    "advanced": true,
+    "local_only": false,
+    "help": "Microns-per-pixel fallback when the slide has no MPP metadata.",
+    "doc": "Microns-per-pixel fallback when the slide has no MPP metadata."
+   },
+   {
+    "name": "stains",
+    "type": "list",
+    "default": [
+     "all"
+    ],
+    "required": false,
+    "choices": null,
+    "advanced": false,
+    "local_only": false,
+    "help": "Stains to extract, matched against filenames (e.g. ``[\"HE\", \"CD8\"]``). ``[\"all\"]`` extracts every recognized stain.",
+    "doc": "Stains to extract, matched against filenames (e.g. ``[\"HE\", \"CD8\"]``).\n``[\"all\"]`` extracts every recognized stain.",
+    "items": "str"
+   },
+   {
+    "name": "only_circles",
+    "type": "bool",
+    "default": true,
+    "required": false,
+    "choices": null,
+    "advanced": false,
+    "local_only": false,
+    "help": "Apply the circularity gate.",
+    "doc": "Apply the circularity gate."
+   },
+   {
+    "name": "min_circularity",
+    "type": "float",
+    "default": 0.7,
+    "required": false,
+    "choices": null,
+    "advanced": false,
+    "local_only": false,
+    "help": "Minimum dimensionless ``4\u03c0A/P\u00b2`` score in ``[0, 1]``.",
+    "doc": "Minimum dimensionless ``4\u03c0A/P\u00b2`` score in ``[0, 1]``."
+   },
+   {
+    "name": "per_stain_detection",
+    "type": "bool",
+    "default": true,
+    "required": false,
+    "choices": null,
+    "advanced": false,
+    "local_only": false,
+    "help": "Detect regions independently on each stain.",
+    "doc": "Detect regions independently on each stain."
+   },
+   {
+    "name": "fallback_to_he",
+    "type": "bool",
+    "default": true,
+    "required": false,
+    "choices": null,
+    "advanced": false,
+    "local_only": false,
+    "help": "Reuse reference boxes when moving-stain region counts differ.",
+    "doc": "Reuse reference boxes when moving-stain region counts differ."
+   },
+   {
+    "name": "box_scale",
+    "type": "float",
+    "default": 1.0,
+    "required": false,
+    "choices": null,
+    "advanced": false,
+    "local_only": false,
+    "help": "Multiplicative expansion around each detected bounding box.",
+    "doc": "Multiplicative expansion around each detected bounding box."
+   },
+   {
+    "name": "ihc_enhance",
+    "type": "bool",
+    "default": true,
+    "required": false,
+    "choices": null,
+    "advanced": false,
+    "local_only": false,
+    "help": "Apply the historical CLAHE/DAB enhancement.",
+    "doc": "Apply the historical CLAHE/DAB enhancement."
+   },
+   {
+    "name": "clahe_clip_limit",
+    "type": "float",
+    "default": 3.0,
+    "required": false,
+    "choices": null,
+    "advanced": true,
+    "local_only": false,
+    "help": "OpenCV CLAHE contrast limit.",
+    "doc": "OpenCV CLAHE contrast limit."
+   },
+   {
+    "name": "clahe_tile_size",
+    "type": "list",
+    "default": [
+     8,
+     8
+    ],
+    "required": false,
+    "choices": null,
+    "advanced": true,
+    "local_only": false,
+    "help": "CLAHE tile dimensions in extracted-region pixels.",
+    "doc": "CLAHE tile dimensions in extracted-region pixels.",
+    "items": "int",
+    "length": 2
+   },
+   {
+    "name": "min_aspect_ratio",
+    "type": "float",
+    "default": 0.9,
+    "required": false,
+    "choices": null,
+    "advanced": true,
+    "local_only": false,
+    "help": "Minimum short/long side ratio of a core's bounding box in ``[0, 1]``.",
+    "doc": "Minimum short/long side ratio of a core's bounding box in ``[0, 1]``."
+   },
+   {
+    "name": "min_solidity",
+    "type": "float",
+    "default": 0.95,
+    "required": false,
+    "choices": null,
+    "advanced": true,
+    "local_only": false,
+    "help": "Minimum contour area divided by convex-hull area in ``[0, 1]``.",
+    "doc": "Minimum contour area divided by convex-hull area in ``[0, 1]``."
+   },
+   {
+    "name": "min_relative_area",
+    "type": "float",
+    "default": 0.8,
+    "required": false,
+    "choices": null,
+    "advanced": true,
+    "local_only": false,
+    "help": "Accepted core area relative to the median core area of the block.",
+    "doc": "Accepted core area relative to the median core area of the block."
+   },
+   {
+    "name": "max_relative_area",
+    "type": "float",
+    "default": 1.2,
+    "required": false,
+    "choices": null,
+    "advanced": true,
+    "local_only": false,
+    "help": "Accepted core area relative to the median core area of the block.",
+    "doc": "Accepted core area relative to the median core area of the block."
+   }
+  ]
+ },
+ {
+  "name": "extract_patches",
+  "label": "Extract patches",
+  "summary": "Save matching patch pairs from reference slides and their aligned counterparts.",
+  "extra": "extraction",
+  "available": true,
+  "missing": [],
+  "inputs": {
+   "kind": "the output of rp.align, or a folder of aligned slides (with reference=)",
+   "help": "The result (or output folder) of :func:`align`: each aligned slide is paired with the reference slide it was aligned to. Alternatively a folder of aligned slides laid out as ``<biomarker>/<sample>_<reference_name>/*.ome.tiff``, together with ``reference=``."
+  },
+  "options": [
+   {
+    "name": "reference",
+    "help": "Only for a plain aligned folder: folder searched recursively for reference slides whose names match ``reference_pattern``."
+   }
+  ],
+  "settings": [
+   {
+    "name": "biomarker_folders",
+    "type": "list",
+    "default": [],
+    "required": false,
+    "choices": null,
+    "advanced": false,
+    "local_only": false,
+    "help": "Marker subfolders of the aligned input to process. Empty (the default) processes every subfolder.",
+    "doc": "Marker subfolders of the aligned input to process. Empty (the\ndefault) processes every subfolder.",
+    "items": "str"
+   },
+   {
+    "name": "reference_pattern",
+    "type": "str",
+    "default": "^(?P<sample_id>.+?)(?:_he|__he__s\\d+)\\.(?:tif|tiff|svs|ndpi|mrxs)$",
+    "required": false,
+    "choices": null,
+    "advanced": true,
+    "local_only": false,
+    "help": "Filename regex with a named ``sample_id`` group.",
+    "doc": "Filename regex with a named ``sample_id`` group."
+   },
+   {
+    "name": "reference_name",
+    "type": "str",
+    "default": "he",
+    "required": false,
+    "choices": null,
+    "advanced": false,
+    "local_only": false,
+    "help": "Channel tokens used in metadata and output filenames.",
+    "doc": "Channel tokens used in metadata and output filenames."
+   },
+   {
+    "name": "moving_name",
+    "type": "str",
+    "default": "ihc",
+    "required": false,
+    "choices": null,
+    "advanced": false,
+    "local_only": false,
+    "help": "Channel tokens used in metadata and output filenames.",
+    "doc": "Channel tokens used in metadata and output filenames."
+   },
+   {
+    "name": "patch_size",
+    "type": "int",
+    "default": 512,
+    "required": false,
+    "choices": null,
+    "advanced": false,
+    "local_only": false,
+    "help": "Square patch edge in target-magnification pixels.",
+    "doc": "Square patch edge in target-magnification pixels."
+   },
+   {
+    "name": "stride",
+    "type": "int",
+    "default": null,
+    "required": false,
+    "choices": null,
+    "advanced": false,
+    "local_only": false,
+    "help": "Sliding step in target-magnification pixels; defaults to patch size.",
+    "doc": "Sliding step in target-magnification pixels; defaults to patch size."
+   },
+   {
+    "name": "tissue_threshold",
+    "type": "float",
+    "default": 0.5,
+    "required": false,
+    "choices": null,
+    "advanced": false,
+    "local_only": false,
+    "help": "Inclusive minimum tissue fraction in ``[0, 1]``.",
+    "doc": "Inclusive minimum tissue fraction in ``[0, 1]``."
+   },
+   {
+    "name": "max_workers",
+    "type": "int",
+    "default": 1,
+    "required": false,
+    "choices": null,
+    "advanced": false,
+    "local_only": false,
+    "help": "Case-level thread count.",
+    "doc": "Case-level thread count."
+   },
+   {
+    "name": "target_magnification",
+    "type": "float",
+    "default": 20.0,
+    "required": false,
+    "choices": null,
+    "advanced": false,
+    "local_only": false,
+    "help": "Physical extraction objective magnification.",
+    "doc": "Physical extraction objective magnification."
+   },
+   {
+    "name": "reference_source_magnification",
+    "type": "float",
+    "default": null,
+    "required": false,
+    "choices": null,
+    "advanced": false,
+    "local_only": false,
+    "help": "Objective fallbacks when metadata is absent.",
+    "doc": "Objective fallbacks when metadata is absent."
+   },
+   {
+    "name": "target_source_magnification",
+    "type": "float",
+    "default": null,
+    "required": false,
+    "choices": null,
+    "advanced": false,
+    "local_only": false,
+    "help": "Objective fallbacks when metadata is absent.",
+    "doc": "Objective fallbacks when metadata is absent."
+   },
+   {
+    "name": "dimension_tolerance",
+    "type": "float",
+    "default": 0.01,
+    "required": false,
+    "choices": null,
+    "advanced": true,
+    "local_only": false,
+    "help": "Maximum relative target-dimension mismatch.",
+    "doc": "Maximum relative target-dimension mismatch."
+   }
+  ]
+ },
+ {
+  "name": "align",
+  "label": "Align",
+  "summary": "Register moving slides (e.g. IHC) onto reference slides (e.g. H&E).",
+  "extra": "orb",
+  "available": true,
+  "missing": [],
+  "inputs": {
+   "kind": "a folder of pair folders, or two slides: reference then moving",
+   "help": "Folder containing the pair folders, or two slide files to align directly (reference first)."
+  },
+  "options": [],
+  "settings": [
+   {
+    "name": "pair_folders",
+    "type": "list",
+    "default": [],
+    "required": false,
+    "choices": null,
+    "advanced": false,
+    "local_only": false,
+    "help": "Names of pair folders beneath the input folder that should be processed.",
+    "doc": "Names of pair folders beneath the input folder that should be processed.\n\nFor example::\n\n    pair_folders=[\"cd8\", \"panck\"]\n\ncauses RocqiPath to process only::\n\n    wsi_input/cd8/\n    wsi_input/panck/\n\nAn empty list enables automatic pair-folder discovery. RocqiPath scans\nthe input folder and identifies folders containing the expected\n``reference_name`` and/or ``moving_name`` subdirectories.\n\nExplicitly specifying ``pair_folders`` can be useful when a study\ncontains multiple stains but only a subset should be registered.",
+    "items": "str"
+   },
+   {
+    "name": "reference_name",
+    "type": "str",
+    "default": "reference",
+    "required": false,
+    "choices": null,
+    "advanced": false,
+    "local_only": false,
+    "help": "Directory and filename-role token representing the fixed/reference image.",
+    "doc": "Directory and filename-role token representing the fixed/reference\nimage.\n\nIn a typical H&E/IHC workflow, the H&E slide is used as the reference\nbecause downstream patch coordinates and aligned WSI geometry are\ncommonly defined relative to H&E.\n\nExample::\n\n    reference_name=\"he\"\n\nmay correspond to::\n\n    cd8/he/\n    sample_0001_he.tiff\n\n``reference_name`` must be non-empty and must differ from\n``moving_name`` ignoring capitalization."
+   },
+   {
+    "name": "moving_name",
+    "type": "str",
+    "default": "moving",
+    "required": false,
+    "choices": null,
+    "advanced": false,
+    "local_only": false,
+    "help": "Directory and filename-role token representing the image that will be transformed into the reference coordinate system.",
+    "doc": "Directory and filename-role token representing the image that will be\ntransformed into the reference coordinate system.\n\nIn an H&E/CD8 registration workflow, for example::\n\n    reference_name=\"he\"\n    moving_name=\"cd8\"\n\nmeans H&E remains spatially fixed while the CD8 image is warped to\nmatch H&E.\n\n``moving_name`` must be non-empty and must differ from\n``reference_name`` ignoring capitalization."
+   },
+   {
+    "name": "filename_pattern",
+    "type": "str",
+    "default": null,
+    "required": false,
+    "choices": null,
+    "advanced": true,
+    "local_only": false,
+    "help": "Regular expression used to parse WSI filenames and identify ``sample_id`` and ``role``.",
+    "doc": "Regular expression used to parse WSI filenames and identify\n``sample_id`` and ``role``.\n\nThe expression must contain both named capture groups::\n\n    (?P<sample_id>...)\n    (?P<role>...)\n\nFor example::\n\n    r\"(?P<sample_id>.+?)_(?P<role>he|cd8)\\\\.(tif|tiff|svs)$\"\n\ncan parse filenames such as::\n\n    sample_0001_he.tiff\n    sample_0001_cd8.tiff\n\ninto::\n\n    sample_id = \"sample_0001\"\n    role = \"he\"\n\nIf ``None``, RocqiPath automatically constructs a filename pattern\nusing ``reference_name`` and ``moving_name``.\n\nThe regular expression is compiled case-insensitively.\n\nInvalid regular expressions or expressions lacking the required named\ngroups raise ``ValueError``."
+   },
+   {
+    "name": "backend",
+    "type": "choice",
+    "default": "valis",
+    "required": false,
+    "choices": [
+     "valis",
+     "orb"
+    ],
+    "advanced": false,
+    "local_only": false,
+    "help": "Registration backend used for paired-slide alignment.",
+    "doc": "Registration backend used for paired-slide alignment.\n\n``\"valis\"``\n    Performs VALIS-based rigid and non-rigid WSI registration.\n\n``\"orb\"``\n    Performs RocqiPath's ORB/contour-based affine registration.\n\nVALIS is generally preferred when accurate cross-stain registration\nand local deformation correction are required.\n\nORB is useful as a lightweight fallback or when only approximate\nglobal geometric alignment is necessary."
+   },
+   {
+    "name": "aligned_wsi_level",
+    "type": "int",
+    "default": 0,
+    "required": false,
+    "choices": null,
+    "advanced": true,
+    "local_only": false,
+    "help": "Reference-slide pyramid level used when exporting the aligned moving WSI.",
+    "doc": "Reference-slide pyramid level used when exporting the aligned moving\nWSI.\n\nWhole-slide images usually contain multiple pyramid levels:\n\n- level 0: highest/native resolution,\n- level 1: downsampled representation,\n- level 2: further downsampled,\n- and so on.\n\n``aligned_wsi_level=0`` exports the registered moving image on the\nreference slide's level-0 coordinate canvas.\n\nHigher values reduce output resolution and storage requirements.\n\nThis parameter refers to the pyramid level of the exported aligned\nimage and is independent of the internal registration resolution used\nby VALIS or ORB."
+   },
+   {
+    "name": "patch_size",
+    "type": "int",
+    "default": 1024,
+    "required": false,
+    "choices": null,
+    "advanced": true,
+    "local_only": false,
+    "help": "Edge length, in pixels, of patches generated or evaluated by the registration grid at ``target_magnification``.",
+    "doc": "Edge length, in pixels, of patches generated or evaluated by the\nregistration grid at ``target_magnification``.\n\nFor example::\n\n    patch_size=1024\n\nrepresents a square field of::\n\n    1024 x 1024 pixels\n\nat the configured target magnification.\n\n``patch_size`` does not define the internal VALIS or ORB registration\nimage size."
+   },
+   {
+    "name": "grid_density",
+    "type": "int",
+    "default": 1,
+    "required": false,
+    "choices": null,
+    "advanced": true,
+    "local_only": false,
+    "help": "Number of uniform grid divisions along each spatial dimension when constructing the registration grid map.",
+    "doc": "Number of uniform grid divisions along each spatial dimension when\nconstructing the registration grid map.\n\nConceptually::\n\n    grid_density=1\n\ncorresponds to one large grid region, while::\n\n    grid_density=4\n\nproduces approximately a::\n\n    4 x 4\n\nspatial grid before tissue-validity filtering.\n\nThe exact number of usable grid regions may be smaller because\nbackground or insufficient-tissue regions can be rejected.\n\nIncreasing ``grid_density`` provides finer spatial sampling for patch\nextraction but may generate many more candidate grid cells."
+   },
+   {
+    "name": "target_magnification",
+    "type": "float",
+    "default": 20.0,
+    "required": false,
+    "choices": null,
+    "advanced": false,
+    "local_only": false,
+    "help": "Physical objective magnification used by RocqiPath for standardized patch coordinates and magnification-aware image operations.",
+    "doc": "Physical objective magnification used by RocqiPath for standardized\npatch coordinates and magnification-aware image operations.\n\nTypical values include::\n\n    10.0\n    20.0\n    40.0\n\nFor example::\n\n    target_magnification=20.0\n\nrequests coordinates and patch fields corresponding to approximately\n20x objective magnification regardless of the native scanner\nmagnification.\n\nRocqiPath uses slide metadata and pyramid downsampling information to\ndetermine how this physical target maps onto each WSI.\n\nThis value must be strictly greater than zero."
+   },
+   {
+    "name": "reference_source_magnification",
+    "type": "float",
+    "default": null,
+    "required": false,
+    "choices": null,
+    "advanced": false,
+    "local_only": false,
+    "help": "Explicit level-0 objective magnification of the reference slide.",
+    "doc": "Explicit level-0 objective magnification of the reference slide.\n\nNormally RocqiPath obtains the source magnification from OpenSlide\nmetadata such as::\n\n    openslide.objective-power\n\nor derives an estimate from physical pixel size when appropriate.\n\nThis field provides a manual fallback or override when slide metadata\nis unavailable, missing, unreliable, or known to be incorrect.\n\nExample::\n\n    reference_source_magnification=80.0\n\nindicates that the reference WSI was scanned at approximately 80x\nnative magnification.\n\n``None`` allows RocqiPath to determine the value automatically.\n\nWhen supplied, this value must be strictly positive."
+   },
+   {
+    "name": "moving_source_magnification",
+    "type": "float",
+    "default": null,
+    "required": false,
+    "choices": null,
+    "advanced": false,
+    "local_only": false,
+    "help": "Explicit level-0 objective magnification of the moving slide.",
+    "doc": "Explicit level-0 objective magnification of the moving slide.\n\nThis serves the same purpose as\n``reference_source_magnification`` but is applied independently to the\nmoving WSI.\n\nIndependent values are important because the two slides may have been\nscanned using different scanners, objective powers, or pixel sizes.\n\nExample::\n\n    reference_source_magnification=80.0\n    moving_source_magnification=20.0\n\nis valid when the reference and moving slides truly originate from\ndifferent native resolutions.\n\n``None`` allows RocqiPath to determine the moving-slide magnification\nfrom available metadata.\n\nWhen supplied, this value must be strictly positive."
+   },
+   {
+    "name": "max_physical_field_ratio",
+    "type": "float",
+    "default": null,
+    "required": false,
+    "choices": null,
+    "advanced": true,
+    "local_only": false,
+    "help": "Maximum allowed ratio between the physical fields covered by the reference and moving slides.",
+    "doc": "Maximum allowed ratio between the physical fields covered by the\nreference and moving slides.\n\nBefore registration, RocqiPath can compare the physical dimensions of\nthe two WSIs to detect highly mismatched slide extents.\n\nConceptually, if the larger physical field is divided by the smaller\nphysical field, the resulting ratio should not exceed this threshold.\n\nFor example::\n\n    max_physical_field_ratio=2.0\n\nmeans that one slide may cover up to approximately twice the physical\nfield of the other before the mismatch is considered unusually large.\n\nThis check is useful for detecting problems such as:\n\n- incorrect magnification metadata,\n- accidental pairing of unrelated slides,\n- drastically different scan regions,\n- incorrect source-magnification overrides.\n\n``None`` disables the physical-field-ratio check.\n\nWhen supplied, the value must be at least ``1.0``."
+   },
+   {
+    "name": "valis",
+    "type": "config",
+    "default": {
+     "max_processed_image_dim_px": 512,
+     "max_non_rigid_reg_dim_px": 2048,
+     "max_image_dim_px": 1024,
+     "thumbnail_size": 512,
+     "align_to_reference": true,
+     "norm_method": "img_stats",
+     "crop": "reference",
+     "imgs_ordered": false,
+     "check_for_reflections": false,
+     "non_rigid_registrar_cls": null,
+     "micro_rigid_registrar_cls": null,
+     "micro_rigid_registrar_params": {},
+     "run_register_micro": false,
+     "register_micro_dim_px": 4096,
+     "feature_detector": "disk",
+     "num_features": 2000,
+     "rgb_features": false,
+     "matcher": "auto",
+     "feature_detector_kwargs": {},
+     "matcher_kwargs": {},
+     "sorting_feature_detector": null,
+     "sorting_matcher": null,
+     "sorting_feature_detector_kwargs": {},
+     "sorting_matcher_kwargs": {},
+     "max_acceptable_error_um": null,
+     "keep_diagnostics": true,
+     "valis_kwargs": {},
+     "processor_dict": null
+    },
+    "required": false,
+    "choices": null,
+    "advanced": true,
+    "local_only": false,
+    "help": "Settings for the VALIS backend, used when ``backend=\"valis\"``.",
+    "doc": "Settings for the VALIS backend, used when ``backend=\"valis\"``.\n\nDefaults suit general H&E-to-IHC registration. Change individual\nsettings with nested keywords, for example\n``rp.align(..., valis__max_acceptable_error_um=100.0)``, or pass a\ncomplete :class:`ValisOptions`.",
+    "fields": [
+     {
+      "name": "max_processed_image_dim_px",
+      "type": "int",
+      "default": 512,
+      "required": false,
+      "choices": null,
+      "advanced": false,
+      "local_only": false,
+      "help": "Maximum dimension, in pixels, of the processed images used primarily for VALIS rigid registration and feature matching.",
+      "doc": "Maximum dimension, in pixels, of the processed images used primarily\nfor VALIS rigid registration and feature matching.\n\nVALIS creates lower-resolution representations of the original\nwhole-slide images before detecting and matching image features.\nLimiting this dimension greatly reduces memory consumption and runtime\nbecause feature detection does not need to operate directly on the\nfull-resolution WSI.\n\nFor example, if the original slide dimensions are approximately\n``80,000 x 60,000`` pixels and this parameter is ``512``, VALIS creates\na processed representation whose longest dimension is approximately\n512 pixels while preserving the slide aspect ratio.\n\nLarger values can expose more tissue detail and may improve feature\nmatching when the tissue contains relatively small or sparse\nstructures. However, they also increase registration runtime, memory\nuse, and the number of potentially ambiguous local features.\n\nThis parameter affects the scale at which the primary rigid\nregistration is estimated. It does not define the resolution of the\nfinal exported aligned WSI."
+     },
+     {
+      "name": "max_non_rigid_reg_dim_px",
+      "type": "int",
+      "default": 2048,
+      "required": false,
+      "choices": null,
+      "advanced": false,
+      "local_only": false,
+      "help": "Maximum processed-image dimension, in pixels, used by VALIS for the primary non-rigid registration stage.",
+      "doc": "Maximum processed-image dimension, in pixels, used by VALIS for the\nprimary non-rigid registration stage.\n\nNon-rigid registration estimates local tissue deformation after the\ninitial rigid registration has approximately aligned the slides.\nBecause local deformation requires more spatial information than rigid\nfeature matching, this value is normally larger than\n``max_processed_image_dim_px``.\n\nIncreasing this value may improve local correspondence between\nhistologic structures, particularly when consecutive sections contain\nbending, stretching, compression, or sectioning artifacts. The cost is\nsubstantially higher memory usage and longer registration time.\n\nThis value should normally satisfy::\n\n    max_non_rigid_reg_dim_px > max_processed_image_dim_px\n\nespecially when a meaningful deformable registration step is desired."
+     },
+     {
+      "name": "max_image_dim_px",
+      "type": "int",
+      "default": 1024,
+      "required": false,
+      "choices": null,
+      "advanced": false,
+      "local_only": false,
+      "help": "Maximum image dimension passed to the underlying VALIS registration object for general image-processing operations.",
+      "doc": "Maximum image dimension passed to the underlying VALIS registration\nobject for general image-processing operations.\n\nThis is distinct from ``max_processed_image_dim_px`` and\n``max_non_rigid_reg_dim_px``. VALIS may use this value while generating\nintermediate image representations, thumbnails, or registration\nimages depending on the installed VALIS version.\n\nIn most workflows this value can remain at its default unless a\nparticular VALIS configuration requires larger image representations."
+     },
+     {
+      "name": "thumbnail_size",
+      "type": "int",
+      "default": 512,
+      "required": false,
+      "choices": null,
+      "advanced": false,
+      "local_only": false,
+      "help": "Requested thumbnail dimension, in pixels, used by VALIS for low-resolution visualization and internal image handling where applicable.",
+      "doc": "Requested thumbnail dimension, in pixels, used by VALIS for\nlow-resolution visualization and internal image handling where\napplicable.\n\nThis parameter does not determine the resolution of the final aligned\nWSI and should generally remain relatively small."
+     },
+     {
+      "name": "align_to_reference",
+      "type": "bool",
+      "default": true,
+      "required": false,
+      "choices": null,
+      "advanced": false,
+      "local_only": false,
+      "help": "Whether the registered image set should be explicitly aligned to the designated reference image.",
+      "doc": "Whether the registered image set should be explicitly aligned to the\ndesignated reference image.\n\nWhen ``True``, the reference slide acts as the fixed spatial anchor.\nFor a typical H&E/IHC workflow, H&E remains fixed and the IHC slide is\ntransformed into the H&E coordinate system.\n\nWhen ``False``, VALIS may construct a common or consensus registration\nspace rather than preserving the original reference-image coordinate\nsystem exactly.\n\nRocqiPath generally recommends ``True`` for paired-slide workflows\nbecause downstream aligned patch extraction usually assumes that the\nreference slide defines the coordinate system."
+     },
+     {
+      "name": "norm_method",
+      "type": "str",
+      "default": "img_stats",
+      "required": false,
+      "choices": null,
+      "advanced": false,
+      "local_only": false,
+      "help": "VALIS intensity normalization method used during registration image preprocessing.",
+      "doc": "VALIS intensity normalization method used during registration image\npreprocessing.\n\nRegistration between differently stained histology images is difficult\nbecause corresponding structures may have very different RGB or\ngrayscale intensities. VALIS therefore preprocesses images before\nfeature detection and registration.\n\n``\"img_stats\"`` uses image-statistics-based normalization and is a\nsuitable general default.\n\nSetting this value to ``None`` prevents RocqiPath from explicitly\nsupplying a normalization method, allowing the installed VALIS version\nto choose its own default behavior."
+     },
+     {
+      "name": "crop",
+      "type": "str",
+      "default": "reference",
+      "required": false,
+      "choices": null,
+      "advanced": false,
+      "local_only": false,
+      "help": "Cropping strategy supplied to VALIS.",
+      "doc": "Cropping strategy supplied to VALIS.\n\n``\"reference\"`` instructs VALIS to use the reference image as the\nspatial basis for the resulting registered field where supported.\n\nCropping behavior affects how much of the warped image canvas is\nretained after registration. This is especially important when the\nreference and moving slides contain different tissue extents or were\nscanned with different surrounding margins.\n\nSetting this value to ``None`` leaves cropping behavior to VALIS."
+     },
+     {
+      "name": "imgs_ordered",
+      "type": "bool",
+      "default": false,
+      "required": false,
+      "choices": null,
+      "advanced": false,
+      "local_only": false,
+      "help": "Whether the input images are already supplied in their known physical or serial-section order.",
+      "doc": "Whether the input images are already supplied in their known physical\nor serial-section order.\n\nFor large multi-slide registration studies, VALIS can determine image\nordering using image similarity and feature matching. When\n``imgs_ordered=True``, the supplied image ordering is treated as known\nand the corresponding sorting stage can be reduced or bypassed,\ndepending on VALIS behavior.\n\nFor simple two-slide H&E/IHC pairs this setting usually has little\npractical effect and can remain ``False``."
+     },
+     {
+      "name": "check_for_reflections",
+      "type": "bool",
+      "default": false,
+      "required": false,
+      "choices": null,
+      "advanced": false,
+      "local_only": false,
+      "help": "Whether VALIS should evaluate reflected image orientations during registration.",
+      "doc": "Whether VALIS should evaluate reflected image orientations during\nregistration.\n\nThis option can help when one slide may have been scanned or stored\nwith a mirrored orientation relative to another slide.\n\nReflection checking increases the number of candidate transformations\nthat must be evaluated and therefore increases registration runtime.\n\nSet this to ``True`` when slide orientation is uncertain or when\nmirrored registration failures have been observed."
+     },
+     {
+      "name": "run_register_micro",
+      "type": "bool",
+      "default": false,
+      "required": false,
+      "choices": null,
+      "advanced": false,
+      "local_only": false,
+      "help": "Whether to execute VALIS' optional high-resolution micro-registration stage after the standard registration pipeline.",
+      "doc": "Whether to execute VALIS' optional high-resolution micro-registration\nstage after the standard registration pipeline.\n\nWhen enabled, RocqiPath calls the corresponding VALIS\n``register_micro`` workflow after the initial rigid and non-rigid\nregistration.\n\nMicro-registration can substantially increase runtime and memory\nrequirements. It is therefore disabled by default."
+     },
+     {
+      "name": "register_micro_dim_px",
+      "type": "int",
+      "default": 4096,
+      "required": false,
+      "choices": null,
+      "advanced": false,
+      "local_only": false,
+      "help": "Maximum processed-image dimension, in pixels, used during optional micro-registration.",
+      "doc": "Maximum processed-image dimension, in pixels, used during optional\nmicro-registration.\n\nThis should normally be larger than\n``max_non_rigid_reg_dim_px`` because the purpose of micro-registration\nis to refine registration at a higher spatial resolution.\n\nFor example::\n\n    max_processed_image_dim_px = 512\n    max_non_rigid_reg_dim_px = 2048\n    register_micro_dim_px = 4096\n\ndefines progressively finer registration stages.\n\nIf micro-registration is disabled through ``run_register_micro=False``,\nthis value has no effect."
+     },
+     {
+      "name": "feature_detector",
+      "type": "str",
+      "default": "disk",
+      "required": false,
+      "choices": null,
+      "advanced": false,
+      "local_only": false,
+      "help": "Name of the feature detector used for the primary rigid registration.",
+      "doc": "Name of the feature detector used for the primary rigid registration.\n\nRocqiPath resolves this name against supported VALIS feature detectors.\nThe intended modern default is ``\"disk\"``, corresponding to VALIS'\n``DiskFD`` detector.\n\nDepending on the installed VALIS version and RocqiPath matcher builder,\npossible choices may include detectors such as::\n\n    \"disk\"\n    \"dedode\"\n    \"superpoint\"\n    \"brisk\"\n    \"orb\"\n    \"kaze\"\n    \"akaze\"\n    \"vgg\"\n\nThe selected feature detector determines how local image landmarks are\nidentified before correspondence matching.\n\nDeep feature detectors such as DISK or DeDoDe are generally useful for\ndifficult cross-stain histology registration, whereas classical\ndetectors such as BRISK or ORB can be useful when rotation invariance,\nspeed, or lower computational requirements are important.\n\nWhen ``None``, RocqiPath does not explicitly construct a feature\nmatcher from this field and VALIS may fall back to its native defaults."
+     },
+     {
+      "name": "num_features",
+      "type": "int",
+      "default": 2000,
+      "required": false,
+      "choices": null,
+      "advanced": false,
+      "local_only": false,
+      "help": "Maximum or target number of detected image features where supported by the selected detector.",
+      "doc": "Maximum or target number of detected image features where supported by\nthe selected detector.\n\nThis is primarily a convenience option for feature detectors such as\nDISK and DeDoDe.\n\nIncreasing this value creates more potential correspondences and may\nimprove registration when tissue is heterogeneous or sparse. However,\nmore features also increase feature-matching cost and may introduce\nadditional incorrect correspondences.\n\nExplicit values supplied inside ``feature_detector_kwargs`` should be\nconsidered more advanced detector-specific configuration and may\noverride this convenience field depending on the matcher builder."
+     },
+     {
+      "name": "rgb_features",
+      "type": "bool",
+      "default": false,
+      "required": false,
+      "choices": null,
+      "advanced": false,
+      "local_only": false,
+      "help": "Whether compatible feature detectors should operate on RGB image data rather than the processed single-channel registration image.",
+      "doc": "Whether compatible feature detectors should operate on RGB image data\nrather than the processed single-channel registration image.\n\n``False`` uses grayscale or VALIS-processed image representations and\ncorresponds to the modern VALIS default for DISK-based registration.\n\n``True`` can preserve stain-specific color information and may improve\nregistration in some datasets, but its usefulness depends strongly on\nstain pairing and image appearance.\n\nThis option is only meaningful for feature detectors that explicitly\nsupport RGB operation, such as compatible Kornia-based detectors."
+     },
+     {
+      "name": "matcher",
+      "type": "str",
+      "default": "auto",
+      "required": false,
+      "choices": null,
+      "advanced": false,
+      "local_only": false,
+      "help": "Feature-matching strategy used with ``feature_detector``.",
+      "doc": "Feature-matching strategy used with ``feature_detector``.\n\n``\"auto\"`` instructs RocqiPath to determine an appropriate matcher\nbased on the selected feature detector.\n\nTypical automatically resolved combinations include::\n\n    DISK       -> LightGlue\n    DeDoDe     -> LightGlue\n    SuperPoint -> SuperGlue\n    BRISK      -> generic descriptor matcher\n    ORB        -> generic descriptor matcher\n\nAdvanced users may explicitly request a supported matcher, for example::\n\n    matcher=\"lightglue\"\n    matcher=\"superglue\"\n    matcher=\"descriptor\"\n\nThe exact available matcher names depend on RocqiPath's matcher\nresolver and the installed VALIS version.\n\nExplicit detector/matcher combinations should be chosen carefully.\nSome matchers are designed only for specific descriptor families."
+     },
+     {
+      "name": "sorting_feature_detector",
+      "type": "str",
+      "default": null,
+      "required": false,
+      "choices": null,
+      "advanced": false,
+      "local_only": false,
+      "help": "Optional feature detector used specifically during VALIS image sorting and initial orientation estimation.",
+      "doc": "Optional feature detector used specifically during VALIS image\nsorting and initial orientation estimation.\n\nVALIS can use a different detector for image ordering/orientation than\nfor the main rigid registration. This is particularly useful when the\nprimary high-performance feature detector is not rotation invariant.\n\nFor example, DISK may be used for final rigid matching while BRISK is\nused to estimate initial orientation::\n\n    feature_detector=\"disk\"\n    matcher=\"lightglue\"\n    sorting_feature_detector=\"brisk\"\n    sorting_matcher=\"descriptor\"\n\nWhen ``None``, RocqiPath does not explicitly construct a separate\nsorting detector and VALIS retains its normal/default sorting behavior."
+     },
+     {
+      "name": "sorting_matcher",
+      "type": "str",
+      "default": null,
+      "required": false,
+      "choices": null,
+      "advanced": false,
+      "local_only": false,
+      "help": "Optional matcher paired with ``sorting_feature_detector``.",
+      "doc": "Optional matcher paired with ``sorting_feature_detector``.\n\nThis matcher is used for the image sorting/orientation stage rather\nthan the final rigid feature-matching stage.\n\n``None`` means that RocqiPath does not explicitly request a separate\nsorting matcher unless the surrounding matcher-building logic chooses\none automatically."
+     },
+     {
+      "name": "max_acceptable_error_um",
+      "type": "float",
+      "default": null,
+      "required": false,
+      "choices": null,
+      "advanced": false,
+      "local_only": false,
+      "help": "Maximum registration error accepted by RocqiPath, expressed in micrometres.",
+      "doc": "Maximum registration error accepted by RocqiPath, expressed in\nmicrometres.\n\nAfter VALIS registration, RocqiPath can inspect the registration error\nmetrics produced by VALIS and compare them against this threshold.\n\nIf the measured error exceeds the threshold, RocqiPath may flag the\nregistration according to the surrounding quality-control logic.\n\n``None`` disables this explicit physical-error threshold.\n\nUnlike the ``*_dim_px`` parameters, this field is expressed in a\nphysical unit rather than processed-image pixels."
+     },
+     {
+      "name": "keep_diagnostics",
+      "type": "bool",
+      "default": true,
+      "required": false,
+      "choices": null,
+      "advanced": false,
+      "local_only": false,
+      "help": "Keep VALIS's intermediate registration files (processed images, overlaps, error tables) in the case output folder. ``False`` deletes them after the aligned slide is exported.",
+      "doc": "Keep VALIS's intermediate registration files (processed images,\noverlaps, error tables) in the case output folder. ``False``\ndeletes them after the aligned slide is exported."
+     }
+    ]
+   },
+   {
+    "name": "orb",
+    "type": "config",
+    "default": {
+     "ransac_threshold": 20.0,
+     "thumb_size": 1500,
+     "refine_thumb_size": 3000,
+     "refine_enabled": true,
+     "max_contours": 8,
+     "min_area_frac": 0.001,
+     "match_threshold": 1.4,
+     "min_ncc_threshold": 0.25,
+     "save_tile_size": 1024
+    },
+    "required": false,
+    "choices": null,
+    "advanced": true,
+    "local_only": false,
+    "help": "Settings for the lightweight ORB backend, used when ``backend=\"orb\"``. For example ``rp.align(..., backend=\"orb\", orb__ransac_threshold=10.0)``.",
+    "doc": "Settings for the lightweight ORB backend, used when\n``backend=\"orb\"``. For example\n``rp.align(..., backend=\"orb\", orb__ransac_threshold=10.0)``.",
+    "fields": [
+     {
+      "name": "ransac_threshold",
+      "type": "float",
+      "default": 20.0,
+      "required": false,
+      "choices": null,
+      "advanced": false,
+      "local_only": false,
+      "help": "RANSAC reprojection-error threshold, in pixels, used when estimating the geometric transform from matched ORB features.",
+      "doc": "RANSAC reprojection-error threshold, in pixels, used when estimating\nthe geometric transform from matched ORB features.\n\nRANSAC identifies a subset of geometrically consistent feature matches\nwhile rejecting outliers.\n\nSmaller values enforce stricter geometric agreement and may reject\nvalid matches when image correspondence is imperfect.\n\nLarger values tolerate greater positional disagreement but may allow\nincorrect matches to influence the estimated transformation.\n\nThe default of ``20.0`` pixels is the value the backend has always\napplied; it tolerates the imprecision of contour-derived matches at\nthumbnail resolution."
+     },
+     {
+      "name": "thumb_size",
+      "type": "int",
+      "default": 1500,
+      "required": false,
+      "choices": null,
+      "advanced": false,
+      "local_only": false,
+      "help": "Maximum thumbnail dimension, in pixels, used for the initial ORB registration stage.",
+      "doc": "Maximum thumbnail dimension, in pixels, used for the initial ORB\nregistration stage.\n\nThe original whole-slide images are reduced to manageable thumbnail\nrepresentations before contour analysis and ORB feature detection.\n\nIncreasing this value exposes finer tissue structures and may improve\nthe initial transformation estimate, but increases memory use and ORB\nfeature-detection runtime.\n\nDecreasing this value accelerates registration but may remove\ndiagnostically useful spatial detail.\n\nThis value refers to the processed thumbnail representation and not to\nthe original level-0 WSI dimensions."
+     },
+     {
+      "name": "refine_thumb_size",
+      "type": "int",
+      "default": 3000,
+      "required": false,
+      "choices": null,
+      "advanced": false,
+      "local_only": false,
+      "help": "Maximum thumbnail dimension, in pixels, used for the optional ORB refinement stage.",
+      "doc": "Maximum thumbnail dimension, in pixels, used for the optional ORB\nrefinement stage.\n\nAfter an initial affine transformation has been estimated using\n``thumb_size``, RocqiPath can repeat feature matching at a larger\nimage scale to refine that transformation.\n\nThis value is normally larger than ``thumb_size`` because the\nsecond stage is intended to improve alignment using finer structural\ninformation.\n\nFor example::\n\n    thumb_size = 1500\n    refine_thumb_size = 3000\n\nperforms coarse registration first and then refines the transform at\napproximately twice the linear image dimension."
+     },
+     {
+      "name": "refine_enabled",
+      "type": "bool",
+      "default": true,
+      "required": false,
+      "choices": null,
+      "advanced": false,
+      "local_only": false,
+      "help": "Whether to run the higher-resolution ORB refinement stage.",
+      "doc": "Whether to run the higher-resolution ORB refinement stage.\n\nWhen ``True``, RocqiPath first estimates an initial registration at\n``thumb_size`` and subsequently attempts to improve the alignment\nusing ``refine_thumb_size``.\n\nWhen ``False``, only the initial ORB registration stage is used.\n\nDisabling refinement can substantially reduce runtime when initial\nalignment quality is already sufficient."
+     },
+     {
+      "name": "max_contours",
+      "type": "int",
+      "default": 8,
+      "required": false,
+      "choices": null,
+      "advanced": false,
+      "local_only": false,
+      "help": "Maximum number of tissue contours considered when constructing the tissue geometry used by the ORB registration pipeline.",
+      "doc": "Maximum number of tissue contours considered when constructing the\ntissue geometry used by the ORB registration pipeline.\n\nWhole-slide tissue masks can contain multiple disconnected tissue\nfragments, artifacts, labels, or small isolated regions. Restricting\nthe number of contours prevents very small or irrelevant structures\nfrom dominating geometric comparison.\n\nA larger value allows more disconnected tissue fragments to\ncontribute to registration, which may be useful for tissue\nmicroarrays or fragmented specimens.\n\nA smaller value focuses registration on the largest tissue regions."
+     },
+     {
+      "name": "min_area_frac",
+      "type": "float",
+      "default": 0.001,
+      "required": false,
+      "choices": null,
+      "advanced": false,
+      "local_only": false,
+      "help": "Minimum contour area expressed as a fraction of the processed image area.",
+      "doc": "Minimum contour area expressed as a fraction of the processed image\narea.\n\nContours smaller than this fraction can be excluded from tissue-shape\nanalysis.\n\nFor example, ``0.001`` corresponds to approximately 0.1% of the\nprocessed image area.\n\nThis filter reduces the influence of dust, scanner artifacts, small\ndebris, isolated staining artifacts, and other minor connected\ncomponents.\n\nIncreasing this value makes contour filtering more aggressive.\nDecreasing it allows smaller tissue fragments to participate.\n\nValid values are normally between ``0`` and ``1``."
+     },
+     {
+      "name": "match_threshold",
+      "type": "float",
+      "default": 1.4,
+      "required": false,
+      "choices": null,
+      "advanced": false,
+      "local_only": false,
+      "help": "Threshold used by RocqiPath's contour/feature matching logic to determine whether candidate tissue structures or ORB registration correspondences are sufficiently compatible.",
+      "doc": "Threshold used by RocqiPath's contour/feature matching logic to\ndetermine whether candidate tissue structures or ORB registration\ncorrespondences are sufficiently compatible.\n\nThis is a backend-specific dimensionless threshold rather than a\nphysical distance in pixels or micrometres.\n\nLower or higher values may make candidate matching more restrictive or\npermissive depending on the exact scoring implementation used by the\nORB backend.\n\nThe default ``1.4`` is intended to provide a balanced tolerance for\ntypical paired histology slides.\n\nThis parameter should generally be tuned only when the ORB backend\nconsistently rejects valid slide pairs or accepts geometrically poor\ncorrespondences."
+     },
+     {
+      "name": "min_ncc_threshold",
+      "type": "float",
+      "default": 0.25,
+      "required": false,
+      "choices": null,
+      "advanced": false,
+      "local_only": false,
+      "help": "Minimum normalized cross-correlation (NCC) score required for registration validation.",
+      "doc": "Minimum normalized cross-correlation (NCC) score required for\nregistration validation.\n\nNCC measures similarity between the aligned reference and moving\nimage representations after the estimated transformation has been\napplied.\n\nValues theoretically range approximately from ``-1`` to ``1``:\n\n- ``1`` indicates very strong positive similarity.\n- ``0`` indicates little linear image similarity.\n- Negative values indicate inverse intensity relationships.\n\nHistology slides stained with different biomarkers can have\nsubstantially different pixel intensities even when geometrically\naligned. Therefore, the default threshold is intentionally modest.\n\nIncreasing this threshold makes registration validation stricter.\nDecreasing it allows more weakly correlated registrations to pass.\n\nNCC should be interpreted as a registration-quality indicator rather\nthan a definitive measure of histologic correspondence."
+     },
+     {
+      "name": "save_tile_size",
+      "type": "int",
+      "default": 1024,
+      "required": false,
+      "choices": null,
+      "advanced": false,
+      "local_only": false,
+      "help": "Edge length, in output pixels, of the tiles streamed when the aligned slide is written. Smaller tiles use less memory.",
+      "doc": "Edge length, in output pixels, of the tiles streamed when the\naligned slide is written. Smaller tiles use less memory."
+     }
+    ]
+   },
+   {
+    "name": "qc_enabled",
+    "type": "bool",
+    "default": false,
+    "required": false,
+    "choices": null,
+    "advanced": false,
+    "local_only": false,
+    "help": "Whether RocqiPath should generate an additional registration quality-control image for each successfully aligned pair.",
+    "doc": "Whether RocqiPath should generate an additional registration\nquality-control image for each successfully aligned pair.\n\nWhen enabled, the alignment pipeline creates a representative\nside-by-side or center-region comparison between the reference and\naligned moving image.\n\nThese QC figures are intended for rapid visual review rather than as a\nreplacement for quantitative registration metrics."
+   },
+   {
+    "name": "qc_reference_level",
+    "type": "int",
+    "default": 0,
+    "required": false,
+    "choices": null,
+    "advanced": true,
+    "local_only": false,
+    "help": "Reference-slide pyramid level used to define the physical field shown in the QC comparison.",
+    "doc": "Reference-slide pyramid level used to define the physical field shown\nin the QC comparison.\n\n``0`` corresponds to the highest-resolution reference level.\n\nHigher pyramid levels define progressively larger effective fields of\nview for the same nominal patch dimensions because the image is more\nheavily downsampled."
+   },
+   {
+    "name": "qc_patch_size",
+    "type": "int",
+    "default": 1024,
+    "required": false,
+    "choices": null,
+    "advanced": true,
+    "local_only": false,
+    "help": "Edge length, in output pixels, of the representative QC region.",
+    "doc": "Edge length, in output pixels, of the representative QC region.\n\nFor example::\n\n    qc_patch_size=1024\n\nproduces a nominal::\n\n    1024 x 1024\n\nQC field after the corresponding reference and moving regions are\nread and displayed.\n\nThis parameter controls the QC panel size and does not affect the\nregistration itself."
+   },
+   {
+    "name": "qc_reference_read_level",
+    "type": "int",
+    "default": 0,
+    "required": false,
+    "choices": null,
+    "advanced": true,
+    "local_only": false,
+    "help": "Pyramid level used to read the reference image when generating the QC figure.",
+    "doc": "Pyramid level used to read the reference image when generating the QC\nfigure.\n\nThis can be controlled separately from ``qc_reference_level`` so that\nthe physical field of view and the image-reading resolution can be\nadjusted independently.\n\nUsing higher-resolution reads can improve QC image sharpness but may\nincrease memory usage and I/O cost."
+   },
+   {
+    "name": "qc_moving_read_level",
+    "type": "int",
+    "default": 0,
+    "required": false,
+    "choices": null,
+    "advanced": true,
+    "local_only": false,
+    "help": "Pyramid level used to read the aligned moving image when generating the QC figure.",
+    "doc": "Pyramid level used to read the aligned moving image when generating\nthe QC figure.\n\nThis is the moving-slide counterpart to\n``qc_reference_read_level``.\n\nWhen possible, corresponding reference and moving QC reads should\nrepresent comparable physical resolutions."
+   },
+   {
+    "name": "qc_dpi",
+    "type": "int",
+    "default": 300,
+    "required": false,
+    "choices": null,
+    "advanced": false,
+    "local_only": false,
+    "help": "Resolution, in dots per inch, used when saving QC figures.",
+    "doc": "Resolution, in dots per inch, used when saving QC figures.\n\n``300`` is suitable for most reports and presentation figures.\n\nHigher values such as ``600`` can be useful for publication-quality\nraster outputs but increase file size.\n\nThis setting affects only the saved QC figure and does not affect the\nWSI registration or aligned WSI resolution."
+   },
+   {
+    "name": "dry_run",
+    "type": "bool",
+    "default": false,
+    "required": false,
+    "choices": null,
+    "advanced": false,
+    "local_only": false,
+    "help": "Whether to perform slide discovery and pairing without executing registration.",
+    "doc": "Whether to perform slide discovery and pairing without executing\nregistration.\n\nWhen ``True``, RocqiPath:\n\n- discovers pair folders,\n- indexes reference and moving images,\n- applies filename parsing,\n- builds slide pairs,\n- reports the discovered workflow,\n\nbut does not register or export aligned WSIs.\n\nThis is useful for validating directory structure, filenames, regex\npatterns, role assignments, and pairing logic before running an\nexpensive registration job."
+   }
+  ]
+ },
+ {
+  "name": "train_stain_normalizer",
+  "label": "Train stain normalizer",
+  "summary": "Fit a stain normalizer to reference patches and save its weights.",
+  "extra": "stain",
+  "available": true,
+  "missing": [],
+  "inputs": {
+   "kind": "reference patches or a folder of them",
+   "help": "Reference image patches, folders searched recursively for them, or an earlier result whose patches (of the requested ``stains``) are used."
+  },
+  "options": [],
+  "settings": [
+   {
+    "name": "method",
+    "type": "choice",
+    "default": "macenko",
+    "required": false,
+    "choices": [
+     "reinhard",
+     "macenko",
+     "vahadane"
+    ],
+    "advanced": false,
+    "local_only": false,
+    "help": "Normalization algorithm. Reinhard matches color statistics and is fastest; Macenko and Vahadane estimate stain vectors and preserve structure better. All three need the ``stain`` extra (TIAToolbox).",
+    "doc": "Normalization algorithm. Reinhard matches color statistics and is\nfastest; Macenko and Vahadane estimate stain vectors and preserve\nstructure better. All three need the ``stain`` extra (TIAToolbox)."
+   },
+   {
+    "name": "stains",
+    "type": "list",
+    "default": [
+     "he"
+    ],
+    "required": false,
+    "choices": null,
+    "advanced": false,
+    "local_only": false,
+    "help": "Only use images whose path contains one of these folder names, e.g. ``[\"he\"]``. ``[\"all\"]`` uses every image.",
+    "doc": "Only use images whose path contains one of these folder names,\ne.g. ``[\"he\"]``. ``[\"all\"]`` uses every image.",
+    "items": "str"
+   },
+   {
+    "name": "fit_min_tissue",
+    "type": "float",
+    "default": 0.1,
+    "required": false,
+    "choices": null,
+    "advanced": false,
+    "local_only": false,
+    "help": "Inclusive minimum optical-density tissue fraction in ``[0, 1]``.",
+    "doc": "Inclusive minimum optical-density tissue fraction in ``[0, 1]``."
+   },
+   {
+    "name": "max_train_patches",
+    "type": "int",
+    "default": 1000,
+    "required": false,
+    "choices": null,
+    "advanced": true,
+    "local_only": false,
+    "help": "Mosaic patch cap for Macenko and Vahadane fitting.",
+    "doc": "Mosaic patch cap for Macenko and Vahadane fitting."
+   },
+   {
+    "name": "resume",
+    "type": "bool",
+    "default": false,
+    "required": false,
+    "choices": null,
+    "advanced": false,
+    "local_only": false,
+    "help": "Skip normalized outputs that already exist.",
+    "doc": "Skip normalized outputs that already exist."
+   }
+  ]
+ },
+ {
+  "name": "normalize_stain",
+  "label": "Normalize stain",
+  "summary": "Recolor image patches so their stain matches a trained normalizer.",
+  "extra": "stain",
+  "available": true,
+  "missing": [],
+  "inputs": {
+   "kind": "image patches or a folder of them",
+   "help": "Images to normalize, folders searched recursively for images whose path contains one of ``stains``, or an earlier result whose patches of those stains are used."
+  },
+  "options": [
+   {
+    "name": "normalizer",
+    "help": "Saved weights (``.npz``) or the result of :func:`train_stain_normalizer`. The method is taken from the training result, or from a ``<method>_weights.npz`` filename, and otherwise from ``method``."
+   }
+  ],
+  "settings": [
+   {
+    "name": "method",
+    "type": "choice",
+    "default": "macenko",
+    "required": false,
+    "choices": [
+     "reinhard",
+     "macenko",
+     "vahadane"
+    ],
+    "advanced": false,
+    "local_only": false,
+    "help": "Normalization algorithm. Reinhard matches color statistics and is fastest; Macenko and Vahadane estimate stain vectors and preserve structure better. All three need the ``stain`` extra (TIAToolbox).",
+    "doc": "Normalization algorithm. Reinhard matches color statistics and is\nfastest; Macenko and Vahadane estimate stain vectors and preserve\nstructure better. All three need the ``stain`` extra (TIAToolbox)."
+   },
+   {
+    "name": "stains",
+    "type": "list",
+    "default": [
+     "he"
+    ],
+    "required": false,
+    "choices": null,
+    "advanced": false,
+    "local_only": false,
+    "help": "Only use images whose path contains one of these folder names, e.g. ``[\"he\"]``. ``[\"all\"]`` uses every image.",
+    "doc": "Only use images whose path contains one of these folder names,\ne.g. ``[\"he\"]``. ``[\"all\"]`` uses every image.",
+    "items": "str"
+   },
+   {
+    "name": "fit_min_tissue",
+    "type": "float",
+    "default": 0.1,
+    "required": false,
+    "choices": null,
+    "advanced": false,
+    "local_only": false,
+    "help": "Inclusive minimum optical-density tissue fraction in ``[0, 1]``.",
+    "doc": "Inclusive minimum optical-density tissue fraction in ``[0, 1]``."
+   },
+   {
+    "name": "max_train_patches",
+    "type": "int",
+    "default": 1000,
+    "required": false,
+    "choices": null,
+    "advanced": true,
+    "local_only": false,
+    "help": "Mosaic patch cap for Macenko and Vahadane fitting.",
+    "doc": "Mosaic patch cap for Macenko and Vahadane fitting."
+   },
+   {
+    "name": "resume",
+    "type": "bool",
+    "default": false,
+    "required": false,
+    "choices": null,
+    "advanced": false,
+    "local_only": false,
+    "help": "Skip normalized outputs that already exist.",
+    "doc": "Skip normalized outputs that already exist."
+   }
+  ]
+ },
+ {
+  "name": "count_cells",
+  "label": "Count cells",
+  "summary": "Count DAB-positive (brown) cells on IHC slides.",
+  "extra": "cellcount",
+  "available": true,
+  "missing": [],
+  "inputs": {
+   "kind": "IHC slides or a folder of them",
+   "help": "One slide, several slides, a folder of slides, or an earlier result whose aligned slides, regions or cores are counted."
+  },
+  "options": [
+   {
+    "name": "compare_to",
+    "help": "A second slide to compare against the single input slide."
+   }
+  ],
+  "settings": [
+   {
+    "name": "label",
+    "type": "str",
+    "default": "Cell",
+    "required": false,
+    "choices": null,
+    "advanced": false,
+    "local_only": false,
+    "help": "Marker name stored in the results, e.g. ``\"CD8\"``.",
+    "doc": "Marker name stored in the results, e.g. ``\"CD8\"``."
+   },
+   {
+    "name": "patch_size",
+    "type": "int",
+    "default": 512,
+    "required": false,
+    "choices": null,
+    "advanced": false,
+    "local_only": false,
+    "help": "Patch edge in target-magnification pixels.",
+    "doc": "Patch edge in target-magnification pixels."
+   },
+   {
+    "name": "tissue_threshold",
+    "type": "float",
+    "default": 0.1,
+    "required": false,
+    "choices": null,
+    "advanced": false,
+    "local_only": false,
+    "help": "Inclusive minimum tissue fraction per patch.",
+    "doc": "Inclusive minimum tissue fraction per patch."
+   },
+   {
+    "name": "target_magnification",
+    "type": "float",
+    "default": 20.0,
+    "required": false,
+    "choices": null,
+    "advanced": false,
+    "local_only": false,
+    "help": "Physical objective magnification for analysis coordinates.",
+    "doc": "Physical objective magnification for analysis coordinates."
+   },
+   {
+    "name": "source_magnification",
+    "type": "float",
+    "default": null,
+    "required": false,
+    "choices": null,
+    "advanced": false,
+    "local_only": false,
+    "help": "Objective fallbacks for single and paired slides.",
+    "doc": "Objective fallbacks for single and paired slides."
+   },
+   {
+    "name": "paired_source_magnification",
+    "type": "float",
+    "default": null,
+    "required": false,
+    "choices": null,
+    "advanced": false,
+    "local_only": false,
+    "help": "Objective fallbacks for single and paired slides.",
+    "doc": "Objective fallbacks for single and paired slides."
+   },
+   {
+    "name": "min_cell_area",
+    "type": "int",
+    "default": 50,
+    "required": false,
+    "choices": null,
+    "advanced": false,
+    "local_only": false,
+    "help": "Minimum connected-component area in target-grid pixels squared.",
+    "doc": "Minimum connected-component area in target-grid pixels squared."
+   },
+   {
+    "name": "max_cell_area",
+    "type": "int",
+    "default": null,
+    "required": false,
+    "choices": null,
+    "advanced": false,
+    "local_only": false,
+    "help": "Maximum component area in target-grid pixels squared.",
+    "doc": "Maximum component area in target-grid pixels squared."
+   },
+   {
+    "name": "save_plots",
+    "type": "bool",
+    "default": true,
+    "required": false,
+    "choices": null,
+    "advanced": false,
+    "local_only": false,
+    "help": "When comparing two slides, save per-patch comparison figures.",
+    "doc": "When comparing two slides, save per-patch comparison figures."
+   },
+   {
+    "name": "max_plots",
+    "type": "int",
+    "default": 10,
+    "required": false,
+    "choices": null,
+    "advanced": false,
+    "local_only": false,
+    "help": "Maximum number of comparison figures saved per slide pair.",
+    "doc": "Maximum number of comparison figures saved per slide pair."
+   },
+   {
+    "name": "dpi",
+    "type": "int",
+    "default": 150,
+    "required": false,
+    "choices": null,
+    "advanced": false,
+    "local_only": false,
+    "help": "Resolution of comparison figures.",
+    "doc": "Resolution of comparison figures."
+   }
+  ]
+ },
+ {
+  "name": "compare",
+  "label": "Compare",
+  "summary": "Make publication figures comparing H&E, ground-truth IHC and predicted IHC.",
+  "extra": "viz",
+  "available": true,
+  "missing": [],
+  "inputs": {
+   "kind": "three slides: H&E, ground-truth IHC and predicted IHC",
+   "help": "``[he, ground_truth, prediction]`` image paths, or a case manifest whose ``stains`` hold ``gt_he``, ``gt_ihc`` and ``prediction_ihc``."
+  },
+  "options": [],
+  "settings": [
+   {
+    "name": "title_reference",
+    "type": "str",
+    "default": "H&E",
+    "required": false,
+    "choices": null,
+    "advanced": false,
+    "local_only": false,
+    "help": "Title of the H&E panel.",
+    "doc": "Title of the H&E panel."
+   },
+   {
+    "name": "title_truth",
+    "type": "str",
+    "default": "Ground Truth IHC",
+    "required": false,
+    "choices": null,
+    "advanced": false,
+    "local_only": false,
+    "help": "Title of the ground-truth IHC panel.",
+    "doc": "Title of the ground-truth IHC panel."
+   },
+   {
+    "name": "title_prediction",
+    "type": "str",
+    "default": "Predicted IHC",
+    "required": false,
+    "choices": null,
+    "advanced": false,
+    "local_only": false,
+    "help": "Title of the predicted IHC panel.",
+    "doc": "Title of the predicted IHC panel."
+   },
+   {
+    "name": "dpi",
+    "type": "int",
+    "default": 600,
+    "required": false,
+    "choices": null,
+    "advanced": false,
+    "local_only": false,
+    "help": "Figure resolution in dots per inch.",
+    "doc": "Figure resolution in dots per inch."
+   },
+   {
+    "name": "regions",
+    "type": "list",
+    "default": [
+     "center",
+     "top_left",
+     "top_right",
+     "bottom_left",
+     "bottom_right"
+    ],
+    "required": false,
+    "choices": null,
+    "advanced": false,
+    "local_only": false,
+    "help": "Fixed crop anchors: any of ``center``, ``top_left``, ``top_right``, ``bottom_left``, ``bottom_right``.",
+    "doc": "Fixed crop anchors: any of ``center``, ``top_left``, ``top_right``,\n``bottom_left``, ``bottom_right``.",
+    "items": "str"
+   },
+   {
+    "name": "zooms",
+    "type": "list",
+    "default": [
+     "40x",
+     "20x",
+     "10x",
+     "5x"
+    ],
+    "required": false,
+    "choices": null,
+    "advanced": false,
+    "local_only": false,
+    "help": "Crop sizes, as names (``40x`` = 512 px, ``20x`` = 1000 px, ``10x`` = 2000 px, ``5x`` = 4000 px) or ``label:edge`` pairs such as ``detail:256``.",
+    "doc": "Crop sizes, as names (``40x`` = 512 px, ``20x`` = 1000 px,\n``10x`` = 2000 px, ``5x`` = 4000 px) or ``label:edge`` pairs such as\n``detail:256``.",
+    "items": "str"
+   },
+   {
+    "name": "random_rois",
+    "type": "int",
+    "default": 0,
+    "required": false,
+    "choices": null,
+    "advanced": false,
+    "local_only": false,
+    "help": "Random tissue crops per zoom level, 0 to 10. Zero disables them.",
+    "doc": "Random tissue crops per zoom level, 0 to 10. Zero disables them."
+   },
+   {
+    "name": "roi_seed",
+    "type": "int",
+    "default": 42,
+    "required": false,
+    "choices": null,
+    "advanced": true,
+    "local_only": false,
+    "help": "Seed for choosing random crops; saved next to the figures.",
+    "doc": "Seed for choosing random crops; saved next to the figures."
+   },
+   {
+    "name": "scale_bars",
+    "type": "bool",
+    "default": false,
+    "required": false,
+    "choices": null,
+    "advanced": false,
+    "local_only": false,
+    "help": "Draw physically calibrated scale bars on crops.",
+    "doc": "Draw physically calibrated scale bars on crops."
+   },
+   {
+    "name": "mpp",
+    "type": "float",
+    "default": null,
+    "required": false,
+    "choices": null,
+    "advanced": true,
+    "local_only": false,
+    "help": "Micrometres per pixel for scale bars; a per-zoom table is used when omitted.",
+    "doc": "Micrometres per pixel for scale bars; a per-zoom table is used\nwhen omitted."
+   },
+   {
+    "name": "figure_name",
+    "type": "str",
+    "default": "comparison.png",
+    "required": false,
+    "choices": null,
+    "advanced": true,
+    "local_only": false,
+    "help": "File name of the full-view figure. Crop names derive from it.",
+    "doc": "File name of the full-view figure. Crop names derive from it."
+   }
+  ]
+ },
+ {
+  "name": "overlay_markers",
+  "label": "Overlay markers",
+  "summary": "Layer color masks of several IHC markers over a base marker.",
+  "extra": "viz",
+  "available": true,
+  "missing": [],
+  "inputs": {
+   "kind": "a case folder with one subfolder per marker, or a folder of cases",
+   "help": "One case folder, or a folder whose subfolders are cases."
+  },
+  "options": [],
+  "settings": [
+   {
+    "name": "markers",
+    "type": "mapping",
+    "default": null,
+    "required": true,
+    "choices": null,
+    "advanced": false,
+    "local_only": false,
+    "help": "Marker keys mapped to :class:`MarkerProfile` values.",
+    "doc": "Marker keys mapped to :class:`MarkerProfile` values."
+   },
+   {
+    "name": "combinations",
+    "type": "list",
+    "default": null,
+    "required": true,
+    "choices": null,
+    "advanced": false,
+    "local_only": false,
+    "help": "Base/overlay figures to generate.",
+    "doc": "Base/overlay figures to generate.",
+    "items": "config"
+   },
+   {
+    "name": "base_marker",
+    "type": "str",
+    "default": null,
+    "required": true,
+    "choices": null,
+    "advanced": false,
+    "local_only": false,
+    "help": "Default base key used when combinations are synthesized.",
+    "doc": "Default base key used when combinations are synthesized."
+   },
+   {
+    "name": "base_render_mode",
+    "type": "choice",
+    "default": "mask",
+    "required": false,
+    "choices": [
+     "mask",
+     "original"
+    ],
+    "advanced": false,
+    "local_only": false,
+    "help": "Render the base as its binary color mask or original RGB patch.",
+    "doc": "Render the base as its binary color mask or original RGB patch."
+   },
+   {
+    "name": "plot_mode",
+    "type": "choice",
+    "default": "composite",
+    "required": false,
+    "choices": [
+     "composite",
+     "grid",
+     "both"
+    ],
+    "advanced": false,
+    "local_only": false,
+    "help": "Figure types to save.",
+    "doc": "Figure types to save."
+   },
+   {
+    "name": "show_plot",
+    "type": "bool",
+    "default": false,
+    "required": false,
+    "choices": null,
+    "advanced": false,
+    "local_only": false,
+    "help": "Display figures interactively.",
+    "doc": "Display figures interactively."
+   },
+   {
+    "name": "dpi",
+    "type": "int",
+    "default": 300,
+    "required": false,
+    "choices": null,
+    "advanced": false,
+    "local_only": false,
+    "help": "Figure resolution in dots per inch.",
+    "doc": "Figure resolution in dots per inch."
+   },
+   {
+    "name": "patches_per_case",
+    "type": "int",
+    "default": 0,
+    "required": false,
+    "choices": null,
+    "advanced": false,
+    "local_only": false,
+    "help": "Random patch cap; zero processes every shared filename.",
+    "doc": "Random patch cap; zero processes every shared filename."
+   },
+   {
+    "name": "skip_existing",
+    "type": "bool",
+    "default": true,
+    "required": false,
+    "choices": null,
+    "advanced": false,
+    "local_only": false,
+    "help": "Skip requested figures already present.",
+    "doc": "Skip requested figures already present."
+   },
+   {
+    "name": "max_workers",
+    "type": "int",
+    "default": 1,
+    "required": false,
+    "choices": null,
+    "advanced": false,
+    "local_only": false,
+    "help": "Case-level thread count.",
+    "doc": "Case-level thread count."
+   }
+  ]
+ }
+]
