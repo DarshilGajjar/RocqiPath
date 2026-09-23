@@ -4,10 +4,10 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "rocqipath"
-version = "1.0.0"
+version = "2.0.0"
 description = "A Python library for whole-slide image (WSI) processing and analysis in computational pathology."
 readme = "README.md"
-requires-python = ">=3.10,<=3.15"
+requires-python = ">=3.10,<3.12"
 license = { text = "All Rights Reserved" }
 authors = [
     { name = "Darshil Gajjar" },
@@ -54,6 +54,14 @@ test = [
     "openslide-bin>=4.0",
     "fastapi>=0.110",
     "httpx>=0.27",
+]
+
+# `pip install rocqipath[docs]`
+# The documentation site (`mkdocs serve`).
+docs = [
+    "mkdocs>=1.6,<2",
+    "mkdocs-material>=9.5",
+    "mkdocstrings[python]>=0.26",
 ]
 
 # `pip install rocqipath[extraction]`

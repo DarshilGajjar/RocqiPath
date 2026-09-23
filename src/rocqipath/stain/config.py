@@ -15,7 +15,7 @@ NORMALIZER_TYPES = frozenset({"reinhard", "macenko", "vahadane"})
 
 @dataclass
 class StainConfig(BaseConfig):
-    """Settings for :func:`rocqipath.train_stain_normalizer` and :func:`rocqipath.normalize_stain`.
+    """Settings for `rocqipath.train_stain_normalizer` and `rocqipath.normalize_stain`.
 
     Training fits one normalizer to reference patches and saves its weights;
     normalizing applies saved weights to other images so their stain colors

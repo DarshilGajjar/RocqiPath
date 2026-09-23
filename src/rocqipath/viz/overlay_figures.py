@@ -17,7 +17,7 @@ def _save_composite_figure(composite: np.ndarray, out_path: str, cfg: OverlayCon
     ----------
     composite : numpy.ndarray
         ``(H, W, 3)`` RGB composite, as returned by
-        :func:`_build_composite`.
+        `_build_composite`.
     out_path : str
         Destination file path.
     cfg : OverlayConfig
@@ -53,12 +53,12 @@ def _save_grid_figure(
     ----------
     images : dict of str to numpy.ndarray
         Original RGB patches, keyed by marker key (unused directly here,
-        accepted for signature symmetry with :func:`_build_composite` and
+        accepted for signature symmetry with `_build_composite` and
         potential future panel types).
     masks : dict of str to numpy.ndarray
         Boolean detection masks, keyed by marker key.
     composite : numpy.ndarray
-        The already-built composite (from :func:`_build_composite`) shown
+        The already-built composite (from `_build_composite`) shown
         as the final panel.
     combo : OverlayCombo
         Determines panel order: base marker first, then each overlay in
@@ -74,7 +74,7 @@ def _save_grid_figure(
     Each marker panel renders its mask via
     ``ax.imshow(mask, cmap="gray")`` — white where detected, black
     elsewhere — titled with that marker's
-    :attr:`~MarkerProfile.label`. The final panel is titled
+    `MarkerProfile.label`. The final panel is titled
     ``"Composite"``.
     """
     panel_keys = [combo.base] + list(combo.overlays)

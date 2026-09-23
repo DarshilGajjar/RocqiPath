@@ -16,7 +16,7 @@ from rocqipath._internal.base_config import BaseConfig
 
 @dataclass
 class CountCellsConfig(BaseConfig):
-    """Settings for :func:`rocqipath.count_cells`.
+    """Settings for `rocqipath.count_cells`.
 
     Counts brown (DAB-positive) cells on IHC slides patch by patch: an HSV
     color gate finds brown pixels and a per-patch Otsu threshold separates

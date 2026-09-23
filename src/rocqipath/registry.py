@@ -1,11 +1,11 @@
 """The workflow registry behind ``rp.<workflow>()``, the CLI and Studio.
 
-Every workflow is an ordinary function decorated with :func:`workflow`. The
+Every workflow is an ordinary function decorated with `workflow`. The
 decorator gives all workflows the same calling convention::
 
     result = rp.<name>(inputs, output_dir, *, config=None, **overrides)
 
-and records the workflow in :data:`WORKFLOWS`, which the command line and
+and records the workflow in `WORKFLOWS`, which the command line and
 Studio read to build their commands and forms. Adding a workflow therefore
 means writing one decorated function; see ``docs/contributing``.
 
@@ -17,9 +17,9 @@ The decorator handles, for every workflow:
 * passing extra keyword arguments the workflow declares (such as
   ``compare_to=``) through to the function;
 * resolving ``inputs`` (paths, earlier results, or output folders) into
-  :class:`Item` objects, checking that each exists;
+  `Item` objects, checking that each exists;
 * creating ``output_dir``, recording the run in ``rocqipath.json`` there,
-  and returning a :class:`Result`.
+  and returning a `Result`.
 """
 
 from __future__ import annotations
@@ -69,7 +69,7 @@ class Item:
 class Result:
     """What a workflow run produced.
 
-    Iterating a result yields its :class:`Item` objects. ``summary`` holds
+    Iterating a result yields its `Item` objects. ``summary`` holds
     the workflow's own numbers, such as region counts or cell counts.
 
     Parameters
@@ -137,7 +137,7 @@ class Workflow:
     function : callable
         The public function users call.
     config : type
-        Its :class:`~rocqipath._internal.base_config.BaseConfig` class.
+        Its `rocqipath._internal.base_config.BaseConfig` class.
     extra : str
         The ``pip install rocqipath[<extra>]`` extra it needs.
     inputs : InputSpec
@@ -195,9 +195,9 @@ def workflow(
     """Register a function as a workflow with the standard calling convention.
 
     The decorated function receives ``(inputs, output_dir, config, **options)``
-    where ``inputs`` is a list of :class:`Item` (see
-    :func:`rocqipath.io.inputs.resolve_inputs`), ``output_dir`` an existing
-    :class:`~pathlib.Path` and ``config`` a validated config instance. It
+    where ``inputs`` is a list of `Item` (see
+    `rocqipath.io.inputs.resolve_inputs`), ``output_dir`` an existing
+    `pathlib.Path` and ``config`` a validated config instance. It
     returns ``(items, summary)``. Keyword-only parameters of the decorated
     function (other than ``config``) become the workflow's extra options.
 

@@ -1,7 +1,7 @@
 """Shared behavior for every typed workflow configuration.
 
-Configs are plain dataclasses that inherit :class:`BaseConfig`. Their numpy
-docstrings are the single source of documentation: :func:`field_help` parses
+Configs are plain dataclasses that inherit `BaseConfig`. Their numpy
+docstrings are the single source of documentation: `field_help` parses
 the ``Parameters`` section so the CLI and Studio can show the same text the
 API reference renders, without repeating it in field metadata.
 """
@@ -39,7 +39,7 @@ class BaseConfig:
     """Provide serialization, overrides and schema shared by every config."""
 
     def __new__(cls, *args: Any, **kwargs: Any) -> "BaseConfig":
-        """Remember constructor arguments so :meth:`replace` can re-derive fields.
+        """Remember constructor arguments so `replace` can re-derive fields.
 
         Some fields are derived during validation (for example
         ``AlignConfig.filename_pattern`` from the role names, or
@@ -334,7 +334,7 @@ def field_schema(cls: Type[BaseConfig]) -> List[Dict[str, Any]]:
     Parameters
     ----------
     cls : type
-        A :class:`BaseConfig` dataclass.
+        A `BaseConfig` dataclass.
 
     Returns
     -------

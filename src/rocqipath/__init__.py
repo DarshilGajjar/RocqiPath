@@ -10,7 +10,7 @@ Everything most users need is available from the top level::
 
 Every workflow is called the same way,
 ``rp.<workflow>(inputs, output_dir, *, config=None, **settings)``, and returns
-a :class:`Result` listing the files it produced. :func:`list_workflows`
+a `Result` listing the files it produced. `list_workflows`
 shows them all. Settings are fields of each workflow's config class
 (``rp.AlignConfig``, ``rp.CountCellsConfig``, ...).
 

@@ -43,7 +43,7 @@ def _load_thumbnail(
     -------
     numpy.ndarray
         The thumbnail as a ``(height, width, 3)`` ``uint8`` RGB array
-        (via :func:`_vips_to_numpy_rgb`).
+        (via `_vips_to_numpy_rgb`).
 
     Raises
     ------

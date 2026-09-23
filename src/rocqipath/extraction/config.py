@@ -143,7 +143,7 @@ class _RegionExtractionConfig(BaseConfig):
 
 @dataclass
 class ExtractTissueConfig(_RegionExtractionConfig):
-    """Settings for :func:`rocqipath.extract_tissue`.
+    """Settings for `rocqipath.extract_tissue`.
 
     Detects separate pieces of tissue on each whole-slide image and saves
     each one as its own pyramidal TIFF with a preview and a manifest. This
@@ -167,7 +167,7 @@ class ExtractTissueConfig(_RegionExtractionConfig):
 
 @dataclass
 class ExtractTMAConfig(_RegionExtractionConfig):
-    """Settings for :func:`rocqipath.extract_tma`.
+    """Settings for `rocqipath.extract_tma`.
 
     Detects round tissue-microarray cores on each H&E slide and cuts the
     same cores out of every matching IHC slide of that block.
@@ -245,7 +245,7 @@ class ExtractTMAConfig(_RegionExtractionConfig):
 
 @dataclass
 class ExtractPatchesConfig(BaseConfig):
-    """Settings for :func:`rocqipath.extract_patches`.
+    """Settings for `rocqipath.extract_patches`.
 
     Walks a sliding window over each reference slide and its aligned
     counterpart, saving matching patch pairs that contain enough tissue.

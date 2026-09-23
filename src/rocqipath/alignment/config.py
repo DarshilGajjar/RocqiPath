@@ -19,7 +19,7 @@ from rocqipath._internal.base_config import ADVANCED, LOCAL_ONLY, BaseConfig
 
 @dataclass
 class AlignConfig(BaseConfig):
-    r"""Settings for :func:`rocqipath.align`: pairing, registration, export and QC.
+    r"""Settings for `rocqipath.align`: pairing, registration, export and QC.
 
     ``AlignConfig`` is the configuration object for RocqiPath's
     paired-slide alignment workflow. It controls how reference and moving
@@ -43,7 +43,7 @@ class AlignConfig(BaseConfig):
         can be useful when VALIS is unavailable or when a faster,
         dependency-minimal registration method is sufficient.
 
-    The typical layout of the folder passed to :func:`rocqipath.align` is::
+    The typical layout of the folder passed to `rocqipath.align` is::
 
         wsi_input/
         ├── cd8/
@@ -356,7 +356,7 @@ class AlignConfig(BaseConfig):
         Defaults suit general H&E-to-IHC registration. Change individual
         settings with nested keywords, for example
         ``rp.align(..., valis__max_acceptable_error_um=100.0)``, or pass a
-        complete :class:`ValisOptions`.
+        complete `ValisOptions`.
 
     orb : OrbOptions, default=OrbOptions()
         Settings for the lightweight ORB backend, used when
@@ -470,8 +470,8 @@ class AlignConfig(BaseConfig):
     High-level versus backend configuration
         ``AlignConfig`` controls the overall paired-slide workflow.
         VALIS-specific settings live in its ``valis`` field
-        (:class:`ValisOptions`) and ORB-specific settings in its ``orb``
-        field (:class:`OrbOptions`).
+        (`ValisOptions`) and ORB-specific settings in its ``orb``
+        field (`OrbOptions`).
 
     Reference coordinate system
         In the typical RocqiPath workflow, the reference image defines the
@@ -716,7 +716,7 @@ class ValisOptions(BaseConfig):
     parameters without requiring users to modify RocqiPath's internal
     registration implementation.
 
-    It is the ``valis`` field of :class:`AlignConfig`; set individual values
+    It is the ``valis`` field of `AlignConfig`; set individual values
     with nested keywords such as ``valis__num_features=3000``. Simple users can rely entirely on
     the defaults, while advanced users can modify feature detectors, feature
     matchers, registration resolutions, or native VALIS options.

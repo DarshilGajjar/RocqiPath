@@ -89,7 +89,7 @@ from rocqipath._internal.geometry import transform_coords
 
 
 def registrar_settings(config: AlignConfig, output_dir: Union[str, Path], item_name: Optional[str] = None) -> dict:
-    """Translate an :class:`AlignConfig` into the settings a registrar reads.
+    """Translate an `AlignConfig` into the settings a registrar reads.
 
     Parameters
     ----------
@@ -198,35 +198,26 @@ def magnification_fallback(properties, explicit=None):
 
 
 class WSIRegistrar:
-    """Register paired WSIs and extract spatially aligned patches.
+    """Register one moving slide onto a reference slide and export the result.
 
-    Workflow
-    ────────
-    1. Instantiate with slide paths and a config dict.
-    2. Call ``register_slides()`` to run VALIS (or ORB fallback).
-    3. Call ``generate_grid_map()`` to identify tissue-containing grid cells.
-    4. Call ``extract_patch_pair()`` (or ``extract_single_patch()``) per grid cell.
-    5. Call ``close()`` to release file handles and clean up temp files.
+    `rocqipath.align` uses this for every pair; use it directly for
+    finer control or for grid-based patch extraction.
 
-    Parameters
-    ----------
-    ──────────
-    path_ref : str
-        Absolute path to the H&E (reference / fixed) slide.
-    path_tgt : str or None
-        Absolute path to the IHC (moving) slide.
-        Pass None for reference-only (single-slide) mode.
-    config : dict
-        Pipeline configuration. Expected keys:
-          - patch_size        : int   — patch edge length in pixels
-          - grid_density      : int   — number of grid rows/cols
-          - base_output_dir   : str   — root directory for all outputs
-          - target_magnification : float — physical zoom for both slides (default 20x)
-          - overlay_max_px    : int   — (optional) max edge for QC overlay images
-          - orb_thumb_size    : int   — (optional) thumbnail size for ORB fallback
-          - ransac_threshold  : float — (optional) RANSAC reprojection threshold
-    valis_cfg : ValisOptions, optional
-        Fine-grained VALIS parameters. Defaults to ``ValisOptions()``.
+    Typical use:
+
+    1. Create it with the two slide paths and an `AlignConfig`.
+    2. Call `register_slides` to run VALIS or ORB.
+    3. Call `save_aligned_wsi` to export the aligned moving slide, or
+       `generate_grid_map` and `extract_patch_pair` for patches.
+    4. Call `close` to release file handles and temporary files.
+
+    Examples
+    --------
+    >>> from rocqipath.alignment import AlignConfig, WSIRegistrar
+    >>> registrar = WSIRegistrar("he.svs", "cd8.svs", AlignConfig(backend="orb"), output_dir="out")  # doctest: +SKIP
+    >>> registrar.register_slides(method="orb")  # doctest: +SKIP
+    >>> registrar.save_aligned_wsi(level=0)  # doctest: +SKIP
+    >>> registrar.close()  # doctest: +SKIP
     """
 
     # ──────────────────────────────────────────────────────────────────────────
@@ -262,7 +253,7 @@ class WSIRegistrar:
         ----------
         path_ref : str
             Path to the H&E (reference / fixed) slide. Resolved to an
-            absolute path immediately via :func:`os.path.abspath`, and
+            absolute path immediately via `os.path.abspath`, and
             opened synchronously with OpenSlide before this constructor
             returns.
         path_tgt : str or None
@@ -271,42 +262,34 @@ class WSIRegistrar:
             case ``self.slide_tgt`` stays ``None`` and no target-slide
             operations (registration, aligned-WSI export) are available.
         config : AlignConfig or dict, optional
-            Alignment settings. An :class:`AlignConfig` (default
-            ``AlignConfig()``) is translated with :func:`registrar_settings`;
+            Alignment settings. An `AlignConfig` (default
+            ``AlignConfig()``) is translated with `registrar_settings`;
             its ``valis`` options are used unless ``valis_cfg`` is given.
             A dict of registrar settings (``patch_size``, ``grid_density``,
             ``base_output_dir``, ...) is stored verbatim for low-level use.
         valis_cfg : ValisOptions, optional
             Fine-grained VALIS hyperparameters overriding ``config.valis``.
         output_dir : str or pathlib.Path, optional
-            Output root when ``config`` is an :class:`AlignConfig`
+            Output root when ``config`` is an `AlignConfig`
             (default: the current directory). Outputs go to
             ``<output_dir>/alignment/<reference name>/``.
 
         Attributes
         ----------
-        Beyond the parameters stored directly (``self.config``,
-        ``self.valis_cfg``, ``self.path_ref``, ``self.path_tgt``), this
-        constructor also initialises:
-
-        - ``self.method`` (str or None) — set to ``"valis"`` or ``"orb"``
-          once :meth:`register_slides` has run; ``None`` beforehand.
-        - ``self.registration_ok`` (bool) — whether registration has
-          succeeded; ``False`` until then.
-        - ``self.valis_obj``, ``self._registrar``, ``self._slide_ref_valis``,
-          ``self._slide_tgt_valis``, ``self.registration_error_df`` —
-          VALIS-specific state, populated later by the internal
-          ``_register_valis`` method; all ``None`` at construction.
-        - ``self.orb_matrix``, ``self.orb_scale`` — ORB-fallback state,
-          populated later by the internal ``_register_orb`` method; both
-          ``None`` at construction.
-        - ``self.slide_ref`` / ``self.slide_tgt`` — open
-          :class:`openslide.OpenSlide` handles for the reference and
-          (if provided) target slides.
-        - ``self.w``, ``self.h`` — base-level (level 0) pixel dimensions
-          of the reference slide.
-        - ``self.ref_name``, ``self.tgt_name``, ``self.base_name`` —
-          convenience filename strings derived from the slide paths.
+        method : str or None
+            ``"valis"`` or ``"orb"`` once `register_slides` has run.
+        registration_ok : bool
+            Whether registration has succeeded; ``False`` until then.
+        slide_ref, slide_tgt : openslide.OpenSlide
+            Open handles for the reference and (if given) target slides.
+        w, h : int
+            Level-0 pixel dimensions of the reference slide.
+        orb_matrix : numpy.ndarray or None
+            ORB transform, set by ORB registration.
+        valis_obj : object or None
+            VALIS registrar state, set by VALIS registration.
+        ref_name, tgt_name, base_name : str
+            Filename strings derived from the slide paths.
 
         Notes
         -----
@@ -314,8 +297,8 @@ class WSIRegistrar:
         this constructor, so instantiating a ``WSIRegistrar`` is not free
         — it performs real file I/O and will raise whatever OpenSlide
         raises if a path is invalid or the format is unsupported (e.g.
-        :class:`openslide.OpenSlideError`). Callers should call
-        :meth:`close` when finished to release these file handles.
+        `openslide.OpenSlideError`). Callers should call
+        `close` when finished to release these file handles.
         """
         if config is None:
             config = AlignConfig()
@@ -482,7 +465,6 @@ class WSIRegistrar:
 
         Parameters
         ----------
-        ──────────
         method : str
             "valis" — full rigid + non-rigid registration via the VALIS library.
             "orb"   — lightweight contour-shape-based affine registration

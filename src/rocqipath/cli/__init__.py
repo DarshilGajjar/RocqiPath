@@ -184,6 +184,16 @@ def _run_workflow(args: argparse.Namespace) -> int:
 
 def main(argv: Optional[List[str]] = None) -> int:
     """Parse arguments and run a workflow or utility command."""
+    try:
+        return _main(argv)
+    except BrokenPipeError:  # output piped into e.g. `head`; exit quietly
+        import os
+
+        os.dup2(os.open(os.devnull, os.O_WRONLY), sys.stdout.fileno())
+        return 0
+
+
+def _main(argv: Optional[List[str]] = None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
     show_all = "--help-all" in argv
     if show_all:

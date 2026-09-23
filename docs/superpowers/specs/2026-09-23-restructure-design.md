@@ -1,6 +1,6 @@
 # RocqiPath 2.0 restructure — design
 
-**Status:** approved in brainstorming, 2026-09-23.
+**Status:** approved in brainstorming, 2026-09-23; implemented (see the plan's status note for deviations).
 **Goal:** make RocqiPath simple to learn, use, and extend, without losing any
 existing capability or the ability to add workflows later.
 **Audience:** Python/notebook users, Studio (web UI) users, and contributors.

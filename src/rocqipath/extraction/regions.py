@@ -1,7 +1,7 @@
 """Extract contiguous tissue regions from ordinary whole-slide images.
 
 For slides with multiple discrete tissue regions (e.g. microarrays or
-biopsy punch collections), use :mod:`rocqipath.extraction.tma`
+biopsy punch collections), use `rocqipath.extraction.tma`
 instead. This module handles regular biopsies, resections, and any slide
 containing a single contiguous tissue section.
 
@@ -67,7 +67,7 @@ _log = get_logger("tissue_extraction")
 def _print_config_panel(cfg: ExtractTissueConfig, input_dir: str, output_dir: str) -> None:
     """Print the resolved run configuration.
 
-    Printed once at the start of :func:`run_tissue_pipeline` so the
+    Printed once at the start of `run_tissue_pipeline` so the
     operator can see exactly which parameters will be used before
     processing begins.
 

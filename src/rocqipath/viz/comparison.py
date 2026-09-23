@@ -331,7 +331,7 @@ def visualize_side_by_side(
     title_he, title_gt, title_pred : str
         Panel titles.
     regions : list of str, optional
-        Named anchors from :data:`VALID_REGIONS`. Defaults to all anchors.
+        Named anchors from `VALID_REGIONS`. Defaults to all anchors.
     zoom_sizes : list of tuple of (str, int), optional
         Zoom label and square crop edge in source-image pixels.
     n_random_rois : int, optional
@@ -362,7 +362,7 @@ def visualize_side_by_side(
 
     Examples
     --------
-    Use :command:`rocqipath compare --help` for a complete file-backed
+    Use `rocqipath compare --help` for a complete file-backed
     example without loading scanner data during documentation tests.
     """
     regions = list(VALID_REGIONS) if regions is None else regions

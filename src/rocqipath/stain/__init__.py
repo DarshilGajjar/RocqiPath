@@ -1,7 +1,7 @@
 """Stain normalization: Reinhard, Macenko and Vahadane.
 
-Most users call :func:`rocqipath.train_stain_normalizer` and
-:func:`rocqipath.normalize_stain`. The normalizer classes fit and transform
+Most users call `rocqipath.train_stain_normalizer` and
+`rocqipath.normalize_stain`. The normalizer classes fit and transform
 individual images in memory.
 """
 

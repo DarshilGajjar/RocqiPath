@@ -1,6 +1,6 @@
 """Whole-slide registration of a moving slide onto a reference slide.
 
-Most users call :func:`rocqipath.align`. :class:`WSIRegistrar` registers and
+Most users call `rocqipath.align`. `WSIRegistrar` registers and
 exports one slide pair directly for finer control.
 """
 

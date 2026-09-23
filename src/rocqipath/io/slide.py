@@ -37,7 +37,7 @@ def _image_base_name(path: Path) -> str:
 class SlideReader:
     """Open a WSI with OpenSlide or fall back to PIL for ordinary TIFFs.
 
-    Call :meth:`configure_magnification` before :meth:`read_at_magnification`.
+    Call `configure_magnification` before `read_at_magnification`.
     Coordinates and sizes passed to that method are expressed entirely in the
     target-resolution grid, keeping scanner-specific pyramid details internal.
     """
@@ -244,8 +244,8 @@ def open_slide(
     path : str or pathlib.Path
         Slide or image file.
     target_magnification : float, optional
-        When given, :meth:`SlideReader.configure_magnification` is called so
-        :meth:`SlideReader.read_at_magnification` reads at this objective.
+        When given, `SlideReader.configure_magnification` is called so
+        `SlideReader.read_at_magnification` reads at this objective.
     source_magnification : float, optional
         Objective the slide was scanned at, for files whose metadata does
         not say (plain TIFFs). Only used with ``target_magnification``.

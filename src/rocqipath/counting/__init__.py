@@ -1,6 +1,6 @@
 """DAB-positive cell counting.
 
-Most users call :func:`rocqipath.count_cells`. :class:`PositiveCellCounter`
+Most users call `rocqipath.count_cells`. `PositiveCellCounter`
 counts single patches or slides directly.
 """
 

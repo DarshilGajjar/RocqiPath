@@ -1,6 +1,6 @@
 """Quality-control and publication figures.
 
-Most users call :func:`rocqipath.compare` and :func:`rocqipath.overlay_markers`.
+Most users call `rocqipath.compare` and `rocqipath.overlay_markers`.
 The plotting helpers here draw grid maps, patch pairs and thumbnails.
 """
 

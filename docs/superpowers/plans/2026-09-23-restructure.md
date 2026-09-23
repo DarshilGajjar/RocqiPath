@@ -1,5 +1,31 @@
 # RocqiPath 2.0 restructure — implementation plan
 
+> **Status (2026-09-23): complete.** Executed on `claude/eager-euler-genyiq`.
+> Deviations from the plan as written, each for the reason given:
+>
+> - **Registry module is `rocqipath/registry.py`** and the workflows live in
+>   `rocqipath/api.py`, since `studio/workflows.py` existed until 4a and one
+>   module per concern reads better.
+> - **Phase 4a was folded into Phase 2.** The old CLI commands and Studio
+>   adapters called the functions Phase 2 replaced; regenerating them there
+>   avoided patching code about to be deleted.
+> - **`config.py` is the one repeated module name** (a per-package convention);
+>   the base config is `_internal/base_config.py`, `stain/pipeline.py` became
+>   `stain/batch.py`, and overlay/ORB modules stayed flat to keep names unique.
+> - **Inputs are `Item`s.** Workflows receive resolved items rather than raw
+>   paths, so `extract_patches` pairs aligned and reference slides from the
+>   `align` result without any directory convention.
+> - **Studio frontend was rebuilt** as a static Vite/React app (the scaffold
+>   targeted Cloudflare hosting and was not connected to the API).
+> - **Pre-existing defects fixed along the way** (each with a regression test):
+>   sequential-access reads broke plain TIFFs; reconstruction mixed H&E and IHC
+>   patches; `OrbConfig` was never applied; `BaseConfig.replace` kept stale
+>   derived fields; two broken log calls; `WSIRegistrar.close()` not idempotent;
+>   Studio's OpenSlide fallback and test host.
+> - **Known, left as is:** ORB's refinement step fails (and falls back to the
+>   coarse match) on slides smaller than `refine_thumb_size`; fixing it changes
+>   alignment output, so it is a separate change.
+
 **Spec:** `docs/superpowers/specs/2026-09-23-restructure-design.md`
 **Goal:** a simpler, better-documented package with one call shape per workflow,
 one registry behind Python, the CLI, and Studio, and chaining through run
@@ -26,7 +52,7 @@ manifests. No capability is lost.
 Nothing in the package is moved in this phase. It adds the tests that prove
 later phases lose nothing.
 
-- [ ] **Golden tests.** Add `tests/golden/test_golden_workflows.py`. Each
+- [x] **Golden tests.** Add `tests/golden/test_golden_workflows.py`. Each
   scanner-free workflow runs on `tests/fixtures/synthetic.py` data through the
   **current** API:
   - tissue extraction (Otsu), TMA extraction, paired patch extraction plus reconstruction;
@@ -34,7 +60,7 @@ later phases lose nothing.
   - Reinhard stain train/apply (Macenko and Vahadane when TIAToolbox is present);
   - cell counting in single, batch, and paired modes;
   - IHC overlay, grid map, and comparison figure.
-- [ ] **Recorded values.** For each run, record the following in
+- [x] **Recorded values.** For each run, record the following in
   `tests/golden/expected/<workflow>.json`:
   - the sorted relative output file tree;
   - region counts and boxes;
@@ -43,13 +69,13 @@ later phases lose nothing.
   - manifest keys.
 
   `--update-golden` regenerates these files, but only in Phase 0.
-- [ ] **Adapter.** Put a thin `tests/golden/_calls.py` adapter between the
+- [x] **Adapter.** Put a thin `tests/golden/_calls.py` adapter between the
   golden tests and the API. It is the **only** file later phases edit to follow
   API changes. The expected JSON must not change.
-- [ ] **Structure test.** Add `tests/test_structure.py` (`xfail` for now). It
+- [x] **Structure test.** Add `tests/test_structure.py` (`xfail` for now). It
   covers no duplicate module basenames and no helper defined twice
   (`tissue_fraction`, `list_wsi_files`).
-- [ ] **Verify.** The golden suite passes on 3.10 and 3.11 in CI. Commit the
+- [x] **Verify.** The golden suite passes on 3.10 and 3.11 in CI. Commit the
   expected files.
 
 ## Phase 1 — Layout: pure moves, no behavior change
@@ -82,25 +108,25 @@ The target tree is spec §3. The old-to-new module moves are:
 
 Steps:
 
-- [ ] **Moves.** Do the moves in 4 commits (io+tissue, extraction+alignment,
+- [x] **Moves.** Do the moves in 4 commits (io+tissue, extraction+alignment,
   stain+counting+viz, internal+config+errors). Remove the empty `core/`,
   `utils/`, `config/`, `analysis/`, `registration/`, and `visualization/` packages.
-- [ ] **Deduplicate helpers.**
+- [x] **Deduplicate helpers.**
   - `tissue_fraction` gets one definition in `tissue/masks.py`. The copies in
     `stain/normalizers.py` and `utils/geometry.py` import it. First check that
     their semantics are identical; if they differ, keep separately named
     functions rather than merge them.
   - `list_wsi_files` gets one definition in `io/discovery.py`, and
     `alignment/pipeline.py` imports it.
-- [ ] **Update imports** across `src`, `tests`, and `how_to_use/*.ipynb`. Reorganize
+- [x] **Update imports** across `src`, `tests`, and `how_to_use/*.ipynb`. Reorganize
   `tests/` to mirror the package (`tests/io/`, `tests/extraction/`, ...).
-- [ ] **Remove `xfail`** from `tests/test_structure.py`.
-- [ ] **Verify.** The golden tests pass. Only `_calls.py` import lines change.
+- [x] **Remove `xfail`** from `tests/test_structure.py`.
+- [x] **Verify.** The golden tests pass. Only `_calls.py` import lines change.
   Ruff and the import-isolation test pass.
 
 ## Phase 2 — Public API, registry, config simplification
 
-- [ ] **Registry.** Add `rocqipath/registry.py`:
+- [x] **Registry.** Add `rocqipath/registry.py`:
   - `Item`, `Result`, `InputSpec`, and the `Workflow` record;
   - the `@workflow(name, config, extra, inputs)` decorator;
   - `WORKFLOWS`, `run()`, and `list_workflows()`.
@@ -112,23 +138,23 @@ Steps:
   - creates `output_dir` and returns a `Result`.
 
   The run manifest is added in Phase 3. Until then `Result.manifest_path` is `None`.
-- [ ] **Config helpers.** Extend `_internal/config.py` with:
+- [x] **Config helpers.** Extend `_internal/config.py` with:
   - `BaseConfig.replace()`, `to_dict()`/`from_dict()` (nested), and TOML loading;
   - a numpy `Parameters` parser that caches per-field help;
   - `field_schema(cfg_cls)`, returning type, default, choices, advanced, and help.
-- [ ] **Rename configs and remove path fields.**
+- [x] **Rename configs and remove path fields.**
   - `ExtractTissueConfig`, `ExtractTMAConfig`, `ExtractPatchesConfig`,
     `StainConfig`, `CountCellsConfig`, `OverlayConfig`, and a new
     `CompareConfig` (built from `visualize_side_by_side` keyword arguments).
   - Remove `input_dir`, `output_dir`, `base_output_dir`, `he_dir`, and
     `aligned_dir` from every config.
-- [ ] **Split `AlignmentConfig`.** It becomes `AlignConfig`, with nested `orb:
+- [x] **Split `AlignmentConfig`.** It becomes `AlignConfig`, with nested `orb:
   OrbOptions` and `valis: ValisOptions`. Move each field's existing docstring
   text with it. Add `tests/alignment/test_config_mapping.py`, asserting that
   every old field maps to exactly one new location and keeps its default.
-- [ ] **Typed `WSIRegistrar`.** `WSIRegistrar` and `ReversiblePatchExtractor`
+- [x] **Typed `WSIRegistrar`.** `WSIRegistrar` and `ReversiblePatchExtractor`
   take typed configs instead of dicts.
-- [ ] **Wrap the workflows** with `@workflow` in their packages. Keep the
+- [x] **Wrap the workflows** with `@workflow` in their packages. Keep the
   existing function bodies and delegate to them:
 
   | Workflow | Delegates to |
@@ -144,31 +170,31 @@ Steps:
   | `overlay_markers` | `process_ihc_overlay` |
 
   Each workflow returns `list[Item]` plus a summary.
-- [ ] **Remove the old entry points.** Delete `run_*` and `process_*`, or make
+- [x] **Remove the old entry points.** Delete `run_*` and `process_*`, or make
   them private, since this is a clean break. Tier-2 building blocks keep their
   names.
-- [ ] **Tier-1 `__init__.py`.** Add lazy `__getattr__` and an exact `__all__`
+- [x] **Tier-1 `__init__.py`.** Add lazy `__getattr__` and an exact `__all__`
   (spec §3.1). Add `open_slide()` to `io/slide.py`.
-- [ ] **Tests.**
+- [x] **Tests.**
   - Rewrite `tests/test_public_api.py` for the Tier-1 and Tier-2 surface.
   - Point `tests/golden/_calls.py` at the new API.
   - Add a registry contract test: docstring present, every config field
     documented, and the extra present in pyproject.
-- [ ] **Docstrings.** Every Tier-1 function gets full numpy docstrings with
+- [x] **Docstrings.** Every Tier-1 function gets full numpy docstrings with
   Parameters, Returns, Raises, and Examples. Existing config docstrings are
   kept and extended so every field is covered.
-- [ ] **Verify.** Golden tests are unchanged, and the contract and
+- [x] **Verify.** Golden tests are unchanged, and the contract and
   import-isolation tests pass.
 
 ## Phase 3 — Run manifest and chaining
 
-- [ ] **Run manifest.** In `io/manifest.py`, add `write_run_manifest(result)` and
+- [x] **Run manifest.** In `io/manifest.py`, add `write_run_manifest(result)` and
   `read_run_manifest(folder)` for schema v1 (spec §5). Paths are relative to the
   manifest, and reading validates the schema version.
-- [ ] **Decorator.** The decorator writes `rocqipath.json` after every
+- [x] **Decorator.** The decorator writes `rocqipath.json` after every
   successful run. A failed run writes nothing, so a partial folder is never
   mistaken for a valid input.
-- [ ] **Input resolver.** Add `io/inputs.py` with
+- [x] **Input resolver.** Add `io/inputs.py` with
   `resolve_inputs(inputs, spec) -> list[Item]`. It handles:
   - a file;
   - a raw folder, using existing discovery and naming patterns;
@@ -177,24 +203,24 @@ Steps:
   - a folder that contains a manifest, filtered by `spec.roles`.
 
   The error message states which roles were expected and which were found.
-- [ ] **Declare inputs.** Each workflow declares its `InputSpec`.
+- [x] **Declare inputs.** Each workflow declares its `InputSpec`.
   `extract_patches` accepts `("reference", "aligned")`, `count_cells` accepts
   slides or patches, and `normalize_stain` accepts images or patches.
-- [ ] **Keep existing manifests.** Per-region, per-slide, and aligned-magnification
+- [x] **Keep existing manifests.** Per-region, per-slide, and aligned-magnification
   manifests are unchanged, and `SlideReader` still reads the aligned manifest.
-- [ ] **Chaining tests.** Add `tests/test_chaining.py`, covering:
+- [x] **Chaining tests.** Add `tests/test_chaining.py`, covering:
   - `align` → `extract_patches` → `count_cells` on synthetic pairs;
   - both a `Result` and a folder path as input;
   - a moved output folder still resolving;
   - a clear error when the roles don't match.
-- [ ] **Notebook 08.** Remove the staging helper.
-- [ ] **Verify.** Golden tests pass. The expected file trees now also contain
+- [x] **Notebook 08.** Remove the staging helper.
+- [x] **Verify.** Golden tests pass. The expected file trees now also contain
   `rocqipath.json`; regenerate them with a reviewed diff that shows only that
   file added.
 
 ## Phase 4a — CLI and Studio backend from the registry
 
-- [ ] **Generated CLI.** Rewrite `cli/`:
+- [x] **Generated CLI.** Rewrite `cli/`:
   - `build_parser()` iterates `WORKFLOWS`;
   - each config field becomes a flag, with help from the parsed docstring;
   - advanced flags appear only under `--help-all`;
@@ -204,10 +230,10 @@ Steps:
   Add `rocqipath list`, `rocqipath info SLIDE`, and `rocqipath studio`, which
   moves the launcher from `studio/__main__` behind the CLI. Delete
   `cli/commands/`.
-- [ ] **CLI tests.** Update `tests/test_cli.py`: every workflow has a subcommand,
+- [x] **CLI tests.** Update `tests/test_cli.py`: every workflow has a subcommand,
   and the help for each shows every non-advanced field. Record every flag
   rename for `MIGRATION.md`.
-- [ ] **Studio backend.**
+- [x] **Studio backend.**
   - Delete `studio/workflows.py`.
   - Add `rocqipath/extras.py` with one extras→modules table. The Studio
     capability checks and a pyproject consistency test both use it.
@@ -215,50 +241,50 @@ Steps:
     workflow, and whether its extra is installed.
   - `POST /api/jobs` accepts `{workflow, inputs: [slide_id | job_id], params}`.
     The worker calls `rp.run`. A job ID resolves to that job's output folder.
-- [ ] **Studio tests.** Update `tests/test_studio.py`. The existing security
+- [x] **Studio tests.** Update `tests/test_studio.py`. The existing security
   tests stay unchanged. Add tests for the schema endpoint and for a chained
   job.
-- [ ] **CI.** `ci.yml` smoke-tests `rocqipath list` and `--help` for each
+- [x] **CI.** `ci.yml` smoke-tests `rocqipath list` and `--help` for each
   registered workflow.
-- [ ] **Verify.** Golden, CLI, and Studio tests pass.
+- [x] **Verify.** Golden, CLI, and Studio tests pass.
 
 ## Phase 4b — Studio frontend
 
-- [ ] **Build the interface.** Replace the placeholder `studio-web/app/page.tsx`
+- [x] **Build the interface.** Replace the placeholder `studio-web/app/page.tsx`
   with the interface from the 2026-09-07 Studio spec:
   - a slide library (folder browser/import);
   - a zoomable viewer with a comparison pane;
   - a generic `WorkflowForm` driven by `/api/workflows`, with basic/advanced
     sections, choices as selects, and help as tooltips;
   - job history with logs, artifacts, and "use as input".
-- [ ] **No per-workflow frontend code.** Add a frontend unit test that renders
+- [x] **No per-workflow frontend code.** Add a frontend unit test that renders
   every schema returned by a fixture snapshot of `/api/workflows`.
-- [ ] **Package it.** The production build is packaged under `studio/static`,
+- [x] **Package it.** The production build is packaged under `studio/static`,
   with a `studio` extra in pyproject.
-- [ ] **Verify.** Run `pnpm build`, the backend tests, and an HTTP smoke test,
+- [x] **Verify.** Run `pnpm build`, the backend tests, and an HTTP smoke test,
   and check the page manually in a local preview.
 
 ## Phase 5 — Documentation and 2.0 release
 
-- [ ] **Site setup.** Add a `docs` extra (`mkdocs-material`, `mkdocstrings[python]`),
+- [x] **Site setup.** Add a `docs` extra (`mkdocs-material`, `mkdocstrings[python]`),
   `mkdocs.yml`, and the site structure from spec §8. The reference pages are
   one-liners (`::: rocqipath.align`) so the docstrings remain the only source.
-- [ ] **Hand-written pages.** Write `index.md`, `getting-started.md`,
+- [x] **Hand-written pages.** Write `index.md`, `getting-started.md`,
   `concepts/*`, one short `workflows/*.md` per workflow, and
   `contributing/{architecture,adding-a-workflow,testing}.md`.
   `adding-a-workflow.md` walks through adding a toy workflow end to end and is
   checked by a doctest-style test.
-- [ ] **Move existing docs.** `how_to_use/09_Studio_Web.md` → `docs/studio.md`;
+- [x] **Move existing docs.** `how_to_use/09_Studio_Web.md` → `docs/studio.md`;
   `docs/reliability-review.md` → `docs/history/`.
-- [ ] **Notebooks.** Update `how_to_use/*.ipynb` to `import rocqipath as rp` and
+- [x] **Notebooks.** Update `how_to_use/*.ipynb` to `import rocqipath as rp` and
   trim them. `tests/test_readme_examples.py` also executes the README examples.
-- [ ] **README.** Rewrite it: what RocqiPath is, the install matrix, a
+- [x] **README.** Rewrite it: what RocqiPath is, the install matrix, a
   five-line Python example, the CLI, Studio, and links to the docs.
-- [ ] **`MIGRATION.md`.** Map every old import, function, config class, config
+- [x] **`MIGRATION.md`.** Map every old import, function, config class, config
   field, and CLI flag to its replacement, using the phase notes.
-- [ ] **pyproject.** Set `version = "2.0.0"` and `requires-python = ">=3.10,<3.12"`.
-- [ ] **CI.** Add `mkdocs build --strict`.
-- [ ] **Final review.** Run the full suite on 3.10 and 3.11, build the wheel,
+- [x] **pyproject.** Set `version = "2.0.0"` and `requires-python = ">=3.10,<3.12"`.
+- [x] **CI.** Add `mkdocs build --strict`.
+- [x] **Final review.** Run the full suite on 3.10 and 3.11, build the wheel,
   install it without extras (import plus `rocqipath list`), and review the
   complete diff against spec §1 point by point.
 
@@ -266,9 +292,9 @@ Steps:
 
 ## Done criteria
 
-- [ ] Every row of spec §4.1 has a working new entry point, covered by golden or unit tests.
-- [ ] `import rocqipath as rp; dir(rp)` shows the full Tier-1 surface with no extras installed.
-- [ ] Python, the CLI, and Studio all list the same workflows from `WORKFLOWS`.
-- [ ] `align` → `extract_patches` → `count_cells` chains with no staging code.
-- [ ] Adding a workflow means writing one function with a docstring and a config, with no CLI or Studio edits. The contributing guide demonstrates this.
-- [ ] The docs site builds strictly from docstrings plus the concept and workflow pages.
+- [x] Every row of spec §4.1 has a working new entry point, covered by golden or unit tests.
+- [x] `import rocqipath as rp; dir(rp)` shows the full Tier-1 surface with no extras installed.
+- [x] Python, the CLI, and Studio all list the same workflows from `WORKFLOWS`.
+- [x] `align` → `extract_patches` → `count_cells` chains with no staging code.
+- [x] Adding a workflow means writing one function with a docstring and a config, with no CLI or Studio edits. The contributing guide demonstrates this.
+- [x] The docs site builds strictly from docstrings plus the concept and workflow pages.

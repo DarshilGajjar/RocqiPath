@@ -1,6 +1,6 @@
 """Tissue-detection primitives shared by extraction, counting and stain workflows.
 
-Region detectors (:mod:`rocqipath.tissue.detection`, :mod:`rocqipath.tissue.semantic`)
+Region detectors (`rocqipath.tissue.detection`, `rocqipath.tissue.semantic`)
 need OpenCV or TIAToolbox and are imported from their modules directly.
 """
 

@@ -7,8 +7,8 @@ costs ~7 s and instantiates LightGlue/SuperPoint matchers as a side effect
 (printing "Loaded LightGlue model" twice), which every unrelated pipeline --
 patch extraction, ORB alignment, stain normalisation -- would otherwise pay.
 
-VALIS is loaded on first actual use via :func:`_load_valis` /
-:func:`_load_valis_features`, both memoised so the cost is paid once per
+VALIS is loaded on first actual use via `_load_valis` /
+`_load_valis_features`, both memoised so the cost is paid once per
 process.  ``HAS_VALIS`` and ``HAS_VALIS_FEATURES`` remain importable and are
 resolved through the module-level ``__getattr__`` using ``find_spec``, which
 locates a module without executing it.

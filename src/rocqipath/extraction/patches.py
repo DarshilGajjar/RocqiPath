@@ -24,10 +24,10 @@ def _discover_reference_files(he_dir: str, pattern: "re.Pattern") -> List[Tuple[
     Parameters
     ----------
     he_dir : str
-        Root directory to walk recursively via :func:`os.walk`.
+        Root directory to walk recursively via `os.walk`.
     pattern : re.Pattern
         Compiled regex (case-insensitive) defining a ``sample_id`` named
-        group, matched against each filename via :meth:`re.Pattern.match`
+        group, matched against each filename via `re.Pattern.match`
         (basename only, not the full path).
 
     Returns
@@ -52,7 +52,7 @@ def _find_aligned_target(
     """Locate the aligned target-channel OME-TIFF for a sample and biomarker.
 
     Parameterised counterpart of
-    :meth:`ReversiblePatchExtractor._find_aligned_ihc` — identical
+    `ReversiblePatchExtractor._find_aligned_ihc` — identical
     directory-search and disambiguation logic, just with
     ``reference_name`` substituted for the hardcoded ``"he"`` suffix
     used there.
@@ -65,7 +65,7 @@ def _find_aligned_target(
         Biomarker subfolder name under ``aligned_dir``.
     sample_id : str
         Sample identifier, as extracted by
-        :func:`_discover_reference_files`.
+        `_discover_reference_files`.
     reference_name : str
         Reference-channel label used to build the expected case
         directory name, ``<sample_id>_<reference_name>``.
@@ -100,9 +100,9 @@ def _patch_is_tissue(image_pil: "Image.Image", tissue_threshold: float) -> bool:
     """Decide whether a patch contains enough tissue to keep.
 
     Same brightness-based heuristic as
-    :meth:`ReversiblePatchExtractor._is_tissue`, factored out as a
+    `ReversiblePatchExtractor._is_tissue`, factored out as a
     module-level function so it can be used by both the sequential and
-    thread-pool code paths in :func:`run_patch_extraction` without
+    thread-pool code paths in `run_patch_extraction` without
     depending on a class instance.
 
     Parameters
@@ -162,7 +162,7 @@ def _extract_case_patches(
 
     Notes
     -----
-    Mirrors :meth:`ReversiblePatchExtractor.extract_from_case`'s sliding
+    Mirrors `ReversiblePatchExtractor.extract_from_case`'s sliding
     window / tissue-gate / save-and-record-metadata logic, generalized
     to use ``cfg.reference_name``/``cfg.moving_name`` as both the
     output subdirectory names and the metadata keys, instead of the
@@ -172,9 +172,9 @@ def _extract_case_patches(
     kept patch's coordinates, size, and output paths.
 
     This function is called both from a sequential loop and from worker
-    threads in a :class:`concurrent.futures.ThreadPoolExecutor` (see
-    :func:`run_patch_extraction`) — it opens and closes its own
-    :class:`_SlideReader` instances rather than sharing any, so it is
+    threads in a `concurrent.futures.ThreadPoolExecutor` (see
+    `run_patch_extraction`) — it opens and closes its own
+    `_SlideReader` instances rather than sharing any, so it is
     safe to run concurrently for different cases.
     """
     ref_reader = _SlideReader(reference_path)
@@ -329,7 +329,7 @@ def run_patch_extraction(
     file under ``aligned_dir``. Cases without
     a match are recorded as skipped rather than treated as fatal errors,
     since a partially processed/aligned dataset is common. Matched cases
-    are extracted via :func:`_extract_case_patches`, either sequentially
+    are extracted via `_extract_case_patches`, either sequentially
     or concurrently depending on ``cfg.max_workers``.
 
     Parameters
@@ -342,7 +342,7 @@ def run_patch_extraction(
         Root beneath which ``patch_extraction/<case>/`` folders are written.
     cfg : ExtractPatchesConfig
         Fully validated configuration (validation happens in
-        :meth:`ExtractPatchesConfig.__post_init__` at construction
+        `ExtractPatchesConfig.__post_init__` at construction
         time, not here).
 
     Returns
@@ -356,7 +356,7 @@ def run_patch_extraction(
     Notes
     -----
     **Parallelism.** When ``cfg.max_workers > 1``, cases are submitted to
-    a :class:`concurrent.futures.ThreadPoolExecutor`. Threads (not
+    a `concurrent.futures.ThreadPoolExecutor`. Threads (not
     processes) are used deliberately: each case's work is dominated by
     I/O (OpenSlide region reads, PNG writes) and NumPy/Pillow operations
     that release the GIL, so threads capture most of the available
@@ -370,7 +370,7 @@ def run_patch_extraction(
     **No global progress bar** is shown for the parallel path (individual
     cases still log their own completion via ``print()``) — this keeps
     the output readable when multiple cases interleave, at the cost of
-    the single unified :mod:`tqdm` bar the sequential path provides.
+    the single unified `tqdm` bar the sequential path provides.
     """
     pattern = re.compile(cfg.reference_pattern, re.IGNORECASE)
     reference_files = _discover_reference_files(reference_dir, pattern)

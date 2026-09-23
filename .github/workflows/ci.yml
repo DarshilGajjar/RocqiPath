@@ -45,6 +45,12 @@ jobs:
       - name: Lint source and tests
         run: ruff check src tests
 
+      - name: Build documentation
+        if: matrix.python-version == '3.11'
+        run: |
+          python -m pip install -e ".[docs]"
+          mkdocs build --strict
+
   studio-web:
     runs-on: ubuntu-latest
     defaults:
