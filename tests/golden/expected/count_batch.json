@@ -23,6 +23,54 @@
       "tissue_area_mm2": 0.043,
       "tissue_pixels": 667069,
       "total_positive": 25
+    },
+    "rocqipath.json": {
+      "runs": {
+        "count_cells": {
+          "config": {
+            "dpi": 150,
+            "label": "CD8",
+            "max_cell_area": null,
+            "max_plots": 10,
+            "min_cell_area": 20,
+            "paired_source_magnification": 20.0,
+            "patch_size": 256,
+            "save_plots": true,
+            "source_magnification": 20.0,
+            "target_magnification": 20.0,
+            "tissue_threshold": 0.1
+          },
+          "inputs": [
+            "<ROOT>/count_in"
+          ],
+          "items": [
+            {
+              "magnification": null,
+              "meta": {},
+              "path": "cell_counting/case_gt/case_gt_cell_count_results.json",
+              "role": "count",
+              "sample_id": "case_gt",
+              "source": null
+            }
+          ],
+          "summary": {
+            "results": [
+              {
+                "density_per_mm2": 586.43,
+                "label": "CD8",
+                "mpp_x": 0.253,
+                "mpp_y": 0.253,
+                "slide": "case_gt.tif",
+                "tissue_area_method": "pixel_mask",
+                "tissue_area_mm2": 0.043,
+                "tissue_pixels": 667069,
+                "total_positive": 25
+              }
+            ]
+          }
+        }
+      },
+      "schema": 1
     }
   },
   "returned": {

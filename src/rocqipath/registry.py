@@ -16,12 +16,15 @@ The decorator handles, for every workflow:
   rejecting unknown keywords with a suggestion;
 * passing extra keyword arguments the workflow declares (such as
   ``compare_to=``) through to the function;
-* checking every input exists (``FileNotFoundError`` names any that do not);
-* creating ``output_dir`` and returning a :class:`Result`.
+* resolving ``inputs`` (paths, earlier results, or output folders) into
+  :class:`Item` objects, checking that each exists;
+* creating ``output_dir``, recording the run in ``rocqipath.json`` there,
+  and returning a :class:`Result`.
 """
 
 from __future__ import annotations
 
+import dataclasses
 import difflib
 import functools
 import inspect
@@ -79,8 +82,9 @@ class Result:
         Every produced file, in a stable order.
     summary : dict
         Workflow-specific results; documented on each workflow.
-    config : BaseConfig
-        The exact settings used.
+    config : BaseConfig or None
+        The exact settings used (``None`` when read back from a manifest
+        of an unregistered workflow).
     manifest_path : pathlib.Path, optional
         The run manifest describing this result on disk, when written.
     """
@@ -89,7 +93,7 @@ class Result:
     output_dir: Path
     items: Tuple[Item, ...]
     summary: Dict[str, Any]
-    config: BaseConfig
+    config: Optional[BaseConfig]
     manifest_path: Optional[Path] = None
 
     def by_role(self, role: str) -> List[Item]:
@@ -166,15 +170,6 @@ WORKFLOWS: Dict[str, Workflow] = {}
 Implementation = Callable[..., Tuple[Sequence[Item], Dict[str, Any]]]
 
 
-def _as_paths(inputs: Any) -> List[Path]:
-    """Normalize the ``inputs`` argument to a list of paths."""
-    if isinstance(inputs, Result):
-        return [item.path for item in inputs.items]
-    if isinstance(inputs, (str, Path)):
-        return [Path(inputs)]
-    return [Path(value) for value in inputs]
-
-
 def _default_config(config_class: Type[BaseConfig], overrides: Dict[str, Any]) -> BaseConfig:
     """Build a config, taking required fields from ``overrides`` when needed."""
     required = [
@@ -200,7 +195,8 @@ def workflow(
     """Register a function as a workflow with the standard calling convention.
 
     The decorated function receives ``(inputs, output_dir, config, **options)``
-    where ``inputs`` is a list of paths, ``output_dir`` an existing
+    where ``inputs`` is a list of :class:`Item` (see
+    :func:`rocqipath.io.inputs.resolve_inputs`), ``output_dir`` an existing
     :class:`~pathlib.Path` and ``config`` a validated config instance. It
     returns ``(items, summary)``. Keyword-only parameters of the decorated
     function (other than ``config``) become the workflow's extra options.
@@ -251,20 +247,26 @@ def workflow(
                 chosen = chosen.replace(**overrides)
             out = Path(output_dir).expanduser().resolve()
             out.mkdir(parents=True, exist_ok=True)
-            paths = _as_paths(inputs)
-            missing = [str(path) for path in paths if not path.exists()]
-            if missing:
-                raise FileNotFoundError(f"{name}: input not found: {', '.join(missing)}")
-            items, summary = implementation(paths, out, config=chosen, **passed)
-            return Result(
+            from rocqipath.io.inputs import resolve_inputs
+            from rocqipath.io.manifest import write_run_manifest
+
+            try:
+                resolved = resolve_inputs(inputs, input_spec.roles)
+            except FileNotFoundError as exc:
+                raise FileNotFoundError(f"{name}: {exc}") from None
+            items, summary = implementation(resolved, out, config=chosen, **passed)
+            result = Result(
                 workflow=name,
                 output_dir=out,
                 items=tuple(items),
                 summary=dict(summary),
                 config=chosen,
             )
+            manifest = write_run_manifest(result, [item.path for item in resolved])
+            return dataclasses.replace(result, manifest_path=manifest)
 
         config_class = config
+        input_spec = inputs
         public.__signature__ = inspect.Signature(  # type: ignore[attr-defined]
             [
                 inspect.Parameter("inputs", inspect.Parameter.POSITIONAL_OR_KEYWORD),

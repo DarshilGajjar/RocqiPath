@@ -33,11 +33,25 @@ Outputs = Tuple[List[Item], Dict[str, Any]]
 _IMAGE_SUFFIXES = {".png", ".jpg", ".jpeg", ".tif", ".tiff"}
 
 
-def _one_folder(inputs: Sequence[Path], workflow_name: str) -> Path:
+def _paths(inputs: Sequence[Item]) -> List[Path]:
+    """Return the file or folder behind each input item."""
+    return [Path(item.path) for item in inputs]
+
+
+def _one_folder(inputs: Sequence[Item], workflow_name: str) -> Path:
     """Return the single input folder a folder-based workflow expects."""
-    if len(inputs) != 1 or not inputs[0].is_dir():
-        raise ValueError(f"{workflow_name} expects one input folder; got {[str(p) for p in inputs]}")
-    return inputs[0]
+    paths = _paths(inputs)
+    if len(paths) != 1 or not paths[0].is_dir():
+        raise ValueError(f"{workflow_name} expects one input folder; got {[str(p) for p in paths]}")
+    return paths[0]
+
+
+def _matching_stains(inputs: Sequence[Item], stains: Sequence[str]) -> List[Item]:
+    """Keep patch items whose recorded stain is requested (all when ``"all"``)."""
+    wanted = {stain.lower() for stain in stains}
+    if "all" in wanted:
+        return list(inputs)
+    return [item for item in inputs if "stain" not in item.meta or str(item.meta["stain"]).lower() in wanted]
 
 
 def _files(folder: Path, suffixes: Iterable[str] = _IMAGE_SUFFIXES) -> List[Path]:
@@ -55,9 +69,9 @@ def _files(folder: Path, suffixes: Iterable[str] = _IMAGE_SUFFIXES) -> List[Path
     "extract_tissue",
     config=ExtractTissueConfig,
     extra="extraction",
-    inputs=InputSpec(kind="whole-slide images or folders of them", roles=("slide", "aligned")),
+    inputs=InputSpec(kind="whole-slide images or folders of them", roles=("aligned",)),
 )
-def extract_tissue(inputs: List[Path], output_dir: Path, *, config: ExtractTissueConfig) -> Outputs:
+def extract_tissue(inputs: List[Item], output_dir: Path, *, config: ExtractTissueConfig) -> Outputs:
     """Cut each separate piece of tissue out of whole-slide images.
 
     Tissue is detected on a low-magnification thumbnail (Otsu thresholding
@@ -67,9 +81,11 @@ def extract_tissue(inputs: List[Path], output_dir: Path, *, config: ExtractTissu
 
     Parameters
     ----------
-    inputs : path, list of paths or Result
+    inputs : path, list of paths, or Result
         Slide files and/or folders of slides (``.svs``, ``.ndpi``,
-        ``.tif``, ...). Folders are not searched recursively.
+        ``.tif``, ...), or an earlier result (e.g. from :func:`align`)
+        whose ``"aligned"`` slides are used. Folders are not searched
+        recursively.
     output_dir : path
         Results go to ``<output_dir>/tissue_extraction/<slide>/``.
     config : ExtractTissueConfig, optional
@@ -92,8 +108,9 @@ def extract_tissue(inputs: List[Path], output_dir: Path, *, config: ExtractTissu
     """
     from rocqipath.extraction.regions import run_tissue_pipeline
 
-    regions = run_tissue_pipeline([str(p) for p in inputs], str(output_dir), config)
-    sources = {p.stem: p for p in _expand_slides(inputs)}
+    paths = _paths(inputs)
+    regions = run_tissue_pipeline([str(p) for p in paths], str(output_dir), config)
+    sources = {p.stem: p for p in _expand_slides(paths)}
     items = []
     for slide, records in regions.items():
         for record in records:
@@ -129,7 +146,7 @@ def _expand_slides(inputs: Sequence[Path]) -> List[Path]:
     extra="extraction",
     inputs=InputSpec(kind="a folder of H&E and IHC TMA slides"),
 )
-def extract_tma(inputs: List[Path], output_dir: Path, *, config: ExtractTMAConfig) -> Outputs:
+def extract_tma(inputs: List[Item], output_dir: Path, *, config: ExtractTMAConfig) -> Outputs:
     """Cut tissue-microarray cores out of H&E slides and their matching IHC slides.
 
     Slides are grouped into blocks by the sample ID in their filenames and
@@ -160,7 +177,7 @@ def extract_tma(inputs: List[Path], output_dir: Path, *, config: ExtractTMAConfi
     """
     from rocqipath.extraction.tma import run_tma_extraction_pipeline
 
-    for folder in inputs:
+    for folder in _paths(inputs):
         run_tma_extraction_pipeline(str(folder), str(output_dir), config)
     items: List[Item] = []
     slides: Dict[str, int] = {}
@@ -194,10 +211,13 @@ def extract_tma(inputs: List[Path], output_dir: Path, *, config: ExtractTMAConfi
     "extract_patches",
     config=ExtractPatchesConfig,
     extra="extraction",
-    inputs=InputSpec(kind="a folder of aligned slides from rp.align", roles=("aligned",)),
+    inputs=InputSpec(
+        kind="the output of rp.align, or a folder of aligned slides (with reference=)",
+        roles=("aligned", "reference"),
+    ),
 )
 def extract_patches(
-    inputs: List[Path],
+    inputs: List[Item],
     output_dir: Path,
     *,
     config: ExtractPatchesConfig,
@@ -213,14 +233,17 @@ def extract_patches(
 
     Parameters
     ----------
-    inputs : path or Result
-        Folder of aligned slides laid out as
-        ``<biomarker>/<sample>_<reference_name>/*.ome.tiff``.
+    inputs : Result, output folder, or path
+        The result (or output folder) of :func:`align`: each aligned slide
+        is paired with the reference slide it was aligned to. Alternatively
+        a folder of aligned slides laid out as
+        ``<biomarker>/<sample>_<reference_name>/*.ome.tiff``, together
+        with ``reference=``.
     output_dir : path
         Pairs go to ``<output_dir>/patch_extraction/<sample>_<biomarker>/``.
-    reference : path
-        Folder searched recursively for reference slides whose names
-        match ``reference_pattern``.
+    reference : path, optional
+        Only for a plain aligned folder: folder searched recursively for
+        reference slides whose names match ``reference_pattern``.
     config : ExtractPatchesConfig, optional
         Complete settings, or give fields as keywords (``patch_size=256``).
 
@@ -234,14 +257,35 @@ def extract_patches(
     Examples
     --------
     >>> import rocqipath as rp
-    >>> pairs = rp.extract_patches("aligned/", "results/", reference="he_slides/", patch_size=512)  # doctest: +SKIP
+    >>> aligned = rp.align("pairs/", "results/")  # doctest: +SKIP
+    >>> pairs = rp.extract_patches(aligned, "results/", patch_size=512)  # doctest: +SKIP
     """
-    from rocqipath.extraction.patches import run_patch_extraction
+    from rocqipath.extraction.patches import extract_case_patches, run_patch_extraction
 
-    if reference is None:
-        raise TypeError("extract_patches() needs reference= (the folder of reference slides)")
-    aligned = _one_folder(inputs, "extract_patches")
-    summary = run_patch_extraction(str(reference), str(aligned), str(output_dir), config)
+    references = {item.meta.get("case_id"): item for item in inputs if item.role == "reference"}
+    aligned_items = [item for item in inputs if item.role == "aligned"]
+    if aligned_items:
+        wanted = {name.lower() for name in config.biomarker_folders}
+        cases = [
+            (
+                f"{item.sample_id}_{item.meta.get('pair', 'aligned')}",
+                str(references[item.meta.get("case_id")].path),
+                str(item.path),
+                item.meta.get("pair", "aligned"),
+            )
+            for item in aligned_items
+            if item.meta.get("case_id") in references
+            and (not wanted or str(item.meta.get("pair", "")).lower() in wanted)
+        ]
+        summary = extract_case_patches(cases, str(output_dir), config)
+    else:
+        if reference is None:
+            raise TypeError(
+                "extract_patches() needs the output of rp.align, or reference= "
+                "(the folder of reference slides) with a folder of aligned slides"
+            )
+        aligned = _one_folder(inputs, "extract_patches")
+        summary = run_patch_extraction(str(reference), str(aligned), str(output_dir), config)
     items: List[Item] = []
     for case in summary["cases"]:
         if case.get("status") != "processed":
@@ -280,7 +324,7 @@ def extract_patches(
     extra="orb",
     inputs=InputSpec(kind="a folder of pair folders, or two slides: reference then moving"),
 )
-def align(inputs: List[Path], output_dir: Path, *, config: AlignConfig) -> Outputs:
+def align(inputs: List[Item], output_dir: Path, *, config: AlignConfig) -> Outputs:
     """Register moving slides (e.g. IHC) onto reference slides (e.g. H&E).
 
     Pairs are discovered in pair folders such as ``cd8/he/`` and ``cd8/cd8/``
@@ -319,8 +363,9 @@ def align(inputs: List[Path], output_dir: Path, *, config: AlignConfig) -> Outpu
     """
     from rocqipath.alignment.pipeline import align_pair, run_alignment
 
-    if len(inputs) == 2 and all(path.is_file() for path in inputs):
-        results = [align_pair(inputs[0], inputs[1], output_dir, config)]
+    paths = _paths(inputs)
+    if len(paths) == 2 and all(path.is_file() for path in paths):
+        results = [align_pair(paths[0], paths[1], output_dir, config)]
     else:
         results = run_alignment(str(_one_folder(inputs, "align")), str(output_dir), config)
     items: List[Item] = []
@@ -374,9 +419,9 @@ def align(inputs: List[Path], output_dir: Path, *, config: AlignConfig) -> Outpu
     "train_stain_normalizer",
     config=StainConfig,
     extra="stain",
-    inputs=InputSpec(kind="a folder of reference patches", roles=("patch", "normalized")),
+    inputs=InputSpec(kind="reference patches or a folder of them", roles=("patch", "region", "core")),
 )
-def train_stain_normalizer(inputs: List[Path], output_dir: Path, *, config: StainConfig) -> Outputs:
+def train_stain_normalizer(inputs: List[Item], output_dir: Path, *, config: StainConfig) -> Outputs:
     """Fit a stain normalizer to reference patches and save its weights.
 
     Patches under the input folder whose path contains one of ``stains``
@@ -386,8 +431,10 @@ def train_stain_normalizer(inputs: List[Path], output_dir: Path, *, config: Stai
 
     Parameters
     ----------
-    inputs : path or list of paths
-        Reference image patches, or folders searched recursively for them.
+    inputs : path, list of paths, or Result
+        Reference image patches, folders searched recursively for them, or
+        an earlier result whose patches (of the requested ``stains``) are
+        used.
     output_dir : path
         Weights go to ``<output_dir>/stain_normalization/<method>_weights.npz``.
     config : StainConfig, optional
@@ -407,7 +454,8 @@ def train_stain_normalizer(inputs: List[Path], output_dir: Path, *, config: Stai
     """
     from rocqipath.stain.batch import run_stain_normalization_train
 
-    weights = Path(run_stain_normalization_train(inputs, str(output_dir), config))
+    images = _paths(_matching_stains(inputs, config.stains))
+    weights = Path(run_stain_normalization_train(images, str(output_dir), config))
     item = Item(sample_id=config.method, role="weights", path=weights, meta={"method": config.method})
     return [item], {"weights": str(weights), "method": config.method}
 
@@ -416,10 +464,10 @@ def train_stain_normalizer(inputs: List[Path], output_dir: Path, *, config: Stai
     "normalize_stain",
     config=StainConfig,
     extra="stain",
-    inputs=InputSpec(kind="a folder of image patches", roles=("patch", "region", "core")),
+    inputs=InputSpec(kind="image patches or a folder of them", roles=("patch", "region", "core")),
 )
 def normalize_stain(
-    inputs: List[Path],
+    inputs: List[Item],
     output_dir: Path,
     *,
     config: StainConfig,
@@ -429,9 +477,10 @@ def normalize_stain(
 
     Parameters
     ----------
-    inputs : path or list of paths
-        Images to normalize, or folders searched recursively for images
-        whose path contains one of ``stains``.
+    inputs : path, list of paths, or Result
+        Images to normalize, folders searched recursively for images whose
+        path contains one of ``stains``, or an earlier result whose patches
+        of those stains are used.
     output_dir : path
         Normalized images go to ``<output_dir>/stain_normalization/<name>/``,
         where ``<name>`` joins the patch's relative path with ``__``.
@@ -467,7 +516,8 @@ def normalize_stain(
         prefix = weights.name.split("_weights", 1)[0].lower()
         if weights.name.lower().endswith("_weights.npz") and prefix in NORMALIZER_TYPES:
             config = config.replace(method=prefix)
-    summary = run_stain_normalization_apply(inputs, str(output_dir), config, weights)
+    images = _paths(_matching_stains(inputs, config.stains))
+    summary = run_stain_normalization_apply(images, str(output_dir), config, weights)
     root = output_dir / "stain_normalization"
     items = [
         Item(sample_id=path.parent.name, role="normalized", path=path)
@@ -484,10 +534,10 @@ def normalize_stain(
     "count_cells",
     config=CountCellsConfig,
     extra="cellcount",
-    inputs=InputSpec(kind="IHC slides or a folder of them", roles=("aligned", "slide")),
+    inputs=InputSpec(kind="IHC slides or a folder of them", roles=("aligned", "region", "core")),
 )
 def count_cells(
-    inputs: List[Path],
+    inputs: List[Item],
     output_dir: Path,
     *,
     config: CountCellsConfig,
@@ -503,8 +553,9 @@ def count_cells(
 
     Parameters
     ----------
-    inputs : path, list of paths or Result
-        One slide, several slides, or a folder of slides.
+    inputs : path, list of paths, or Result
+        One slide, several slides, a folder of slides, or an earlier
+        result whose aligned slides, regions or cores are counted.
     output_dir : path
         Results go to ``<output_dir>/cell_counting/``.
     compare_to : path, optional
@@ -529,11 +580,12 @@ def count_cells(
     from rocqipath.counting.counter import PositiveCellCounter
 
     counter = PositiveCellCounter(config, output_dir=str(output_dir))
+    paths = _paths(inputs)
     if compare_to is not None:
-        if len(inputs) != 1 or inputs[0].is_dir():
+        if len(paths) != 1 or paths[0].is_dir():
             raise ValueError("compare_to= compares one slide with one slide; pass a single input file")
         result = counter.count_slide_pair(
-            str(inputs[0]),
+            str(paths[0]),
             str(compare_to),
             label=config.label,
             save_plots=config.save_plots,
@@ -541,10 +593,10 @@ def count_cells(
             dpi=config.dpi,
         )
         summary: Dict[str, Any] = {"result": result}
-    elif len(inputs) == 1 and inputs[0].is_dir():
-        summary = {"results": counter.count_batch(str(inputs[0]), label=config.label)}
+    elif len(paths) == 1 and paths[0].is_dir():
+        summary = {"results": counter.count_batch(str(paths[0]), label=config.label)}
     else:
-        summary = {"results": [counter.count_slide(str(p), label=config.label) for p in inputs]}
+        summary = {"results": [counter.count_slide(str(p), label=config.label) for p in paths]}
     root = output_dir / "cell_counting"
     items: List[Item] = []
     for path in sorted(p for p in root.rglob("*") if p.is_file()):
@@ -564,7 +616,7 @@ def count_cells(
     extra="viz",
     inputs=InputSpec(kind="three slides: H&E, ground-truth IHC and predicted IHC"),
 )
-def compare(inputs: List[Path], output_dir: Path, *, config: CompareConfig) -> Outputs:
+def compare(inputs: List[Item], output_dir: Path, *, config: CompareConfig) -> Outputs:
     """Make publication figures comparing H&E, ground-truth IHC and predicted IHC.
 
     Saves one full-view figure with the three slides side by side, plus
@@ -594,13 +646,14 @@ def compare(inputs: List[Path], output_dir: Path, *, config: CompareConfig) -> O
     """
     from rocqipath.viz.comparison import visualize_side_by_side
 
-    if len(inputs) == 1 and inputs[0].suffix.lower() == ".json":
+    given = _paths(inputs)
+    if len(given) == 1 and given[0].suffix.lower() == ".json":
         from rocqipath.io.manifest import load_manifest
 
-        stains = load_manifest(str(inputs[0]))["stains"]
+        stains = load_manifest(str(given[0]))["stains"]
         paths = [stains["gt_he"], stains["gt_ihc"], stains["prediction_ihc"]]
-    elif len(inputs) == 3:
-        paths = [str(p) for p in inputs]
+    elif len(given) == 3:
+        paths = [str(p) for p in given]
     else:
         raise ValueError("compare expects [he, ground_truth, prediction] or one manifest JSON")
     visualize_side_by_side(
@@ -632,7 +685,7 @@ def compare(inputs: List[Path], output_dir: Path, *, config: CompareConfig) -> O
     extra="viz",
     inputs=InputSpec(kind="a case folder with one subfolder per marker, or a folder of cases"),
 )
-def overlay_markers(inputs: List[Path], output_dir: Path, *, config: OverlayConfig) -> Outputs:
+def overlay_markers(inputs: List[Item], output_dir: Path, *, config: OverlayConfig) -> Outputs:
     """Layer color masks of several IHC markers over a base marker.
 
     Each case folder holds one subfolder of patches per marker with the
@@ -668,9 +721,10 @@ def overlay_markers(inputs: List[Path], output_dir: Path, *, config: OverlayConf
     from rocqipath.viz.overlays import process_ihc_overlay
 
     summary: Dict[str, Any] = {}
-    for folder in inputs:
+    folders = _paths(inputs)
+    for folder in folders:
         result = process_ihc_overlay(str(folder), config, str(output_dir))
-        summary.update(result if len(inputs) == 1 else {folder.name: result})
+        summary.update(result if len(folders) == 1 else {folder.name: result})
     root = output_dir / "visualization"
     items = [Item(sample_id=path.parent.name, role="figure", path=path) for path in _files(root)]
     return items, summary
