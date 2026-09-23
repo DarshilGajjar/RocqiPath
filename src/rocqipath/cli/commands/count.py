@@ -29,7 +29,7 @@ def run(args: argparse.Namespace, parser: argparse.ArgumentParser) -> int:
     if args.pred and os.path.isdir(args.input):
         parser.error("--pred cannot be combined with a directory input")
 
-    from rocqipath.analysis import CellCountingConfig, PositiveCellCounter
+    from rocqipath.counting import CellCountingConfig, PositiveCellCounter
 
     config = CellCountingConfig(
         patch_size=args.patch_size,

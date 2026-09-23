@@ -9,7 +9,7 @@ biomarker(s) are being imaged.
 
 Use this module when a slide contains multiple circular tissue regions.
 For a slide containing a single contiguous tissue section, use
-rocqipath.extraction.tissue instead.
+rocqipath.extraction.regions instead.
 
 TMA-specific parameters in TMAExtractionConfig
 --------------------------------------------------
@@ -59,22 +59,22 @@ from typing import Any, Dict, List, Optional, Tuple
 import cv2
 import numpy as np
 
-from rocqipath.config import TMAExtractionConfig
-from rocqipath.extraction.detection import _detect_regions, _load_thumbnail
+from rocqipath.extraction.config import TMAExtractionConfig
+from rocqipath.tissue.detection import _detect_regions, _load_thumbnail
 from rocqipath.extraction.engine import (
     SUPPORTED_EXTENSIONS,
     _resolve_vips_magnification,
 )
-from rocqipath.core.logging import configure_logging, get_logger, logger
-from rocqipath.core.output import OutputLayout
-from rocqipath.utils.imageio import save_preview as _save_preview
-from rocqipath.utils.imageio import save_tif as _save_tif
-from rocqipath.utils.manifest import region_outputs_exist as _region_outputs_exist
-from rocqipath.utils.manifest import write_region_manifest as _write_region_manifest
-from rocqipath.utils.manifest import write_slide_manifest as _write_slide_manifest
-from rocqipath.utils.naming import extract_sample_id as _extract_sample_id
-from rocqipath.utils.reporting import print_config_panel
-from rocqipath.utils.vips import resample_region as _resample_region
+from rocqipath._internal.logging import configure_logging, get_logger, logger
+from rocqipath.io.output import OutputLayout
+from rocqipath.io.images import save_preview as _save_preview
+from rocqipath.io.images import save_tif as _save_tif
+from rocqipath.io.manifest import region_outputs_exist as _region_outputs_exist
+from rocqipath.io.manifest import write_region_manifest as _write_region_manifest
+from rocqipath.io.manifest import write_slide_manifest as _write_slide_manifest
+from rocqipath.io.naming import extract_sample_id as _extract_sample_id
+from rocqipath._internal.config_panel import print_config_panel
+from rocqipath.io.vips import resample_region as _resample_region
 
 try:
     import pyvips
@@ -200,7 +200,7 @@ def discover_pairs(
     dict : { sample_id: { stain_label: {"path": Path, "label": str} } }
     """
     if use_suffix_pairing:
-        from rocqipath.utils import find_hne_ihc_pairs_by_suffix, list_wsi_files
+        from rocqipath.io.discovery import find_hne_ihc_pairs_by_suffix, list_wsi_files
 
         files = list_wsi_files(input_dir)
         raw = find_hne_ihc_pairs_by_suffix(files, biomarker)
@@ -254,7 +254,7 @@ def get_reference_boxes(
         source_magnification=cfg.source_magnification,
     )
     if cfg.detector == "semantic":
-        from rocqipath.extraction.semantic import semantic_regions
+        from rocqipath.tissue.semantic import semantic_regions
 
         boxes, rejected = semantic_regions(he_path, cfg, strict_circles=cfg.only_circles)
         return boxes, thumbnail, rejected

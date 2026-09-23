@@ -2,14 +2,15 @@
 
 from __future__ import annotations
 
-import rocqipath.analysis as analysis
+import rocqipath.counting as analysis
 import rocqipath.extraction as extraction
-import rocqipath.registration as registration
+import rocqipath.alignment as registration
 import rocqipath.stain as stain
-import rocqipath.visualization as visualization
-from rocqipath.analysis import CellCountingConfig, PositiveCellCounter
-from rocqipath.core import DEFAULT_TARGET_MAGNIFICATION, MagnificationPlan, OutputLayout
-from rocqipath.core.exceptions import (
+import rocqipath.viz as visualization
+from rocqipath.counting import CellCountingConfig, PositiveCellCounter
+from rocqipath.io.magnification import DEFAULT_TARGET_MAGNIFICATION, MagnificationPlan
+from rocqipath.io.output import OutputLayout
+from rocqipath.errors import (
     ConfigurationError,
     DependencyError,
     ExtractionError,
@@ -29,7 +30,7 @@ from rocqipath.extraction import (
     run_tma_extraction_pipeline,
     run_tissue_pipeline,
 )
-from rocqipath.registration import (
+from rocqipath.alignment import (
     AlignmentConfig,
     AlignedCaseResult,
     OrbConfig,
@@ -46,7 +47,7 @@ from rocqipath.stain import (
     run_stain_normalization_apply,
     run_stain_normalization_train,
 )
-from rocqipath.visualization import (
+from rocqipath.viz import (
     IHCOverlayConfig,
     MarkerProfile,
     OverlayCombo,

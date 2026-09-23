@@ -110,7 +110,7 @@ def reversible_patches(root: Path) -> Tuple[Path, dict]:
 
 
 def align_orb(root: Path) -> Tuple[Path, dict]:
-    from rocqipath.registration import AlignmentConfig, run_alignment
+    from rocqipath.alignment import AlignmentConfig, run_alignment
 
     out = root / "out"
     results = run_alignment(
@@ -179,7 +179,7 @@ def stain_macenko(root: Path) -> Tuple[Path, dict]:
 
 
 def _counter(root: Path):
-    from rocqipath.analysis import CellCountingConfig, PositiveCellCounter
+    from rocqipath.counting import CellCountingConfig, PositiveCellCounter
 
     return PositiveCellCounter(
         CellCountingConfig(
@@ -212,7 +212,7 @@ def count_pair(root: Path) -> Tuple[Path, dict]:
 
 
 def overlay_markers(root: Path) -> Tuple[Path, dict]:
-    from rocqipath.visualization import (
+    from rocqipath.viz import (
         IHCOverlayConfig,
         MarkerProfile,
         OverlayCombo,
@@ -231,7 +231,7 @@ def overlay_markers(root: Path) -> Tuple[Path, dict]:
 
 
 def compare(root: Path) -> Tuple[Path, dict]:
-    from rocqipath.visualization.comparison_workflow import visualize_side_by_side
+    from rocqipath.viz.comparison import visualize_side_by_side
 
     slides = D.make_compare_slides(root)
     out = root / "out"
@@ -257,7 +257,7 @@ def compare(root: Path) -> Tuple[Path, dict]:
 def grid_map(root: Path) -> Tuple[Path, dict]:
     from PIL import Image
 
-    from rocqipath.visualization import plot_selector_map
+    from rocqipath.viz import plot_selector_map
 
     out = root / "out"
     out.mkdir(parents=True)

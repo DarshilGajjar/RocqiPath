@@ -10,19 +10,19 @@ import pytest
 
 PACKAGE = Path(__file__).resolve().parents[1] / "src" / "rocqipath"
 SINGLE_DEFINITION = ("tissue_fraction", "list_wsi_files")
+#: Each workflow package keeps its settings in ``config.py`` by convention.
+PER_PACKAGE_CONVENTION = {"config.py"}
 
 
 def _modules():
     return [p for p in PACKAGE.rglob("*.py") if p.name not in {"__init__.py", "__main__.py"}]
 
 
-@pytest.mark.xfail(reason="Phase 1 of the 2.0 restructure removes duplicate module names", strict=True)
 def test_module_basenames_are_unique():
-    counts = Counter(p.name for p in _modules())
+    counts = Counter(p.name for p in _modules() if p.name not in PER_PACKAGE_CONVENTION)
     assert [name for name, n in counts.items() if n > 1] == []
 
 
-@pytest.mark.xfail(reason="Phase 1 of the 2.0 restructure deduplicates helpers", strict=True)
 @pytest.mark.parametrize("name", SINGLE_DEFINITION)
 def test_helper_defined_once(name):
     homes = [

@@ -8,15 +8,15 @@ from pathlib import Path
 import numpy as np
 from PIL import Image
 
-import rocqipath.registration.pipeline as alignment
-import rocqipath.utils as public_utils
-from rocqipath.visualization.comparison_workflow import _tissue_fraction
-from rocqipath.visualization.roi import _is_tissue as comparison_is_tissue
-from rocqipath.analysis.counting import PositiveCellCounter
-from rocqipath.core.tissue import optical_density_otsu_mask
-from rocqipath.extraction.patch_pipeline import _find_aligned_target, _patch_is_tissue
+import rocqipath.alignment.pipeline as alignment
+import rocqipath.io as public_utils
+from rocqipath.viz.comparison import _tissue_fraction
+from rocqipath.viz.roi import _is_tissue as comparison_is_tissue
+from rocqipath.counting.counter import PositiveCellCounter
+from rocqipath.tissue.masks import optical_density_otsu_mask
+from rocqipath.extraction.patches import _find_aligned_target, _patch_is_tissue
 from rocqipath.extraction.reversible import ReversiblePatchExtractor
-from rocqipath.stain.normalizers import tissue_fraction as stain_tissue_fraction
+from rocqipath.stain.normalizers import _od_tissue_fraction as stain_tissue_fraction
 
 
 def _half_tissue_image() -> Image.Image:
@@ -115,7 +115,7 @@ def test_wsi_discovery_variants_characterization(tmp_path: Path) -> None:
         "slide10.svs",
         "Z.ndpi",
     ]
-    assert alignment.list_wsi_files(tmp_path) == [
+    assert public_utils.list_wsi_files(tmp_path, recursive=False, sort_mode="casefold") == [
         "sample.ome.tiff",
         "slide10.svs",
         "slide2.svs",

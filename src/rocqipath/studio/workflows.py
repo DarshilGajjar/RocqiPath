@@ -44,16 +44,16 @@ def execute(workflow, inputs, p, output):
     for path in inputs:
         print(f"Input: {path}", flush=True)
     if workflow == "count":
-        from rocqipath.analysis import PositiveCellCounter
-        from rocqipath.config import CellCountingConfig
+        from rocqipath.counting import PositiveCellCounter
+        from rocqipath.counting.config import CellCountingConfig
         counter = PositiveCellCounter(CellCountingConfig(
             output_dir=str(output), source_magnification=source, target_magnification=target,
             patch_size=p.get("patch_size", 512), min_cell_area=p.get("min_cell_area", 50),
             tissue_threshold=p.get("tissue_threshold", 0.1)))
         result = counter.count_slide(inputs[0], label="DAB-positive")
     elif workflow == "extract":
-        from rocqipath.config import TissueExtractionConfig
-        from rocqipath.extraction.tissue import extract_tissue_regions
+        from rocqipath.extraction.config import TissueExtractionConfig
+        from rocqipath.extraction.regions import extract_tissue_regions
         result = extract_tissue_regions(inputs[0], str(output), TissueExtractionConfig(
             source_magnification=source, target_magnification=target,
             detection_magnification=p.get("detection_magnification", 1.25),
@@ -61,8 +61,8 @@ def execute(workflow, inputs, p, output):
             detector=p.get("detector", "otsu")))
         print(f"Detected {len(result)} tissue regions.", flush=True)
     elif workflow == "align":
-        from rocqipath.registration import WSIRegistrar
-        from rocqipath.registration.pipeline import _write_aligned_wsi_manifest
+        from rocqipath.alignment import WSIRegistrar
+        from rocqipath.alignment.pipeline import _write_aligned_wsi_manifest
         registrar = WSIRegistrar(inputs[0], inputs[1], {
             "base_output_dir": str(output), "patch_size": 512, "grid_density": 10,
             "target_magnification": target, "reference_source_magnification": source,
@@ -84,7 +84,7 @@ def execute(workflow, inputs, p, output):
     elif workflow == "stain":
         from PIL import Image
         from rocqipath.stain import get_normalizer
-        from rocqipath.utils.imageio import imread_rgb, imwrite_rgb
+        from rocqipath.io.images import imread_rgb, imwrite_rgb
         for path in inputs:
             with Image.open(path) as image:
                 if image.width * image.height > 25_000_000:
@@ -98,7 +98,7 @@ def execute(workflow, inputs, p, output):
         imwrite_rgb(output / "normalized.png", normalizer.transform(image))
         result = {"image": "normalized.png", "weights": "weights.npz"}
     elif workflow == "compare":
-        from rocqipath.visualization.comparison_workflow import visualize_side_by_side
+        from rocqipath.viz.comparison import visualize_side_by_side
         visualize_side_by_side(inputs[0], inputs[1], inputs[2], str(output / "comparison.png"),
             dpi=p.get("dpi", 150), title_he="Reference", title_gt="Comparison A", title_pred="Comparison B",
             regions=["center"], zoom_sizes=[("detail", 512)], n_random_rois=0, add_scale_bars=False)

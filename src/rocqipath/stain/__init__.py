@@ -1,16 +1,16 @@
 """Stain-normalization algorithms and batch workflows."""
 
+from .config import StainNormalizationConfig
 from .normalizers import (
     MacenkoNormalizer,
     ReinhardNormalizer,
     VahadaneNormalizer,
     get_normalizer,
 )
-from .pipeline import (
+from .batch import (
     run_stain_normalization_apply,
     run_stain_normalization_train,
 )
-from rocqipath.config import StainNormalizationConfig
 
 __all__ = [
     "MacenkoNormalizer",

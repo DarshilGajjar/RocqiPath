@@ -1,11 +1,10 @@
 """Tissue, core/TMA, and paired-patch extraction pipelines."""
 
-from .patches import PatchExtractionConfig, ReversiblePatchExtractor, run_patch_extraction
-from .tissue import TissueExtractionConfig, extract_tissue_regions, run_tissue_pipeline
-from .tma import (
-    TMAExtractionConfig,
-    run_tma_extraction_pipeline,
-)
+from .config import PatchExtractionConfig, TMAExtractionConfig, TissueExtractionConfig
+from .patches import run_patch_extraction
+from .regions import extract_tissue_regions, run_tissue_pipeline
+from .reversible import ReversiblePatchExtractor
+from .tma import run_tma_extraction_pipeline
 
 __all__ = [
     "PatchExtractionConfig",
