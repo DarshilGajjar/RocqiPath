@@ -48,8 +48,8 @@ def extract_patches_single(
     input_dir : str
         Directory containing input WSIs.
     output_dir : str
-        Root directory used by :class:`WSIRegistrar` and
-        :class:`~rocqipath.io.output.OutputLayout`.
+        Root directory used by `WSIRegistrar` and
+        `rocqipath.io.output.OutputLayout`.
     wsi_files : list of str, optional
         Basenames to process. Defaults to every discovered WSI.
     patch_size : int, optional

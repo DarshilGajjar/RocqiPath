@@ -54,7 +54,7 @@ def _resolve_marker_dir(case_dir: str, marker_key: str) -> Optional[str]:
 def _looks_like_case_dir(path: str, marker_keys: List[str]) -> bool:
     """Decide whether ``path`` directly contains at least one recognised marker subfolder.
 
-    Used by :func:`process_ihc_overlay` to distinguish a single case
+    Used by `process_ihc_overlay` to distinguish a single case
     directory from a parent directory containing multiple cases.
 
     Parameters
@@ -116,7 +116,7 @@ def _process_single_case(
     the extension must match too); only filenames present in *every*
     required marker's subfolder are processed. When
     ``cfg.patches_per_case > 0``, the matched filename list is randomly
-    subsampled (via :func:`random.sample`) before processing.
+    subsampled (via `random.sample`) before processing.
     """
     needed_markers = sorted(
         {key for combo in cfg.combinations for key in [combo.base, *combo.overlays]}
@@ -194,7 +194,7 @@ def process_ihc_overlay(
 
     Auto-detects which situation ``data_in`` represents: if it directly
     contains at least one recognised marker subfolder (see
-    :func:`_looks_like_case_dir`), it's treated as a single case;
+    `_looks_like_case_dir`), it's treated as a single case;
     otherwise, every immediate subdirectory of ``data_in`` that itself
     looks like a case directory is processed as a separate case.
 
@@ -234,9 +234,9 @@ def process_ihc_overlay(
     -----
     **Parallelism.** In batch mode, when ``cfg.max_workers > 1`` and more
     than one case directory was found, cases are processed concurrently
-    via a :class:`concurrent.futures.ThreadPoolExecutor` (same threads-
+    via a `concurrent.futures.ThreadPoolExecutor` (same threads-
     over-processes rationale as
-    :func:`rocqipath.extraction.patches.run_patch_extraction`:
+    `rocqipath.extraction.patches.run_patch_extraction`:
     the work is I/O- and NumPy-bound, which releases the GIL, so threads
     capture most of the available concurrency without process-pool
     pickling overhead). With ``max_workers=1`` (the default) or only one

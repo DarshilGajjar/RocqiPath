@@ -14,7 +14,7 @@ def _marker_mask(img_rgb: np.ndarray, profile: MarkerProfile) -> np.ndarray:
     """Compute a marker's binary detection mask for one RGB patch.
 
     Dispatches on ``profile.method`` (currently only ``"hsv"`` is
-    implemented, enforced by :meth:`MarkerProfile.__post_init__`).
+    implemented, enforced by `MarkerProfile.__post_init__`).
 
     Parameters
     ----------
@@ -32,7 +32,7 @@ def _marker_mask(img_rgb: np.ndarray, profile: MarkerProfile) -> np.ndarray:
     Notes
     -----
     Same detection family as
-    :meth:`rocqipath.counting.counter.PositiveCellCounter._brown_mask`
+    `rocqipath.counting.counter.PositiveCellCounter._brown_mask`
     combined with its OTSU-refinement step, generalized here so the hue
     range and saturation floor are per-marker configurable rather than
     fixed to a single "brown" gate:
@@ -41,7 +41,7 @@ def _marker_mask(img_rgb: np.ndarray, profile: MarkerProfile) -> np.ndarray:
     2. If fewer than 10 pixels pass the gate, return an all-``False``
        mask immediately (too little signal for a meaningful threshold).
     3. Invert the Value channel (so darker chromogen becomes brighter)
-       and compute an OTSU threshold via :func:`cv2.threshold`,
+       and compute an OTSU threshold via `cv2.threshold`,
        restricted to the gated pixels only.
     4. Return the intersection of the hue/saturation gate and the
        OTSU-thresholded inverted-Value mask.
@@ -79,7 +79,7 @@ def _build_composite(
         Original RGB patch arrays, keyed by marker key, for every marker
         referenced by ``combo``.
     masks : dict of str to numpy.ndarray
-        Boolean detection masks (from :func:`_marker_mask`), keyed by
+        Boolean detection masks (from `_marker_mask`), keyed by
         marker key, for every marker referenced by ``combo``.
     combo : OverlayCombo
         Defines which marker is the base and which are layered on top,

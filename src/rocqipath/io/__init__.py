@@ -1,6 +1,6 @@
 """Slide reading, magnification, file discovery, naming and output layout.
 
-Imaging backends used by :class:`SlideReader` are loaded lazily, so importing
+Imaging backends used by `SlideReader` are loaded lazily, so importing
 this package needs no optional dependencies.
 """
 

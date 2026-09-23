@@ -68,14 +68,14 @@ def tissue_fraction(
     intensity_threshold: float = 235,
     optical_density_threshold: float = 0.15,
 ) -> float:
-    """Return the fraction of pixels selected by :func:`tissue_mask`.
+    """Return the fraction of pixels selected by `tissue_mask`.
 
     Parameters
     ----------
     rgb : array-like
         RGB pixels in the coordinate space being evaluated.
     method : {"mean_intensity", "optical_density_sum"}, optional
-        Tissue detector passed unchanged to :func:`tissue_mask`.
+        Tissue detector passed unchanged to `tissue_mask`.
     intensity_threshold : float, optional
         Mean-intensity cutoff on the 0–255 scale.
     optical_density_threshold : float, optional
@@ -119,7 +119,7 @@ def is_tissue(
     threshold : float
         Minimum accepted tissue fraction in ``[0, 1]``.
     method : {"mean_intensity", "optical_density_sum"}, optional
-        Tissue detector passed to :func:`tissue_fraction`.
+        Tissue detector passed to `tissue_fraction`.
     intensity_threshold : float, optional
         Mean-intensity cutoff on the 0–255 scale.
     optical_density_threshold : float, optional

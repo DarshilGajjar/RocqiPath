@@ -8,7 +8,7 @@
   "missing": [],
   "inputs": {
    "kind": "whole-slide images or folders of them",
-   "help": "Slide files and/or folders of slides (``.svs``, ``.ndpi``, ``.tif``, ...), or an earlier result (e.g. from :func:`align`) whose ``\"aligned\"`` slides are used. Folders are not searched recursively."
+   "help": "Slide files and/or folders of slides (``.svs``, ``.ndpi``, ``.tif``, ...), or an earlier result (e.g. from `align`) whose ``\"aligned\"`` slides are used. Folders are not searched recursively."
   },
   "options": [],
   "settings": [
@@ -555,7 +555,7 @@
   "missing": [],
   "inputs": {
    "kind": "the output of rp.align, or a folder of aligned slides (with reference=)",
-   "help": "The result (or output folder) of :func:`align`: each aligned slide is paired with the reference slide it was aligned to. Alternatively a folder of aligned slides laid out as ``<biomarker>/<sample>_<reference_name>/*.ome.tiff``, together with ``reference=``."
+   "help": "The result (or output folder) of `align`: each aligned slide is paired with the reference slide it was aligned to. Alternatively a folder of aligned slides laid out as ``<biomarker>/<sample>_<reference_name>/*.ome.tiff``, together with ``reference=``."
   },
   "options": [
    {
@@ -886,7 +886,7 @@
     "advanced": true,
     "local_only": false,
     "help": "Settings for the VALIS backend, used when ``backend=\"valis\"``.",
-    "doc": "Settings for the VALIS backend, used when ``backend=\"valis\"``.\n\nDefaults suit general H&E-to-IHC registration. Change individual\nsettings with nested keywords, for example\n``rp.align(..., valis__max_acceptable_error_um=100.0)``, or pass a\ncomplete :class:`ValisOptions`.",
+    "doc": "Settings for the VALIS backend, used when ``backend=\"valis\"``.\n\nDefaults suit general H&E-to-IHC registration. Change individual\nsettings with nested keywords, for example\n``rp.align(..., valis__max_acceptable_error_um=100.0)``, or pass a\ncomplete `ValisOptions`.",
     "fields": [
      {
       "name": "max_processed_image_dim_px",
@@ -1391,7 +1391,7 @@
   "options": [
    {
     "name": "normalizer",
-    "help": "Saved weights (``.npz``) or the result of :func:`train_stain_normalizer`. The method is taken from the training result, or from a ``<method>_weights.npz`` filename, and otherwise from ``method``."
+    "help": "Saved weights (``.npz``) or the result of `train_stain_normalizer`. The method is taken from the training result, or from a ``<method>_weights.npz`` filename, and otherwise from ``method``."
    }
   ],
   "settings": [
@@ -1770,8 +1770,8 @@
     "choices": null,
     "advanced": false,
     "local_only": false,
-    "help": "Marker keys mapped to :class:`MarkerProfile` values.",
-    "doc": "Marker keys mapped to :class:`MarkerProfile` values."
+    "help": "Marker keys mapped to `MarkerProfile` values.",
+    "doc": "Marker keys mapped to `MarkerProfile` values."
    },
    {
     "name": "combinations",

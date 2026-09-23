@@ -7,11 +7,11 @@ Each function here follows the same pattern::
 ``inputs`` names what to process (files or folders), ``output_dir`` is where
 results go, and ``settings`` are fields of the workflow's config class, given
 either as keywords or as a complete ``config=`` object. The return value is a
-:class:`~rocqipath.registry.Result` listing every file produced.
+`rocqipath.registry.Result` listing every file produced.
 
 Heavy dependencies (OpenCV, libvips, OpenSlide, TIAToolbox, VALIS) are
 imported inside the functions, so importing this module is cheap and
-:func:`rocqipath.list_workflows` works without any extras installed.
+`rocqipath.list_workflows` works without any extras installed.
 """
 
 from __future__ import annotations
@@ -83,7 +83,7 @@ def extract_tissue(inputs: List[Item], output_dir: Path, *, config: ExtractTissu
     ----------
     inputs : path, list of paths, or Result
         Slide files and/or folders of slides (``.svs``, ``.ndpi``,
-        ``.tif``, ...), or an earlier result (e.g. from :func:`align`)
+        ``.tif``, ...), or an earlier result (e.g. from `align`)
         whose ``"aligned"`` slides are used. Folders are not searched
         recursively.
     output_dir : path
@@ -234,7 +234,7 @@ def extract_patches(
     Parameters
     ----------
     inputs : Result, output folder, or path
-        The result (or output folder) of :func:`align`: each aligned slide
+        The result (or output folder) of `align`: each aligned slide
         is paired with the reference slide it was aligned to. Alternatively
         a folder of aligned slides laid out as
         ``<biomarker>/<sample>_<reference_name>/*.ome.tiff``, together
@@ -444,7 +444,7 @@ def train_stain_normalizer(inputs: List[Item], output_dir: Path, *, config: Stai
     -------
     Result
         One ``"weights"`` item. Pass the result as ``normalizer=`` to
-        :func:`normalize_stain`.
+        `normalize_stain`.
 
     Examples
     --------
@@ -486,7 +486,7 @@ def normalize_stain(
         where ``<name>`` joins the patch's relative path with ``__``.
     normalizer : path or Result
         Saved weights (``.npz``) or the result of
-        :func:`train_stain_normalizer`. The method is taken from the
+        `train_stain_normalizer`. The method is taken from the
         training result, or from a ``<method>_weights.npz`` filename, and
         otherwise from ``method``.
     config : StainConfig, optional

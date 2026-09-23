@@ -82,7 +82,7 @@ class OverlayCombo(BaseConfig):
 
 @dataclass
 class OverlayConfig(BaseConfig):
-    """Settings for :func:`rocqipath.overlay_markers`.
+    """Settings for `rocqipath.overlay_markers`.
 
     Each case folder holds one subfolder of patches per marker, with the
     same patch filenames in each. Every marker is converted to a colored
@@ -94,7 +94,7 @@ class OverlayConfig(BaseConfig):
     Parameters
     ----------
     markers : dict
-        Marker keys mapped to :class:`MarkerProfile` values.
+        Marker keys mapped to `MarkerProfile` values.
     combinations : list of OverlayCombo
         Base/overlay figures to generate.
     base_marker : str, optional
@@ -220,7 +220,7 @@ COMPARE_REGIONS = ("center", "top_left", "top_right", "bottom_left", "bottom_rig
 
 @dataclass
 class CompareConfig(BaseConfig):
-    """Settings for :func:`rocqipath.compare`.
+    """Settings for `rocqipath.compare`.
 
     Builds publication figures showing an H&E slide, its ground-truth IHC
     and a predicted IHC side by side: one full view plus zoomed crops at
@@ -277,7 +277,7 @@ class CompareConfig(BaseConfig):
         require(self.dpi > 0, f"dpi must be > 0; got {self.dpi}")
 
     def zoom_sizes(self) -> List[Tuple[str, int]]:
-        """Return ``(label, edge)`` pairs for :attr:`zooms`."""
+        """Return ``(label, edge)`` pairs for `zooms`."""
         sizes = []
         for zoom in self.zooms:
             label, _, edge = str(zoom).partition(":")

@@ -1,9 +1,9 @@
 """Turn whatever a user passes as ``inputs`` into a list of items.
 
-Every workflow receives its inputs as :class:`~rocqipath.Item` objects:
+Every workflow receives its inputs as `rocqipath.Item` objects:
 
 * a file or folder path becomes one item with role ``"input"``;
-* a :class:`~rocqipath.Result` contributes its items;
+* a `rocqipath.Result` contributes its items;
 * a folder holding a ``rocqipath.json`` run manifest contributes the items
   recorded there.
 

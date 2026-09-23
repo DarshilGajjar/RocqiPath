@@ -75,22 +75,15 @@ class PositiveCellCounter:
     only that it is brown. See the module docstring for the full
     algorithm description and references.
 
-    Typical usage
-    -------------
-    ::
+    `rocqipath.count_cells` uses this; use it directly to count
+    single slides or patches in memory.
 
-        counter = PositiveCellCounter(CountCellsConfig(), output_dir="./results/cell_counts")
-        result = counter.count_slide("./slide_01.svs")
-
-    Parameters
-    ----------
-    cfg : CountCellsConfig
-    patch_size        : tile size in pixels at the chosen magnification (default 512)
-    tissue_threshold  : minimum tissue fraction per patch (default 0.10)
-    target_magnification : physical analysis zoom — default 20x
-    output_dir        : root output folder
-    min_cell_area     : minimum cell area in px² (default 50)
-    max_cell_area     : maximum cell area in px², None = no upper bound
+    Examples
+    --------
+    >>> from rocqipath.counting import CountCellsConfig, PositiveCellCounter
+    >>> counter = PositiveCellCounter(CountCellsConfig(label="CD8"), output_dir="./counts")  # doctest: +SKIP
+    >>> counter.count_slide("./slide_01.svs")["total_positive"]  # doctest: +SKIP
+    1520
     """
 
     def __init__(self, cfg: CountCellsConfig | None = None, output_dir: str = "./cell_count_output"):
@@ -104,7 +97,7 @@ class PositiveCellCounter:
             - ``"patch_size"`` (int) — tile edge length in pixels at the
               chosen magnification. Defaults to ``512``.
             - ``"tissue_threshold"`` (float) — minimum fraction of
-              non-background pixels (see :meth:`_is_tissue`) for a patch
+              non-background pixels (see `_is_tissue`) for a patch
               to be processed at all. Defaults to ``0.10``.
             - ``target_magnification`` (float) — exact physical zoom for
               analysis. Defaults to ``20.0``.
@@ -197,7 +190,7 @@ class PositiveCellCounter:
             ``openslide.mpp-x`` / ``openslide.mpp-y`` properties. Returns
             ``(0.0, 0.0)`` if the properties are missing or cannot be
             parsed as floats (caught via a broad ``except Exception``) —
-            callers (e.g. :meth:`count_slide`) treat this as "MPP
+            callers (e.g. `count_slide`) treat this as "MPP
             unavailable" and typically substitute a fallback constant
             (e.g. the Aperio standard) rather than failing outright.
         """

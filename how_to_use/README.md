@@ -1,64 +1,36 @@
-# RocqiPath how-to-use notebooks
+# How to use RocqiPath — notebooks
 
-These notebooks are the practical documentation for RocqiPath. They call the
-feature APIs directly without a dataset or experiment-management layer.
+Practical, editable walkthroughs of every workflow. Each notebook starts with
+a **Parameters** cell; long-running steps sit behind `RUN_*` switches that
+default to `False`, and small synthetic examples run straight away without
+any private data.
 
-For the local browser workspace, see [Using RocqiPath Studio](09_Studio_Web.md).
-Studio is under development; the guide identifies the current API entry points
-and the unfinished interface rather than assuming the complete app is ready.
-
-## Recommended order
-
-| Notebook | Purpose | Install extra |
+| Notebook | Purpose | Extras |
 |---|---|---|
-| `00_Installation_and_API_Overview.ipynb` | Environment, imports, typed configs, output layout | base |
-| `01_Slide_Inspection_and_Magnification.ipynb` | Open a slide and read exact physical magnification | `extraction` |
-| `02_WSI_and_TMA_Tissue_Extraction.ipynb` | Ordinary WSI regions and TMA/core extraction, with optional semantic masks | `extraction` or `extraction,semantic` |
-| `03_HnE_IHC_Alignment.ipynb` | Pair discovery, dry run, ORB/VALIS registration, QC | `orb` or `valis` |
-| `04_Paired_Patch_Extraction_and_Reconstruction.ipynb` | Matched patches, manifests, viewing, reconstruction | `extraction,viz` |
-| `05_Stain_Normalization.ipynb` | Train and apply Reinhard/Macenko/Vahadane normalization | `stain` |
-| `06_DAB_Positive_Cell_Counting.ipynb` | Single, batch, and paired DAB-positive cell counts | `cellcount` |
-| `07_Visualization_and_Quality_Control.ipynb` | Patch QC, grid maps, marker overlays, publication figures | `viz` |
-| `08_End_to_End_HnE_CD8_Workflow.ipynb` | Direct H&E/CD8 alignment-to-analysis workflow | combined extras |
+| `00_Installation_and_API_Overview` | Environment check, the one calling pattern, settings, results | base |
+| `01_Slide_Inspection_and_Magnification` | Open slides, resolve magnification, read exact regions | `extraction` |
+| `02_WSI_and_TMA_Tissue_Extraction` | `rp.extract_tissue` and `rp.extract_tma` | `extraction` |
+| `03_HnE_IHC_Alignment` | Pairing, dry run, ORB/VALIS alignment, QC | `orb` or `valis` |
+| `04_Paired_Patch_Extraction_and_Reconstruction` | Matched patches straight from alignment; reconstruction | `extraction,viz` |
+| `05_Stain_Normalization` | Train and apply Reinhard/Macenko/Vahadane | `stain` |
+| `06_DAB_Positive_Cell_Counting` | Single, cohort and real-vs-predicted counting | `cellcount` |
+| `07_Visualization_and_Quality_Control` | Patch QC, grid maps, marker overlays, comparison figures | `viz` |
+| `08_End_to_End_HnE_CD8_Workflow` | Alignment → patches → normalization → counts, chained | combined |
 
 ## Start Jupyter
 
-RocqiPath supports 64-bit Python 3.10–3.11. From the repository root:
+From the repository root, with Python 3.10 or 3.11:
 
 ```bash
 python -m venv .venv
-
-# Windows PowerShell
-.\.venv\Scripts\Activate.ps1
-
-# macOS/Linux
-source .venv/bin/activate
-
-python -m pip install --upgrade pip
+source .venv/bin/activate            # Windows: .\.venv\Scripts\Activate.ps1
 python -m pip install -e ".[extraction,orb,stain,cellcount,viz]"
 python -m pip install jupyterlab
 jupyter lab
 ```
 
-Use `.[valis]` instead of or in addition to `.[orb]` when VALIS registration
-is required. Add `semantic` to use TIAToolbox segmentation while leaving the
-existing Otsu detector as the default. OpenSlide and libvips are native prerequisites for WSI workflows;
-installing the Python packages alone may not install those runtimes.
+Put your slides under `data/` and results go to `results/`; both are ignored
+by git. Synthetic examples write to `notebook_demo_outputs/`.
 
-## Notebook conventions
-
-- Edit the clearly marked **Parameters** cell first.
-- Long-running cells use a `RUN_*` switch and default to `False`.
-- Physical zoom is always an objective magnification such as `20.0`, never a
-  scanner pyramid level.
-- Plain TIFF files without objective metadata need an explicit
-  `source_magnification`.
-- Outputs follow `<results>/<module>/<slide-or-case>/`.
-- The alignment-to-patch handoff notebook includes a staging helper because
-  alignment output and the current patch resolver use different directory
-  contracts. The helper copies or hard-links files; it does not alter originals.
-
-## Validation
-
-The notebooks were checked against the current public APIs on 2026-08-25.
-Data-dependent and long-running cells remain disabled by default.
+The full documentation, including every setting of every workflow, is in
+[`docs/`](../docs/index.md) (build it with `mkdocs serve`).

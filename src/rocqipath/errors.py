@@ -1,6 +1,6 @@
 """Define the custom RocqiPath exception hierarchy.
 
-All library-specific errors inherit from :class:`RocqiPathError` so
+All library-specific errors inherit from `RocqiPathError` so
 callers can catch every error the library raises with a single ``except``
 clause::
 
@@ -55,7 +55,7 @@ class ConfigurationError(RocqiPathError):
 class SlideNotFoundError(RocqiPathError, FileNotFoundError):
     """Raised when a WSI file path does not exist on disk.
 
-    Inherits from :class:`FileNotFoundError` so existing code that catches
+    Inherits from `FileNotFoundError` so existing code that catches
     the built-in also catches this.
     """
 
@@ -101,7 +101,7 @@ class RegistrationQualityError(RegistrationError):
         Notes
         -----
         The formatted message (both values to two decimal places) is
-        passed to :class:`Exception`'s constructor, so ``str(exc)`` and
+        passed to `Exception`'s constructor, so ``str(exc)`` and
         default tracebacks already contain a readable summary — callers
         do not need to re-format ``error_um``/``threshold_um`` themselves.
         """
@@ -119,7 +119,7 @@ class ExtractionError(RocqiPathError):
 class DependencyError(RocqiPathError, ImportError):
     """Report a missing optional dependency.
 
-    Inherits from :class:`ImportError` so existing ``except ImportError``
+    Inherits from `ImportError` so existing ``except ImportError``
     clauses continue to work.
 
     Examples
@@ -149,7 +149,7 @@ class DependencyError(RocqiPathError, ImportError):
 
         Notes
         -----
-        Because this class also inherits from :class:`ImportError`, any
+        Because this class also inherits from `ImportError`, any
         pre-existing ``except ImportError:`` guard elsewhere in a caller's
         code (including this library's own optional-dependency guards)
         will catch it without modification.

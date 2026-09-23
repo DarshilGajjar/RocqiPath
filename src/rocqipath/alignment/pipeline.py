@@ -43,7 +43,7 @@ try:
 except ImportError:
 
     def tqdm(iterable, *args, **kwargs):  # type: ignore[misc]
-        """No-op fallback for :func:`tqdm.auto.tqdm` when tqdm isn't installed.
+        """No-op fallback for `tqdm.auto.tqdm` when tqdm isn't installed.
 
         Returns ``iterable`` unchanged, so any code written as
         ``for x in tqdm(items):`` continues to work identically — just
@@ -188,7 +188,7 @@ class AlignmentProcessor:
     Parameters
     ----------
     config : AlignConfig
-        Typed configuration object.  Use :func:`run_alignment` as the
+        Typed configuration object.  Use `run_alignment` as the
         normal entry point rather than instantiating this class directly.
 
     Attributes
@@ -210,37 +210,37 @@ class AlignmentProcessor:
         ----------
         input_dir : str or pathlib.Path or None
             Existing folder containing the pair folders. ``None`` skips
-            discovery, for aligning explicit pairs with :meth:`process_case`.
+            discovery, for aligning explicit pairs with `process_case`.
         output_dir : str or pathlib.Path
             Output root; created when missing.
         config : AlignConfig
             Typed configuration object — see the class docstring above.
-            Stored on ``self.cfg`` for later use by :meth:`align_case`
-            and :meth:`run`.
+            Stored on ``self.cfg`` for later use by `align_case`
+            and `run`.
 
         Notes
         -----
         Construction performs real filesystem work, not just attribute
         assignment:
 
-        - ``input_dir`` is resolved via :func:`ensure_directory`
+        - ``input_dir`` is resolved via `ensure_directory`
           with ``create=False`` — it must already exist, or this raises
-          :class:`FileNotFoundError`.
-        - ``output_dir`` is resolved via :func:`ensure_directory`
+          `FileNotFoundError`.
+        - ``output_dir`` is resolved via `ensure_directory`
           with ``create=True`` — it is created if missing.
         - ``config.filename_pattern`` is compiled once into
           ``self._pattern`` (already resolved and validated for its
           required named groups by
-          :meth:`AlignConfig.__post_init__`, so no further
+          `AlignConfig.__post_init__`, so no further
           validation happens here).
         - ``self.pair_folders`` is resolved from
           ``config.pair_folders`` if non-empty, otherwise
           auto-discovered by scanning ``self.input_dir`` via
-          :func:`discover_pair_folders`, using
+          `discover_pair_folders`, using
           ``config.reference_name``/``config.moving_name`` as the
           expected subfolder names. If neither yields any folders,
           a warning is logged (not an error — an empty
-          ``self.pair_folders`` list means :meth:`run` will simply process
+          ``self.pair_folders`` list means `run` will simply process
           zero cases).
         """
         self.cfg = config
@@ -287,7 +287,7 @@ class AlignmentProcessor:
             A dict with keys ``"patch_size"``, ``"grid_density"``,
             ``"base_output_dir"`` (as a string), and
             physical magnification fields populated from ``self.cfg``. See
-            :class:`~rocqipath.alignment.registrar.WSIRegistrar` for the
+            `rocqipath.alignment.registrar.WSIRegistrar` for the
             full set of keys it accepts — this helper supplies only the
             subset ``AlignConfig`` exposes.
         """
@@ -525,7 +525,7 @@ class AlignmentProcessor:
 def run_alignment(
     input_dir: Union[str, Path], output_dir: Union[str, Path], config: AlignConfig
 ) -> List[AlignedCaseResult]:
-    """Register every discovered pair; the engine behind :func:`rocqipath.align`.
+    """Register every discovered pair; the engine behind `rocqipath.align`.
 
     Parameters
     ----------

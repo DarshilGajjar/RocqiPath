@@ -23,7 +23,7 @@ None of these apply to single-region whole-slide images.
 
 Quickstart
 ----------
-This module is the engine behind :func:`rocqipath.extract_tma`::
+This module is the engine behind `rocqipath.extract_tma`::
 
     import rocqipath as rp
 
@@ -147,16 +147,16 @@ def _classify_stain(filename: str) -> Optional[Tuple[str, str]]:
     -------
     tuple of (str, str), or None
         ``("IHC", "<MARKER>")`` if the filename contains one of the
-        known IHC keywords in :data:`_IHC_KEYWORDS` (checked first,
+        known IHC keywords in `_IHC_KEYWORDS` (checked first,
         longest keyword first so e.g. ``"cd163"`` matches before the
         shorter ``"cd3"`` would); ``("HE", "HnE")`` if it instead
-        contains one of the H&E keywords in :data:`_HE_KEYWORDS`; or
+        contains one of the H&E keywords in `_HE_KEYWORDS`; or
         ``None`` if neither matches.
 
     Notes
     -----
     This classifier is keyword-based against a fixed list of known IHC
-    marker abbreviations (see :data:`_IHC_KEYWORDS`) — a filename whose
+    marker abbreviations (see `_IHC_KEYWORDS`) — a filename whose
     biomarker isn't in that list will not be classified as IHC by this
     function, even though the rest of the core-extraction pipeline
     otherwise accepts an arbitrary ``target_stains`` list. This function
@@ -419,7 +419,7 @@ def extract_stain_cores(
 def _print_config_panel(cfg: ExtractTMAConfig, input_dir: str, output_dir: str) -> None:
     """Render a Rich table summarising the resolved run configuration.
 
-    Printed once at the start of :func:`run_tma_extraction_pipeline` so
+    Printed once at the start of `run_tma_extraction_pipeline` so
     the operator can see exactly which parameters (including CLI/config
     defaults) will be used before processing begins.
 

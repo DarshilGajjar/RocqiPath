@@ -57,3 +57,4 @@ logs/
 # Package-manager caches
 .pnpm-store/
 node_modules/
+notebook_demo_outputs/
