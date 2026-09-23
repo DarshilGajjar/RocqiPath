@@ -20,7 +20,7 @@ import pytest
 from tests.golden._calls import CALLS, REQUIRES
 
 EXPECTED = Path(__file__).parent / "expected"
-VOLATILE_KEYS = {"generated_at", "created", "timestamp", "elapsed_s", "duration_s"}
+VOLATILE_KEYS = {"generated_at", "created", "timestamp", "elapsed_s", "duration_s", "rocqipath_version"}
 IMAGE_SUFFIXES = {".tif", ".tiff", ".png", ".jpg", ".jpeg"}
 MEAN_TOLERANCE = 1.0
 

@@ -407,6 +407,35 @@ def run_patch_extraction(
                 continue
             to_process.append((case_id, ref_path, target_path, biomarker))
 
+    return extract_case_patches(to_process, output_dir, cfg, results)
+
+
+def extract_case_patches(
+    cases: List[Tuple[str, str, str, str]],
+    output_dir: str,
+    cfg: ExtractPatchesConfig,
+    results: Optional[List[Dict[str, Any]]] = None,
+) -> Dict[str, Any]:
+    """Extract patch pairs for explicit ``(case_id, reference, target, biomarker)`` cases.
+
+    Parameters
+    ----------
+    cases : list of tuple
+        ``(case_id, reference_path, target_path, biomarker)`` per case.
+    output_dir : str
+        Root beneath which ``patch_extraction/<case>/`` folders are written.
+    cfg : ExtractPatchesConfig
+        Extraction settings.
+    results : list of dict, optional
+        Earlier per-case records (e.g. skipped cases) to include.
+
+    Returns
+    -------
+    dict
+        ``{"processed": int, "skipped": int, "cases": list of dict}``.
+    """
+    results = list(results or [])
+    to_process = cases
     if cfg.max_workers > 1 and len(to_process) > 1:
         with concurrent.futures.ThreadPoolExecutor(max_workers=cfg.max_workers) as pool:
             futures = {

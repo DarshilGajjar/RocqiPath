@@ -33,6 +33,141 @@
         1024,
         1024
       ]
+    },
+    "rocqipath.json": {
+      "runs": {
+        "align": {
+          "config": {
+            "aligned_wsi_level": 0,
+            "backend": "orb",
+            "dry_run": false,
+            "filename_pattern": "^(?P<sample_id>.+?)_(?P<role>he|cd8)(?:\\.[^.]+)+$",
+            "grid_density": 1,
+            "max_physical_field_ratio": null,
+            "moving_name": "cd8",
+            "moving_source_magnification": 20.0,
+            "orb": {
+              "match_threshold": 1.4,
+              "max_contours": 8,
+              "min_area_frac": 0.001,
+              "min_ncc_threshold": 0.25,
+              "ransac_threshold": 20.0,
+              "refine_enabled": true,
+              "refine_thumb_size": 3000,
+              "save_tile_size": 1024,
+              "thumb_size": 1500
+            },
+            "pair_folders": [
+              "CD8"
+            ],
+            "patch_size": 1024,
+            "qc_dpi": 300,
+            "qc_enabled": true,
+            "qc_moving_read_level": 0,
+            "qc_output_dir": null,
+            "qc_patch_size": 1024,
+            "qc_reference_level": 0,
+            "qc_reference_read_level": 0,
+            "reference_name": "he",
+            "reference_source_magnification": 20.0,
+            "target_magnification": 20.0,
+            "valis": {
+              "align_to_reference": true,
+              "check_for_reflections": false,
+              "crop": "reference",
+              "feature_detector": "disk",
+              "feature_detector_kwargs": {},
+              "imgs_ordered": false,
+              "keep_diagnostics": true,
+              "matcher": "auto",
+              "matcher_kwargs": {},
+              "max_acceptable_error_um": null,
+              "max_image_dim_px": 1024,
+              "max_non_rigid_reg_dim_px": 2048,
+              "max_processed_image_dim_px": 512,
+              "micro_rigid_registrar_cls": null,
+              "micro_rigid_registrar_params": {},
+              "non_rigid_registrar_cls": null,
+              "norm_method": "img_stats",
+              "num_features": 2000,
+              "processor_dict": null,
+              "register_micro_dim_px": 4096,
+              "rgb_features": false,
+              "run_register_micro": false,
+              "sorting_feature_detector": null,
+              "sorting_feature_detector_kwargs": {},
+              "sorting_matcher": null,
+              "sorting_matcher_kwargs": {},
+              "thumbnail_size": 512,
+              "valis_kwargs": {}
+            }
+          },
+          "inputs": [
+            "<ROOT>/align_in"
+          ],
+          "items": [
+            {
+              "magnification": null,
+              "meta": {
+                "case_id": "case01_cd8",
+                "pair": "CD8"
+              },
+              "path": "<ROOT>/align_in/CD8/he/case01_HE.tif",
+              "role": "reference",
+              "sample_id": "case01",
+              "source": null
+            },
+            {
+              "magnification": 20.0,
+              "meta": {
+                "case_id": "case01_cd8",
+                "pair": "CD8",
+                "valid_grids": [
+                  0
+                ]
+              },
+              "path": "alignment/case01_cd8/case01_cd8_aligned_moving.ome.tiff",
+              "role": "aligned",
+              "sample_id": "case01",
+              "source": "<ROOT>/align_in/CD8/cd8/case01_CD8.tif"
+            },
+            {
+              "magnification": null,
+              "meta": {
+                "case_id": "case01_cd8",
+                "pair": "CD8"
+              },
+              "path": "alignment/case01_cd8/case01_cd8_center_qc.png",
+              "role": "figure",
+              "sample_id": "case01",
+              "source": null
+            },
+            {
+              "magnification": null,
+              "meta": {
+                "case_id": "case01_cd8",
+                "pair": "CD8"
+              },
+              "path": "alignment/case01_cd8/orb_registration_overlay.png",
+              "role": "figure",
+              "sample_id": "case01",
+              "source": null
+            }
+          ],
+          "summary": {
+            "cases": [
+              {
+                "aligned": "<ROOT>/out/alignment/case01_cd8/case01_cd8_aligned_moving.ome.tiff",
+                "case_id": "case01_cd8",
+                "pair": "CD8",
+                "reference": "<ROOT>/align_in/CD8/he/case01_HE.tif",
+                "sample_id": "case01"
+              }
+            ]
+          }
+        }
+      },
+      "schema": 1
     }
   },
   "returned": {

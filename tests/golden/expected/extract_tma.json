@@ -1,5 +1,276 @@
 {
   "files": {
+    "rocqipath.json": {
+      "runs": {
+        "extract_tma": {
+          "config": {
+            "box_scale": 1.0,
+            "clahe_clip_limit": 3.0,
+            "clahe_tile_size": [
+              8,
+              8
+            ],
+            "detection_magnification": 1.25,
+            "detector": "otsu",
+            "fallback_to_he": true,
+            "ihc_enhance": true,
+            "max_relative_area": 1.2,
+            "min_area_fraction": 0.001,
+            "min_aspect_ratio": 0.9,
+            "min_circularity": 0.7,
+            "min_relative_area": 0.8,
+            "min_solidity": 0.95,
+            "only_circles": true,
+            "per_stain_detection": true,
+            "preview_scale": 0.2,
+            "semantic_batch_size": 4,
+            "semantic_device": "auto",
+            "semantic_model": "fcn-tissue_mask",
+            "semantic_num_workers": 0,
+            "semantic_source_mpp": null,
+            "semantic_weights_path": null,
+            "skip_existing": true,
+            "source_magnification": 20.0,
+            "stains": [
+              "all"
+            ],
+            "target_magnification": 5.0,
+            "tif_compression": "lzw",
+            "tif_pyramid": true,
+            "tif_quality": 99,
+            "tif_tile": true
+          },
+          "inputs": [
+            "<ROOT>/tma_in"
+          ],
+          "items": [
+            {
+              "magnification": 5.0,
+              "meta": {
+                "absolute_box": {
+                  "h": 448,
+                  "w": 448,
+                  "x": 176,
+                  "y": 176
+                },
+                "core_number": 1,
+                "core_tag": "core_001",
+                "detection_source": "per_stain_otsu",
+                "relative_box": {
+                  "rh": 0.28,
+                  "rw": 0.28,
+                  "rx": 0.11,
+                  "ry": 0.11
+                },
+                "slide": "TMA01_CD8",
+                "source_file": "TMA01_CD8.tif",
+                "status": "saved"
+              },
+              "path": "tissue_extraction/TMA01_CD8/core_001.tif",
+              "role": "core",
+              "sample_id": "TMA01",
+              "source": null
+            },
+            {
+              "magnification": 5.0,
+              "meta": {
+                "absolute_box": {
+                  "h": 448,
+                  "w": 448,
+                  "x": 976,
+                  "y": 176
+                },
+                "core_number": 2,
+                "core_tag": "core_002",
+                "detection_source": "per_stain_otsu",
+                "relative_box": {
+                  "rh": 0.28,
+                  "rw": 0.28,
+                  "rx": 0.61,
+                  "ry": 0.11
+                },
+                "slide": "TMA01_CD8",
+                "source_file": "TMA01_CD8.tif",
+                "status": "saved"
+              },
+              "path": "tissue_extraction/TMA01_CD8/core_002.tif",
+              "role": "core",
+              "sample_id": "TMA01",
+              "source": null
+            },
+            {
+              "magnification": 5.0,
+              "meta": {
+                "absolute_box": {
+                  "h": 448,
+                  "w": 448,
+                  "x": 176,
+                  "y": 976
+                },
+                "core_number": 3,
+                "core_tag": "core_003",
+                "detection_source": "per_stain_otsu",
+                "relative_box": {
+                  "rh": 0.28,
+                  "rw": 0.28,
+                  "rx": 0.11,
+                  "ry": 0.61
+                },
+                "slide": "TMA01_CD8",
+                "source_file": "TMA01_CD8.tif",
+                "status": "saved"
+              },
+              "path": "tissue_extraction/TMA01_CD8/core_003.tif",
+              "role": "core",
+              "sample_id": "TMA01",
+              "source": null
+            },
+            {
+              "magnification": 5.0,
+              "meta": {
+                "absolute_box": {
+                  "h": 448,
+                  "w": 448,
+                  "x": 976,
+                  "y": 976
+                },
+                "core_number": 4,
+                "core_tag": "core_004",
+                "detection_source": "per_stain_otsu",
+                "relative_box": {
+                  "rh": 0.28,
+                  "rw": 0.28,
+                  "rx": 0.61,
+                  "ry": 0.61
+                },
+                "slide": "TMA01_CD8",
+                "source_file": "TMA01_CD8.tif",
+                "status": "saved"
+              },
+              "path": "tissue_extraction/TMA01_CD8/core_004.tif",
+              "role": "core",
+              "sample_id": "TMA01",
+              "source": null
+            },
+            {
+              "magnification": 5.0,
+              "meta": {
+                "absolute_box": {
+                  "h": 448,
+                  "w": 448,
+                  "x": 176,
+                  "y": 176
+                },
+                "core_number": 1,
+                "core_tag": "core_001",
+                "detection_source": "he_reference",
+                "relative_box": {
+                  "rh": 0.28,
+                  "rw": 0.28,
+                  "rx": 0.11,
+                  "ry": 0.11
+                },
+                "slide": "TMA01_HE",
+                "source_file": "TMA01_HE.tif",
+                "status": "saved"
+              },
+              "path": "tissue_extraction/TMA01_HE/core_001.tif",
+              "role": "core",
+              "sample_id": "TMA01",
+              "source": null
+            },
+            {
+              "magnification": 5.0,
+              "meta": {
+                "absolute_box": {
+                  "h": 448,
+                  "w": 448,
+                  "x": 976,
+                  "y": 176
+                },
+                "core_number": 2,
+                "core_tag": "core_002",
+                "detection_source": "he_reference",
+                "relative_box": {
+                  "rh": 0.28,
+                  "rw": 0.28,
+                  "rx": 0.61,
+                  "ry": 0.11
+                },
+                "slide": "TMA01_HE",
+                "source_file": "TMA01_HE.tif",
+                "status": "saved"
+              },
+              "path": "tissue_extraction/TMA01_HE/core_002.tif",
+              "role": "core",
+              "sample_id": "TMA01",
+              "source": null
+            },
+            {
+              "magnification": 5.0,
+              "meta": {
+                "absolute_box": {
+                  "h": 448,
+                  "w": 448,
+                  "x": 176,
+                  "y": 976
+                },
+                "core_number": 3,
+                "core_tag": "core_003",
+                "detection_source": "he_reference",
+                "relative_box": {
+                  "rh": 0.28,
+                  "rw": 0.28,
+                  "rx": 0.11,
+                  "ry": 0.61
+                },
+                "slide": "TMA01_HE",
+                "source_file": "TMA01_HE.tif",
+                "status": "saved"
+              },
+              "path": "tissue_extraction/TMA01_HE/core_003.tif",
+              "role": "core",
+              "sample_id": "TMA01",
+              "source": null
+            },
+            {
+              "magnification": 5.0,
+              "meta": {
+                "absolute_box": {
+                  "h": 448,
+                  "w": 448,
+                  "x": 976,
+                  "y": 976
+                },
+                "core_number": 4,
+                "core_tag": "core_004",
+                "detection_source": "he_reference",
+                "relative_box": {
+                  "rh": 0.28,
+                  "rw": 0.28,
+                  "rx": 0.61,
+                  "ry": 0.61
+                },
+                "slide": "TMA01_HE",
+                "source_file": "TMA01_HE.tif",
+                "status": "saved"
+              },
+              "path": "tissue_extraction/TMA01_HE/core_004.tif",
+              "role": "core",
+              "sample_id": "TMA01",
+              "source": null
+            }
+          ],
+          "summary": {
+            "slides": {
+              "TMA01_CD8": 4,
+              "TMA01_HE": 4
+            }
+          }
+        }
+      },
+      "schema": 1
+    },
     "tissue_extraction/TMA01_CD8/TMA01_CD8_manifest.json": {
       "n_regions": 4,
       "pipeline": "core",
