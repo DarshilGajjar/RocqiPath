@@ -6,23 +6,23 @@ import cv2
 import numpy as np
 import pytest
 
-from rocqipath.extraction.config import TMAExtractionConfig, TissueExtractionConfig
+from rocqipath.extraction.config import ExtractTMAConfig, ExtractTissueConfig
 
 from rocqipath.tissue import semantic
 
 
 def test_otsu_remains_the_default_detector() -> None:
     """Preserve the existing extraction behavior unless explicitly changed."""
-    assert TissueExtractionConfig().detector == "otsu"
-    assert TMAExtractionConfig().detector == "otsu"
+    assert ExtractTissueConfig().detector == "otsu"
+    assert ExtractTMAConfig().detector == "otsu"
 
 
 def test_semantic_config_rejects_invalid_runtime_values() -> None:
     """Fail configuration mistakes before model inference begins."""
     with pytest.raises(ValueError, match="semantic_batch_size must be >= 1"):
-        TissueExtractionConfig(semantic_batch_size=0)
+        ExtractTissueConfig(semantic_batch_size=0)
     with pytest.raises(ValueError, match="min_relative_area cannot exceed max_relative_area"):
-        TMAExtractionConfig(min_relative_area=1.1, max_relative_area=0.9)
+        ExtractTMAConfig(min_relative_area=1.1, max_relative_area=0.9)
 
 
 def test_semantic_tma_geometry_accepts_round_cores_and_records_rejections(
@@ -37,7 +37,7 @@ def test_semantic_tma_geometry_accepts_round_cores_and_records_rejections(
     mask = canvas.astype(bool)
     monkeypatch.setattr(semantic, "semantic_mask", lambda _path, _cfg: mask)
 
-    cfg = TMAExtractionConfig(
+    cfg = ExtractTMAConfig(
         detector="semantic",
         min_area_fraction=0.001,
         min_circularity=0.80,
@@ -65,7 +65,7 @@ def test_semantic_wsi_keeps_irregular_tissue(monkeypatch) -> None:
 
     accepted, rejected = semantic.semantic_regions(
         "slide.svs",
-        TissueExtractionConfig(detector="semantic", min_area_fraction=0.001),
+        ExtractTissueConfig(detector="semantic", min_area_fraction=0.001),
     )
 
     assert len(accepted) == 1

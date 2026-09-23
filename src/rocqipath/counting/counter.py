@@ -29,6 +29,7 @@ References
 """
 
 import json
+import os
 import warnings
 from pathlib import Path
 from typing import List, Optional, Tuple
@@ -37,7 +38,7 @@ import cv2
 import numpy as np
 from skimage import filters, measure, morphology
 from tqdm.auto import tqdm
-from rocqipath.counting.config import CellCountingConfig
+from rocqipath.counting.config import CountCellsConfig
 from rocqipath.io.output import OutputLayout
 from rocqipath.io.slide import SlideReader as _SlideReader
 from rocqipath.tissue.masks import is_tissue as _shared_is_tissue
@@ -78,12 +79,12 @@ class PositiveCellCounter:
     -------------
     ::
 
-        counter = PositiveCellCounter(CellCountingConfig(output_dir="./results/cell_counts"))
+        counter = PositiveCellCounter(CountCellsConfig(), output_dir="./results/cell_counts")
         result = counter.count_slide("./slide_01.svs")
 
     Parameters
     ----------
-    cfg : CellCountingConfig
+    cfg : CountCellsConfig
     patch_size        : tile size in pixels at the chosen magnification (default 512)
     tissue_threshold  : minimum tissue fraction per patch (default 0.10)
     target_magnification : physical analysis zoom — default 20x
@@ -92,12 +93,12 @@ class PositiveCellCounter:
     max_cell_area     : maximum cell area in px², None = no upper bound
     """
 
-    def __init__(self, cfg: CellCountingConfig):
+    def __init__(self, cfg: CountCellsConfig | None = None, output_dir: str = "./cell_count_output"):
         """Resolve configuration, create the output directory, and print a summary.
 
         Parameters
         ----------
-        cfg : CellCountingConfig
+        cfg : CountCellsConfig
             Typed counting configuration:
 
             - ``"patch_size"`` (int) — tile edge length in pixels at the
@@ -107,9 +108,6 @@ class PositiveCellCounter:
               to be processed at all. Defaults to ``0.10``.
             - ``target_magnification`` (float) — exact physical zoom for
               analysis. Defaults to ``20.0``.
-            - ``"output_dir"`` (str) — root directory for results.
-              Defaults to ``"./cell_count_output"``; created if it
-              doesn't exist.
             - ``"min_cell_area"`` (int) — minimum connected-component
               area, in pixels², for a detected blob to count as a cell.
               Defaults to ``50``.
@@ -118,18 +116,23 @@ class PositiveCellCounter:
               as "no upper bound" (``self.max_cell_area`` becomes
               ``None``).
 
+        output_dir : str
+            Root directory for results, created if missing. Results go to
+            ``<output_dir>/cell_counting/``.
+
         Notes
         -----
         Prints a startup summary (patch size, tissue threshold, cell
         area range, thresholding strategy) to stdout after resolving all
         fields.
         """
+        cfg = cfg if cfg is not None else CountCellsConfig()
         self.patch_size = cfg.patch_size
         self.tissue_threshold = cfg.tissue_threshold
         self.target_magnification = cfg.target_magnification
         self.source_magnification = cfg.source_magnification
         self.paired_source_magnification = cfg.paired_source_magnification
-        self.output_dir = cfg.output_dir
+        self.output_dir = os.path.abspath(output_dir)
         self.min_cell_area = cfg.min_cell_area
         self.max_cell_area = cfg.max_cell_area
 

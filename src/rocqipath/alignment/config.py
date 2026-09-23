@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field
-from typing import List, Optional
+from typing import List, Literal, Optional
 
 from rocqipath.io.magnification import DEFAULT_TARGET_MAGNIFICATION
 from rocqipath.io.naming import (
@@ -14,14 +14,14 @@ from rocqipath.io.naming import (
 )
 from rocqipath._internal.validation import require, validate_positive
 
-from rocqipath._internal.base_config import BaseConfig
+from rocqipath._internal.base_config import ADVANCED, LOCAL_ONLY, BaseConfig
 
 
 @dataclass
-class AlignmentConfig(BaseConfig):
-    r"""Configure paired whole-slide image discovery, registration, export, and QC.
+class AlignConfig(BaseConfig):
+    r"""Settings for :func:`rocqipath.align`: pairing, registration, export and QC.
 
-    ``AlignmentConfig`` is the high-level configuration object for RocqiPath's
+    ``AlignConfig`` is the configuration object for RocqiPath's
     paired-slide alignment workflow. It controls how reference and moving
     whole-slide images are discovered, paired, registered, exported, and
     optionally evaluated using quality-control figures.
@@ -43,7 +43,7 @@ class AlignmentConfig(BaseConfig):
         can be useful when VALIS is unavailable or when a faster,
         dependency-minimal registration method is sufficient.
 
-    The typical directory layout expected by the alignment pipeline is::
+    The typical layout of the folder passed to :func:`rocqipath.align` is::
 
         wsi_input/
         ├── cd8/
@@ -91,44 +91,8 @@ class AlignmentConfig(BaseConfig):
 
     Parameters
     ----------
-    input_dir : str, default="./wsi_input"
-        Root directory containing paired-slide input folders.
-
-        Each direct child selected through ``pair_folders`` should contain the
-        expected reference and moving subdirectories.
-
-        Example::
-
-            input_dir="./data/wsi"
-
-        might contain::
-
-            ./data/wsi/cd8/reference/
-            ./data/wsi/cd8/moving/
-            ./data/wsi/foxp3/reference/
-            ./data/wsi/foxp3/moving/
-
-        The directory must already exist before the alignment pipeline runs.
-
-    output_dir : str, default="./wsi_output/aligned"
-        Root destination for alignment outputs.
-
-        RocqiPath creates the required alignment output structure beneath this
-        directory. Depending on the selected backend and configuration,
-        outputs can include:
-
-        - aligned moving WSIs,
-        - registration manifests,
-        - VALIS working files,
-        - registration diagnostics,
-        - grid maps,
-        - QC figures,
-        - backend-specific intermediate artifacts.
-
-        The directory is created automatically if necessary.
-
     pair_folders : list of str, default=[]
-        Names of pair folders beneath ``input_dir`` that should be processed.
+        Names of pair folders beneath the input folder that should be processed.
 
         For example::
 
@@ -136,11 +100,11 @@ class AlignmentConfig(BaseConfig):
 
         causes RocqiPath to process only::
 
-            input_dir/cd8/
-            input_dir/panck/
+            wsi_input/cd8/
+            wsi_input/panck/
 
         An empty list enables automatic pair-folder discovery. RocqiPath scans
-        ``input_dir`` and identifies folders containing the expected
+        the input folder and identifies folders containing the expected
         ``reference_name`` and/or ``moving_name`` subdirectories.
 
         Explicitly specifying ``pair_folders`` can be useful when a study
@@ -212,7 +176,7 @@ class AlignmentConfig(BaseConfig):
         Invalid regular expressions or expressions lacking the required named
         groups raise ``ValueError``.
 
-    alignment_method : {"valis", "orb"}, default="valis"
+    backend : {"valis", "orb"}, default="valis"
         Registration backend used for paired-slide alignment.
 
         ``"valis"``
@@ -358,59 +322,6 @@ class AlignmentConfig(BaseConfig):
 
         When supplied, this value must be strictly positive.
 
-    valis_config : ValisConfig or None, default=None
-        Complete VALIS backend configuration.
-
-        This is the preferred interface for advanced VALIS registration
-        configuration. It allows feature detectors, feature matchers,
-        sorting/orientation matchers, registration resolutions, non-rigid
-        registration, micro-registration, and other VALIS-specific options
-        to be configured through a dedicated ``ValisConfig`` object.
-
-        When supplied, this configuration takes precedence over the legacy
-        ``valis_*`` convenience fields defined directly on
-        ``AlignmentConfig``.
-
-        Example::
-
-            valis_cfg = ValisConfig(
-                feature_detector="disk",
-                matcher="lightglue",
-                num_features=3000,
-                sorting_feature_detector="brisk",
-                sorting_matcher="descriptor",
-            )
-
-            cfg = AlignmentConfig(
-                input_dir="./wsi_input",
-                output_dir="./wsi_output/aligned",
-                alignment_method="valis",
-                valis_config=valis_cfg,
-            )
-
-        ``None`` preserves the legacy behavior, where RocqiPath constructs a
-        ``ValisConfig`` internally from ``valis_max_error_um``,
-        ``valis_non_rigid_dim``, ``valis_feature_detector``,
-        ``valis_num_features``, ``valis_check_reflections``, and
-        ``valis_norm_method``.    
-    
-    valis_max_error_um : float or None, default=None
-        Maximum accepted VALIS registration error, expressed in micrometres.
-
-        After VALIS completes registration, RocqiPath can compare registration
-        error estimates against this physical threshold.
-
-        Example::
-
-            valis_max_error_um=100.0
-
-        can be used to flag registrations whose reported physical alignment
-        error exceeds approximately 100 micrometres.
-
-        ``None`` disables this explicit acceptance threshold.
-
-        This field applies only when ``alignment_method="valis"``.
-
     max_physical_field_ratio : float or None, default=2.0
         Maximum allowed ratio between the physical fields covered by the
         reference and moving slides.
@@ -439,94 +350,18 @@ class AlignmentConfig(BaseConfig):
 
         When supplied, the value must be at least ``1.0``.
 
-    valis_non_rigid_dim : int, default=2048
-        Maximum processed-image dimension, in pixels, used for VALIS
-        non-rigid registration.
+    valis : ValisOptions, default=ValisOptions()
+        Settings for the VALIS backend, used when ``backend="valis"``.
 
-        This high-level convenience field is forwarded to
-        ``ValisConfig.max_non_rigid_reg_dim_px`` by the current alignment
-        pipeline.
+        Defaults suit general H&E-to-IHC registration. Change individual
+        settings with nested keywords, for example
+        ``rp.align(..., valis__max_acceptable_error_um=100.0)``, or pass a
+        complete :class:`ValisOptions`.
 
-        Larger values provide more spatial information for local deformation
-        estimation but increase memory consumption and runtime.
-
-        This field applies only when ``alignment_method="valis"``.
-
-        In a more advanced workflow where a complete ``ValisConfig`` is
-        supplied separately, the corresponding value in that configuration
-        should be considered the more specific backend setting.
-
-    valis_feature_detector : str or None, default="disk"
-        Feature detector used by the VALIS rigid-registration stage.
-
-        The default ``"disk"`` selects DISK-based feature detection.
-
-        Depending on the RocqiPath and VALIS versions, other supported
-        detectors may include options such as::
-
-            "dedode"
-            "superpoint"
-            "brisk"
-            "orb"
-            "kaze"
-            "akaze"
-            "vgg"
-
-        This field is intended as a convenient high-level configuration option.
-
-        More advanced detector-specific settings should generally be supplied
-        through ``ValisConfig``.
-
-    valis_num_features : int, default=2000
-        Maximum or target number of image features detected by compatible
-        VALIS feature detectors.
-
-        Increasing this value can provide more candidate correspondences when
-        tissue is complex or sparsely matched, but also increases matching
-        runtime and memory usage.
-
-        This value is forwarded to ``ValisConfig.num_features``.
-
-        It applies only to detectors that support explicit feature-count
-        control.
-
-    valis_check_reflections : bool, default=False
-        Whether VALIS should evaluate reflected or mirrored orientations while
-        searching for an alignment.
-
-        Set this to ``True`` when slide orientation is uncertain or when
-        scanner/export behavior may have introduced left-right or other mirror
-        reflections.
-
-        Reflection checking increases registration search complexity and may
-        therefore increase runtime.
-
-    valis_norm_method : str or None, default="img_stats"
-        VALIS image-intensity normalization method used during registration
-        preprocessing.
-
-        ``"img_stats"`` is the default RocqiPath setting and provides a
-        general image-statistics-based normalization strategy.
-
-        Cross-stain histology registration can benefit from preprocessing
-        because the corresponding biological structures may have very
-        different raw pixel intensities between H&E and IHC slides.
-
-        ``None`` allows VALIS to determine its own default behavior.
-
-    keep_valis_diagnostics : bool, default=True
-        Whether VALIS diagnostic and intermediate artifacts should be retained
-        after registration.
-
-        When ``True``, backend-generated diagnostic files can remain available
-        for registration inspection, debugging, and quality assessment.
-
-        When ``False``, RocqiPath may remove unnecessary VALIS temporary or
-        diagnostic data after the registration output has been successfully
-        generated.
-
-        Keeping diagnostics is useful during method development and parameter
-        optimization but can consume substantial disk space in large studies.
+    orb : OrbOptions, default=OrbOptions()
+        Settings for the lightweight ORB backend, used when
+        ``backend="orb"``. For example
+        ``rp.align(..., backend="orb", orb__ransac_threshold=10.0)``.
 
     qc_enabled : bool, default=False
         Whether RocqiPath should generate an additional registration
@@ -633,14 +468,10 @@ class AlignmentConfig(BaseConfig):
     Notes
     -----
     High-level versus backend configuration
-        ``AlignmentConfig`` controls the overall paired-slide workflow.
-
-        VALIS-specific algorithmic settings belong conceptually to
-        ``ValisConfig`` and ORB-specific algorithmic settings belong to
-        ``OrbConfig``.
-
-        The existing ``valis_*`` fields in ``AlignmentConfig`` provide
-        convenient high-level controls and preserve backward compatibility.
+        ``AlignConfig`` controls the overall paired-slide workflow.
+        VALIS-specific settings live in its ``valis`` field
+        (:class:`ValisOptions`) and ORB-specific settings in its ``orb``
+        field (:class:`OrbOptions`).
 
     Reference coordinate system
         In the typical RocqiPath workflow, the reference image defines the
@@ -661,7 +492,7 @@ class AlignmentConfig(BaseConfig):
 
     Directory discovery
         When ``pair_folders`` is empty, RocqiPath attempts to discover pair
-        folders automatically beneath ``input_dir``.
+        folders automatically beneath the input folder.
 
     Physical-field validation
         ``max_physical_field_ratio`` is intended to identify suspicious
@@ -677,138 +508,76 @@ class AlignmentConfig(BaseConfig):
 
     Examples
     --------
-    Run VALIS registration with the default configuration:
+    Run VALIS registration with the default settings:
 
-    >>> cfg = AlignmentConfig(
-    ...     input_dir="./wsi_input",
-    ...     output_dir="./wsi_output/aligned",
-    ... )
+    >>> import rocqipath as rp
+    >>> result = rp.align("./wsi_input", "./wsi_output")  # doctest: +SKIP
 
-    Process only selected stain folders:
+    Process only selected stain folders with custom role names:
 
-    >>> cfg = AlignmentConfig(
-    ...     input_dir="./wsi_input",
-    ...     output_dir="./wsi_output/aligned",
-    ...     pair_folders=["cd8", "panck"],
-    ... )
-
-    Use custom role names:
-
-    >>> cfg = AlignmentConfig(
-    ...     input_dir="./wsi_input",
-    ...     output_dir="./wsi_output/aligned",
-    ...     reference_name="he",
-    ...     moving_name="cd8",
-    ... )
+    >>> cfg = AlignConfig(pair_folders=["cd8", "panck"], reference_name="he", moving_name="cd8")
 
     Use an explicit filename pattern:
 
-    >>> cfg = AlignmentConfig(
-    ...     input_dir="./wsi_input",
-    ...     output_dir="./wsi_output/aligned",
+    >>> cfg = AlignConfig(
     ...     reference_name="he",
     ...     moving_name="cd8",
-    ...     filename_pattern=(
-    ...         r"(?P<sample_id>.+?)_"
-    ...         r"(?P<role>he|cd8)\\.(tif|tiff|svs)$"
-    ...     ),
+    ...     filename_pattern=r"(?P<sample_id>.+?)_(?P<role>he|cd8)\.(tif|tiff|svs)$",
     ... )
 
-    Register at 20x while explicitly defining native slide magnifications:
+    Register at 20x while declaring the native slide magnifications:
 
-    >>> cfg = AlignmentConfig(
-    ...     input_dir="./wsi_input",
-    ...     output_dir="./wsi_output/aligned",
+    >>> cfg = AlignConfig(
     ...     target_magnification=20.0,
     ...     reference_source_magnification=80.0,
     ...     moving_source_magnification=20.0,
     ... )
 
-    Configure the high-level VALIS feature settings:
+    Tune VALIS through nested settings:
 
-    >>> cfg = AlignmentConfig(
-    ...     input_dir="./wsi_input",
-    ...     output_dir="./wsi_output/aligned",
-    ...     alignment_method="valis",
-    ...     valis_non_rigid_dim=2048,
-    ...     valis_feature_detector="disk",
-    ...     valis_num_features=3000,
-    ...     valis_check_reflections=True,
+    >>> cfg = AlignConfig().replace(
+    ...     valis__num_features=3000, valis__check_for_reflections=True
     ... )
 
-    Use the lightweight ORB registration backend:
+    Use the lightweight ORB backend and save QC figures:
 
-    >>> cfg = AlignmentConfig(
-    ...     input_dir="./wsi_input",
-    ...     output_dir="./wsi_output/aligned",
-    ...     alignment_method="orb",
-    ... )
+    >>> cfg = AlignConfig(backend="orb", qc_enabled=True, qc_dpi=600)
 
-    Enable visual registration QC:
+    Validate slide discovery and pairing without registering:
 
-    >>> cfg = AlignmentConfig(
-    ...     input_dir="./wsi_input",
-    ...     output_dir="./wsi_output/aligned",
-    ...     qc_enabled=True,
-    ...     qc_patch_size=1024,
-    ...     qc_dpi=600,
-    ... )
-
-    Validate slide discovery and pairing without registration:
-
-    >>> cfg = AlignmentConfig(
-    ...     input_dir="./wsi_input",
-    ...     output_dir="./wsi_output/aligned",
-    ...     dry_run=True,
-    ... )
+    >>> cfg = AlignConfig(dry_run=True)
     """
 
-    input_dir: str = "./wsi_input"
-    output_dir: str = "./wsi_output/aligned"
     pair_folders: List[str] = field(default_factory=list)
 
     reference_name: str = DEFAULT_REFERENCE_NAME
     moving_name: str = DEFAULT_MOVING_NAME
-    filename_pattern: Optional[str] = None
+    filename_pattern: Optional[str] = field(default=None, metadata=ADVANCED)
 
-    alignment_method: str = "valis"
+    backend: Literal["valis", "orb"] = "valis"
 
-    aligned_wsi_level: int = 0
+    aligned_wsi_level: int = field(default=0, metadata=ADVANCED)
 
-    patch_size: int = 1024
-    grid_density: int = 1
+    patch_size: int = field(default=1024, metadata=ADVANCED)
+    grid_density: int = field(default=1, metadata=ADVANCED)
 
     target_magnification: float = DEFAULT_TARGET_MAGNIFICATION
 
     reference_source_magnification: Optional[float] = None
     moving_source_magnification: Optional[float] = None
 
-    max_physical_field_ratio: Optional[float] = None
+    max_physical_field_ratio: Optional[float] = field(default=None, metadata=ADVANCED)
 
-    # ------------------------------------------------------------------
-    # VALIS backend configuration
-    # ------------------------------------------------------------------
-
-    # Preferred advanced API.
-    valis_config: Optional["ValisConfig"] = None
-
-    # Legacy/high-level convenience options retained for compatibility.
-    valis_max_error_um: Optional[float] = None
-    valis_non_rigid_dim: int = 2048
-    valis_feature_detector: Optional[str] = "disk"
-    valis_num_features: int = 2000
-    valis_check_reflections: bool = False
-    valis_norm_method: Optional[str] = "img_stats"
-
-    keep_valis_diagnostics: bool = True
+    valis: "ValisOptions" = field(default_factory=lambda: ValisOptions(), metadata=ADVANCED)
+    orb: "OrbOptions" = field(default_factory=lambda: OrbOptions(), metadata=ADVANCED)
 
     qc_enabled: bool = False
-    qc_output_dir: Optional[str] = None
+    qc_output_dir: Optional[str] = field(default=None, metadata=LOCAL_ONLY)
 
-    qc_reference_level: int = 0
-    qc_patch_size: int = 1024
-    qc_reference_read_level: int = 0
-    qc_moving_read_level: int = 0
+    qc_reference_level: int = field(default=0, metadata=ADVANCED)
+    qc_patch_size: int = field(default=1024, metadata=ADVANCED)
+    qc_reference_read_level: int = field(default=0, metadata=ADVANCED)
+    qc_moving_read_level: int = field(default=0, metadata=ADVANCED)
     qc_dpi: int = 300
 
     dry_run: bool = False
@@ -856,11 +625,14 @@ class AlignmentConfig(BaseConfig):
         WSI files, inspect image metadata, discover pair folders, or execute
         registration.
         """
-        # Convert serialized VALIS configuration back into ValisConfig.
-        if isinstance(self.valis_config, dict):
-            self.valis_config = ValisConfig.from_dict(
-                self.valis_config
-            )
+        if isinstance(self.valis, dict):
+            self.valis = ValisOptions.from_dict(self.valis)
+        if isinstance(self.orb, dict):
+            self.orb = OrbOptions.from_dict(self.orb)
+        require(
+            self.backend in {"valis", "orb"},
+            f"backend must be 'valis' or 'orb'; got {self.backend!r}",
+        )
 
         require(
             bool(self.reference_name and self.moving_name),
@@ -930,10 +702,10 @@ class AlignmentConfig(BaseConfig):
 
 
 @dataclass
-class ValisConfig(BaseConfig):
+class ValisOptions(BaseConfig):
     """Configure the VALIS rigid and non-rigid whole-slide registration backend.
 
-    ``ValisConfig`` provides the advanced configuration surface used by
+    ``ValisOptions`` provides the advanced configuration surface used by
     RocqiPath when registration is performed with the VALIS backend. It
     controls image resolution, feature detection, feature matching, slide
     orientation, rigid registration, non-rigid registration, optional
@@ -944,8 +716,8 @@ class ValisConfig(BaseConfig):
     parameters without requiring users to modify RocqiPath's internal
     registration implementation.
 
-    In a typical workflow, a ``ValisConfig`` instance is created separately
-    and supplied to the alignment pipeline. Simple users can rely entirely on
+    It is the ``valis`` field of :class:`AlignConfig`; set individual values
+    with nested keywords such as ``valis__num_features=3000``. Simple users can rely entirely on
     the defaults, while advanced users can modify feature detectors, feature
     matchers, registration resolutions, or native VALIS options.
 
@@ -1370,12 +1142,17 @@ class ValisConfig(BaseConfig):
         Unlike the ``*_dim_px`` parameters, this field is expressed in a
         physical unit rather than processed-image pixels.
 
+    keep_diagnostics : bool, default=True
+        Keep VALIS's intermediate registration files (processed images,
+        overlaps, error tables) in the case output folder. ``False``
+        deletes them after the aligned slide is exported.
+
     valis_kwargs : dict, default={}
         Arbitrary keyword arguments passed directly to
         ``valis.registration.Valis``.
 
         This is the advanced escape hatch for functionality that does not yet
-        have a dedicated ``ValisConfig`` field.
+        have a dedicated ``ValisOptions`` field.
 
         Values in ``valis_kwargs`` should be applied after RocqiPath constructs
         its standard VALIS argument dictionary. Therefore, when the same key
@@ -1440,11 +1217,11 @@ class ValisConfig(BaseConfig):
     --------
     Use the default VALIS configuration:
 
-    >>> cfg = ValisConfig()
+    >>> cfg = ValisOptions()
 
     Use more DISK features:
 
-    >>> cfg = ValisConfig(
+    >>> cfg = ValisOptions(
     ...     feature_detector="disk",
     ...     matcher="lightglue",
     ...     num_features=4000,
@@ -1452,7 +1229,7 @@ class ValisConfig(BaseConfig):
 
     Use RGB DISK features:
 
-    >>> cfg = ValisConfig(
+    >>> cfg = ValisOptions(
     ...     feature_detector="disk",
     ...     matcher="lightglue",
     ...     num_features=3000,
@@ -1461,7 +1238,7 @@ class ValisConfig(BaseConfig):
 
     Use DeDoDe with LightGlue:
 
-    >>> cfg = ValisConfig(
+    >>> cfg = ValisOptions(
     ...     feature_detector="dedode",
     ...     matcher="lightglue",
     ...     num_features=3000,
@@ -1469,7 +1246,7 @@ class ValisConfig(BaseConfig):
 
     Use a separate rotation-invariant detector for image orientation:
 
-    >>> cfg = ValisConfig(
+    >>> cfg = ValisOptions(
     ...     feature_detector="disk",
     ...     matcher="lightglue",
     ...     sorting_feature_detector="brisk",
@@ -1478,7 +1255,7 @@ class ValisConfig(BaseConfig):
 
     Enable higher-resolution micro-registration:
 
-    >>> cfg = ValisConfig(
+    >>> cfg = ValisOptions(
     ...     max_processed_image_dim_px=512,
     ...     max_non_rigid_reg_dim_px=2048,
     ...     run_register_micro=True,
@@ -1487,7 +1264,7 @@ class ValisConfig(BaseConfig):
 
     Supply advanced matcher parameters:
 
-    >>> cfg = ValisConfig(
+    >>> cfg = ValisOptions(
     ...     feature_detector="brisk",
     ...     matcher="descriptor",
     ...     matcher_kwargs={
@@ -1498,7 +1275,7 @@ class ValisConfig(BaseConfig):
 
     Override a native VALIS argument directly:
 
-    >>> cfg = ValisConfig(
+    >>> cfg = ValisOptions(
     ...     valis_kwargs={
     ...         "some_future_valis_option": True,
     ...     }
@@ -1525,13 +1302,13 @@ class ValisConfig(BaseConfig):
     # ------------------------------------------------------------------
     # Non-rigid registration
     # ------------------------------------------------------------------
-    non_rigid_registrar_cls: Optional[object] = None
+    non_rigid_registrar_cls: Optional[object] = field(default=None, metadata=LOCAL_ONLY)
 
     # ------------------------------------------------------------------
     # Micro registration
     # ------------------------------------------------------------------
-    micro_rigid_registrar_cls: Optional[object] = None
-    micro_rigid_registrar_params: dict = field(default_factory=dict)
+    micro_rigid_registrar_cls: Optional[object] = field(default=None, metadata=LOCAL_ONLY)
+    micro_rigid_registrar_params: dict = field(default_factory=dict, metadata=LOCAL_ONLY)
     run_register_micro: bool = False
     register_micro_dim_px: int = 4096
 
@@ -1545,8 +1322,8 @@ class ValisConfig(BaseConfig):
     rgb_features: bool = False
 
     matcher: str = "auto"
-    feature_detector_kwargs: dict = field(default_factory=dict)
-    matcher_kwargs: dict = field(default_factory=dict)
+    feature_detector_kwargs: dict = field(default_factory=dict, metadata=LOCAL_ONLY)
+    matcher_kwargs: dict = field(default_factory=dict, metadata=LOCAL_ONLY)
 
     # ------------------------------------------------------------------
     # Feature detector / matcher used during image sorting/orientation
@@ -1554,8 +1331,8 @@ class ValisConfig(BaseConfig):
     sorting_feature_detector: Optional[str] = None
     sorting_matcher: Optional[str] = None
 
-    sorting_feature_detector_kwargs: dict = field(default_factory=dict)
-    sorting_matcher_kwargs: dict = field(default_factory=dict)
+    sorting_feature_detector_kwargs: dict = field(default_factory=dict, metadata=LOCAL_ONLY)
+    sorting_matcher_kwargs: dict = field(default_factory=dict, metadata=LOCAL_ONLY)
 
     # ------------------------------------------------------------------
     # Quality
@@ -1565,8 +1342,9 @@ class ValisConfig(BaseConfig):
     # ------------------------------------------------------------------
     # Advanced VALIS escape hatch
     # ------------------------------------------------------------------
-    valis_kwargs: dict = field(default_factory=dict)
-    processor_dict: Optional[dict] = None
+    keep_diagnostics: bool = True
+    valis_kwargs: dict = field(default_factory=dict, metadata=LOCAL_ONLY)
+    processor_dict: Optional[dict] = field(default=None, metadata=LOCAL_ONLY)
 
     def __post_init__(self) -> None:
         """Resolve the default VALIS non-rigid registrar lazily.
@@ -1593,10 +1371,10 @@ class ValisConfig(BaseConfig):
 
 
 @dataclass
-class OrbConfig(BaseConfig):
+class OrbOptions(BaseConfig):
     """Configure RocqiPath's lightweight ORB-based WSI registration backend.
 
-    ``OrbConfig`` controls the contour-assisted ORB registration pipeline used
+    ``OrbOptions`` controls the contour-assisted ORB registration pipeline used
     by RocqiPath as an alternative to VALIS.
 
     The ORB backend is intended to provide a comparatively lightweight,
@@ -1622,7 +1400,7 @@ class OrbConfig(BaseConfig):
 
     Parameters
     ----------
-    ransac_threshold : float, default=5.0
+    ransac_threshold : float, default=20.0
         RANSAC reprojection-error threshold, in pixels, used when estimating
         the geometric transform from matched ORB features.
 
@@ -1635,10 +1413,11 @@ class OrbConfig(BaseConfig):
         Larger values tolerate greater positional disagreement but may allow
         incorrect matches to influence the estimated transformation.
 
-        A value around ``5.0`` pixels is a reasonable default for the
-        thumbnail-resolution registration stage.
+        The default of ``20.0`` pixels is the value the backend has always
+        applied; it tolerates the imprecision of contour-derived matches at
+        thumbnail resolution.
 
-    orb_thumb_size : int, default=1500
+    thumb_size : int, default=1500
         Maximum thumbnail dimension, in pixels, used for the initial ORB
         registration stage.
 
@@ -1655,39 +1434,39 @@ class OrbConfig(BaseConfig):
         This value refers to the processed thumbnail representation and not to
         the original level-0 WSI dimensions.
 
-    orb_refine_thumb_size : int, default=3000
+    refine_thumb_size : int, default=3000
         Maximum thumbnail dimension, in pixels, used for the optional ORB
         refinement stage.
 
         After an initial affine transformation has been estimated using
-        ``orb_thumb_size``, RocqiPath can repeat feature matching at a larger
+        ``thumb_size``, RocqiPath can repeat feature matching at a larger
         image scale to refine that transformation.
 
-        This value is normally larger than ``orb_thumb_size`` because the
+        This value is normally larger than ``thumb_size`` because the
         second stage is intended to improve alignment using finer structural
         information.
 
         For example::
 
-            orb_thumb_size = 1500
-            orb_refine_thumb_size = 3000
+            thumb_size = 1500
+            refine_thumb_size = 3000
 
         performs coarse registration first and then refines the transform at
         approximately twice the linear image dimension.
 
-    orb_refine_enabled : bool, default=True
+    refine_enabled : bool, default=True
         Whether to run the higher-resolution ORB refinement stage.
 
         When ``True``, RocqiPath first estimates an initial registration at
-        ``orb_thumb_size`` and subsequently attempts to improve the alignment
-        using ``orb_refine_thumb_size``.
+        ``thumb_size`` and subsequently attempts to improve the alignment
+        using ``refine_thumb_size``.
 
         When ``False``, only the initial ORB registration stage is used.
 
         Disabling refinement can substantially reduce runtime when initial
         alignment quality is already sufficient.
 
-    orb_max_contours : int, default=8
+    max_contours : int, default=8
         Maximum number of tissue contours considered when constructing the
         tissue geometry used by the ORB registration pipeline.
 
@@ -1702,7 +1481,7 @@ class OrbConfig(BaseConfig):
 
         A smaller value focuses registration on the largest tissue regions.
 
-    orb_min_area_frac : float, default=0.001
+    min_area_frac : float, default=0.001
         Minimum contour area expressed as a fraction of the processed image
         area.
 
@@ -1721,7 +1500,7 @@ class OrbConfig(BaseConfig):
 
         Valid values are normally between ``0`` and ``1``.
 
-    orb_match_threshold : float, default=1.4
+    match_threshold : float, default=1.4
         Threshold used by RocqiPath's contour/feature matching logic to
         determine whether candidate tissue structures or ORB registration
         correspondences are sufficiently compatible.
@@ -1764,6 +1543,10 @@ class OrbConfig(BaseConfig):
         NCC should be interpreted as a registration-quality indicator rather
         than a definitive measure of histologic correspondence.
 
+    save_tile_size : int, default=1024
+        Edge length, in output pixels, of the tiles streamed when the
+        aligned slide is written. Smaller tiles use less memory.
+
     Notes
     -----
     ORB registration
@@ -1778,7 +1561,7 @@ class OrbConfig(BaseConfig):
         tissue deformation.
 
     Thumbnail coordinates
-        ``orb_thumb_size``, ``orb_refine_thumb_size``, and
+        ``thumb_size``, ``refine_thumb_size``, and
         ``ransac_threshold`` operate in processed thumbnail coordinate
         systems rather than original level-0 WSI coordinates.
 
@@ -1799,53 +1582,68 @@ class OrbConfig(BaseConfig):
     --------
     Use the default ORB configuration:
 
-    >>> cfg = OrbConfig()
+    >>> cfg = OrbOptions()
 
     Use a larger initial registration thumbnail:
 
-    >>> cfg = OrbConfig(
-    ...     orb_thumb_size=2000,
-    ...     orb_refine_thumb_size=4000,
+    >>> cfg = OrbOptions(
+    ...     thumb_size=2000,
+    ...     refine_thumb_size=4000,
     ... )
 
     Disable the refinement stage:
 
-    >>> cfg = OrbConfig(
-    ...     orb_refine_enabled=False,
+    >>> cfg = OrbOptions(
+    ...     refine_enabled=False,
     ... )
 
     Use stricter RANSAC filtering:
 
-    >>> cfg = OrbConfig(
+    >>> cfg = OrbOptions(
     ...     ransac_threshold=3.0,
     ... )
 
     Ignore smaller tissue fragments:
 
-    >>> cfg = OrbConfig(
-    ...     orb_min_area_frac=0.005,
-    ...     orb_max_contours=5,
+    >>> cfg = OrbOptions(
+    ...     min_area_frac=0.005,
+    ...     max_contours=5,
     ... )
 
     Require stronger post-registration correlation:
 
-    >>> cfg = OrbConfig(
+    >>> cfg = OrbOptions(
     ...     min_ncc_threshold=0.40,
     ... )
     """
 
-    ransac_threshold: float = 5.0
-    orb_thumb_size: int = 1500
-    orb_refine_thumb_size: int = 3000
-    orb_refine_enabled: bool = True
-    orb_max_contours: int = 8
-    orb_min_area_frac: float = 0.001
-    orb_match_threshold: float = 1.4
+    ransac_threshold: float = 20.0
+    thumb_size: int = 1500
+    refine_thumb_size: int = 3000
+    refine_enabled: bool = True
+    max_contours: int = 8
+    min_area_frac: float = 0.001
+    match_threshold: float = 1.4
     min_ncc_threshold: float = 0.25
+    save_tile_size: int = 1024
+
+    def registrar_settings(self) -> dict:
+        """Return the keys the ORB backend reads from the registrar settings."""
+        return {
+            "ransac_threshold": self.ransac_threshold,
+            "orb_thumb_size": self.thumb_size,
+            "orb_refine_thumb_size": self.refine_thumb_size,
+            "orb_refine_enabled": self.refine_enabled,
+            "orb_max_contours": self.max_contours,
+            "orb_min_area_frac": self.min_area_frac,
+            "orb_match_threshold": self.match_threshold,
+            "min_ncc_threshold": self.min_ncc_threshold,
+            "orb_save_tile_size": self.save_tile_size,
+        }
 
 
 __all__ = [
-    "AlignmentConfig",
-    "OrbConfig",
-    "ValisConfig",
+    "AlignConfig",
+    "OrbOptions",
+    "ValisOptions",
 ]

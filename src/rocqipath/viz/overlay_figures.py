@@ -7,10 +7,10 @@ from typing import Dict
 import matplotlib.pyplot as plt
 import numpy as np
 
-from rocqipath.viz.config import IHCOverlayConfig, OverlayCombo
+from rocqipath.viz.config import OverlayConfig, OverlayCombo
 
 
-def _save_composite_figure(composite: np.ndarray, out_path: str, cfg: IHCOverlayConfig) -> None:
+def _save_composite_figure(composite: np.ndarray, out_path: str, cfg: OverlayConfig) -> None:
     """Save a coloured composite image to disk as a borderless figure.
 
     Parameters
@@ -20,7 +20,7 @@ def _save_composite_figure(composite: np.ndarray, out_path: str, cfg: IHCOverlay
         :func:`_build_composite`.
     out_path : str
         Destination file path.
-    cfg : IHCOverlayConfig
+    cfg : OverlayConfig
         Supplies ``dpi`` and ``show_plot``.
 
     Notes
@@ -44,7 +44,7 @@ def _save_grid_figure(
     masks: Dict[str, np.ndarray],
     composite: np.ndarray,
     combo: OverlayCombo,
-    cfg: IHCOverlayConfig,
+    cfg: OverlayConfig,
     out_path: str,
 ) -> None:
     """Save a multi-panel figure: one binary mask per marker, plus the composite.
@@ -63,7 +63,7 @@ def _save_grid_figure(
     combo : OverlayCombo
         Determines panel order: base marker first, then each overlay in
         list order, then the composite.
-    cfg : IHCOverlayConfig
+    cfg : OverlayConfig
         Supplies ``dpi``, ``show_plot``, and marker labels (via
         ``cfg.markers[...].label``) used as panel titles.
     out_path : str

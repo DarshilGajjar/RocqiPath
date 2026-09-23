@@ -1,4 +1,4 @@
-"""Typed configurations for tissue, TMA, and paired-patch extraction."""
+"""Settings for the ``extract_tissue``, ``extract_tma`` and ``extract_patches`` workflows."""
 
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ from rocqipath._internal.validation import (
     validate_positive,
 )
 
-from rocqipath._internal.base_config import BaseConfig
+from rocqipath._internal.base_config import ADVANCED, LOCAL_ONLY, BaseConfig
 
 DEFAULT_REFERENCE_FILENAME_PATTERN = (
     r"^(?P<sample_id>.+?)"
@@ -23,7 +23,7 @@ DEFAULT_REFERENCE_FILENAME_PATTERN = (
 
 
 @dataclass
-class BaseExtractionConfig(BaseConfig):
+class _RegionExtractionConfig(BaseConfig):
     """Configure fields shared by tissue and TMA region extraction.
 
     Parameters
@@ -46,25 +46,41 @@ class BaseExtractionConfig(BaseConfig):
         TIFF encoder quality in ``[1, 100]``.
     skip_existing : bool
         Skip regions whose TIFF, preview, and manifest all exist.
+    detector : {"otsu", "semantic"}
+        Tissue detector. ``"otsu"`` thresholds a low-magnification
+        thumbnail and needs no model. ``"semantic"`` runs a TIAToolbox
+        tissue-segmentation model (install the ``semantic`` extra).
+    semantic_model : str
+        TIAToolbox pretrained model name used when ``detector="semantic"``.
+    semantic_weights_path : str, optional
+        Local weights file overriding the pretrained download.
+    semantic_device : {"auto", "cpu", "cuda"}
+        Inference device; ``"auto"`` uses CUDA when available.
+    semantic_batch_size : int
+        Tiles per inference batch.
+    semantic_num_workers : int
+        Data-loader worker processes for inference.
+    semantic_source_mpp : float, optional
+        Microns-per-pixel fallback when the slide has no MPP metadata.
     """
 
     target_magnification: float = DEFAULT_TARGET_MAGNIFICATION
     detection_magnification: float = 1.25
     source_magnification: Optional[float] = None
-    preview_scale: float = 0.2
+    preview_scale: float = field(default=0.2, metadata=ADVANCED)
     min_area_fraction: float = 0.0005
-    tif_tile: bool = True
-    tif_pyramid: bool = True
-    tif_compression: str = "lzw"
-    tif_quality: int = 99
+    tif_tile: bool = field(default=True, metadata=ADVANCED)
+    tif_pyramid: bool = field(default=True, metadata=ADVANCED)
+    tif_compression: str = field(default="lzw", metadata=ADVANCED)
+    tif_quality: int = field(default=99, metadata=ADVANCED)
     skip_existing: bool = True
     detector: Literal["otsu", "semantic"] = "otsu"
-    semantic_model: str = "fcn-tissue_mask"
-    semantic_weights_path: Optional[str] = None
-    semantic_device: Literal["auto", "cpu", "cuda"] = "auto"
-    semantic_batch_size: int = 4
-    semantic_num_workers: int = 0
-    semantic_source_mpp: Optional[float] = None
+    semantic_model: str = field(default="fcn-tissue_mask", metadata=ADVANCED)
+    semantic_weights_path: Optional[str] = field(default=None, metadata=LOCAL_ONLY)
+    semantic_device: Literal["auto", "cpu", "cuda"] = field(default="auto", metadata=ADVANCED)
+    semantic_batch_size: int = field(default=4, metadata=ADVANCED)
+    semantic_num_workers: int = field(default=0, metadata=ADVANCED)
+    semantic_source_mpp: Optional[float] = field(default=None, metadata=ADVANCED)
 
     def __post_init__(self) -> None:
         """Preserve shared extraction validation and user-facing messages."""
@@ -126,22 +142,41 @@ class BaseExtractionConfig(BaseConfig):
 
 
 @dataclass
-class TissueExtractionConfig(BaseExtractionConfig):
-    """Configure contiguous whole-slide tissue region extraction.
+class ExtractTissueConfig(_RegionExtractionConfig):
+    """Settings for :func:`rocqipath.extract_tissue`.
 
-    This specialization uses the shared extraction fields with a larger
-    default minimum area fraction and no circularity gate.
+    Detects separate pieces of tissue on each whole-slide image and saves
+    each one as its own pyramidal TIFF with a preview and a manifest. This
+    specialization uses the shared extraction fields with a larger default
+    minimum area fraction and no circularity gate.
+
+    Parameters
+    ----------
+    min_area_fraction : float
+        Minimum contour area as a fraction of the detection thumbnail.
+        Smaller specks are ignored. Default ``0.005``.
+
+    Examples
+    --------
+    >>> ExtractTissueConfig(target_magnification=10.0, source_magnification=40.0)  # doctest: +ELLIPSIS
+    ExtractTissueConfig(target_magnification=10.0, ...)
     """
 
     min_area_fraction: float = 0.005
 
 
 @dataclass
-class TMAExtractionConfig(BaseExtractionConfig):
-    """Configure circular multi-region or TMA extraction.
+class ExtractTMAConfig(_RegionExtractionConfig):
+    """Settings for :func:`rocqipath.extract_tma`.
+
+    Detects round tissue-microarray cores on each H&E slide and cuts the
+    same cores out of every matching IHC slide of that block.
 
     Parameters
     ----------
+    stains : list of str
+        Stains to extract, matched against filenames (e.g. ``["HE", "CD8"]``).
+        ``["all"]`` extracts every recognized stain.
     only_circles : bool
         Apply the circularity gate.
     min_circularity : float
@@ -158,20 +193,27 @@ class TMAExtractionConfig(BaseExtractionConfig):
         OpenCV CLAHE contrast limit.
     clahe_tile_size : tuple of int
         CLAHE tile dimensions in extracted-region pixels.
+    min_aspect_ratio : float
+        Minimum short/long side ratio of a core's bounding box in ``[0, 1]``.
+    min_solidity : float
+        Minimum contour area divided by convex-hull area in ``[0, 1]``.
+    min_relative_area, max_relative_area : float
+        Accepted core area relative to the median core area of the block.
     """
 
+    stains: List[str] = field(default_factory=lambda: ["all"])
     only_circles: bool = True
     min_circularity: float = 0.70
     per_stain_detection: bool = True
     fallback_to_he: bool = True
     box_scale: float = 1.0
     ihc_enhance: bool = True
-    clahe_clip_limit: float = 3.0
-    clahe_tile_size: Tuple[int, int] = field(default_factory=lambda: (8, 8))
-    min_aspect_ratio: float = 0.90
-    min_solidity: float = 0.95
-    min_relative_area: float = 0.80
-    max_relative_area: float = 1.20
+    clahe_clip_limit: float = field(default=3.0, metadata=ADVANCED)
+    clahe_tile_size: Tuple[int, int] = field(default_factory=lambda: (8, 8), metadata=ADVANCED)
+    min_aspect_ratio: float = field(default=0.90, metadata=ADVANCED)
+    min_solidity: float = field(default=0.95, metadata=ADVANCED)
+    min_relative_area: float = field(default=0.80, metadata=ADVANCED)
+    max_relative_area: float = field(default=1.20, metadata=ADVANCED)
 
     def __post_init__(self) -> None:
         """Validate TMA fields after the shared extraction fields."""
@@ -202,15 +244,17 @@ class TMAExtractionConfig(BaseExtractionConfig):
 
 
 @dataclass
-class PatchExtractionConfig(BaseConfig):
-    """Configure generalized paired sliding-window patch extraction.
+class ExtractPatchesConfig(BaseConfig):
+    """Settings for :func:`rocqipath.extract_patches`.
+
+    Walks a sliding window over each reference slide and its aligned
+    counterpart, saving matching patch pairs that contain enough tissue.
 
     Parameters
     ----------
-    he_dir, aligned_dir, output_dir : str
-        Reference input, aligned-target input, and output roots.
     biomarker_folders : list of str
-        Marker subfolders to process.
+        Marker subfolders of the aligned input to process. Empty (the
+        default) processes every subfolder.
     reference_pattern : str
         Filename regex with a named ``sample_id`` group.
     reference_name, moving_name : str
@@ -231,11 +275,8 @@ class PatchExtractionConfig(BaseConfig):
         Maximum relative target-dimension mismatch.
     """
 
-    he_dir: str
-    aligned_dir: str
-    output_dir: str
-    biomarker_folders: List[str]
-    reference_pattern: str = DEFAULT_REFERENCE_FILENAME_PATTERN
+    biomarker_folders: List[str] = field(default_factory=list)
+    reference_pattern: str = field(default=DEFAULT_REFERENCE_FILENAME_PATTERN, metadata=ADVANCED)
     reference_name: str = "he"
     moving_name: str = "ihc"
     patch_size: int = 512
@@ -245,14 +286,10 @@ class PatchExtractionConfig(BaseConfig):
     target_magnification: float = DEFAULT_TARGET_MAGNIFICATION
     reference_source_magnification: Optional[float] = None
     target_source_magnification: Optional[float] = None
-    dimension_tolerance: float = 0.01
+    dimension_tolerance: float = field(default=0.01, metadata=ADVANCED)
 
     def __post_init__(self) -> None:
         """Resolve stride and preserve all historical validation messages."""
-        require(
-            bool(self.biomarker_folders),
-            "biomarker_folders must be a non-empty list.",
-        )
         validate_positive(
             self.patch_size,
             name="patch_size",
@@ -310,9 +347,8 @@ class PatchExtractionConfig(BaseConfig):
 
 
 __all__ = [
-    "BaseExtractionConfig",
     "DEFAULT_REFERENCE_FILENAME_PATTERN",
-    "PatchExtractionConfig",
-    "TMAExtractionConfig",
-    "TissueExtractionConfig",
+    "ExtractPatchesConfig",
+    "ExtractTMAConfig",
+    "ExtractTissueConfig",
 ]

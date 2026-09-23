@@ -7,7 +7,7 @@ from typing import Dict
 import cv2
 import numpy as np
 
-from rocqipath.viz.config import IHCOverlayConfig, MarkerProfile, OverlayCombo
+from rocqipath.viz.config import OverlayConfig, MarkerProfile, OverlayCombo
 
 
 def _marker_mask(img_rgb: np.ndarray, profile: MarkerProfile) -> np.ndarray:
@@ -69,7 +69,7 @@ def _build_composite(
     images: Dict[str, np.ndarray],
     masks: Dict[str, np.ndarray],
     combo: OverlayCombo,
-    cfg: IHCOverlayConfig,
+    cfg: OverlayConfig,
 ) -> np.ndarray:
     """Paint one base-plus-overlays composite for a single patch.
 
@@ -84,7 +84,7 @@ def _build_composite(
     combo : OverlayCombo
         Defines which marker is the base and which are layered on top,
         in order.
-    cfg : IHCOverlayConfig
+    cfg : OverlayConfig
         Supplies ``base_render_mode`` and each marker's colour (via
         ``cfg.markers``).
 

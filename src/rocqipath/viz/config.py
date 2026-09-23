@@ -2,14 +2,13 @@
 
 from __future__ import annotations
 
-import os
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Mapping, Optional, Tuple
+from typing import Any, Dict, List, Literal, Mapping, Optional, Tuple
 
 from rocqipath.errors import ConfigurationError
 from rocqipath._internal.validation import require
 
-from rocqipath._internal.base_config import BaseConfig
+from rocqipath._internal.base_config import ADVANCED, BaseConfig
 
 BASE_RENDER_MODES = frozenset({"mask", "original"})
 PLOT_MODES = frozenset({"grid", "composite", "both"})
@@ -82,8 +81,15 @@ class OverlayCombo(BaseConfig):
 
 
 @dataclass
-class IHCOverlayConfig(BaseConfig):
-    """Configure multi-marker IHC overlay compositing and figure output.
+class OverlayConfig(BaseConfig):
+    """Settings for :func:`rocqipath.overlay_markers`.
+
+    Each case folder holds one subfolder of patches per marker, with the
+    same patch filenames in each. Every marker is converted to a colored
+    mask and layered over a base marker to show co-localization.
+
+    ``markers`` and ``combinations`` have no defaults because they depend
+    on your stains; see the example below.
 
     Parameters
     ----------
@@ -97,8 +103,6 @@ class IHCOverlayConfig(BaseConfig):
         Render the base as its binary color mask or original RGB patch.
     plot_mode : {"composite", "grid", "both"}
         Figure types to save.
-    save_dir : str
-        Output root.
     patches_per_case : int
         Random patch cap; zero processes every shared filename.
     max_workers : int
@@ -109,15 +113,22 @@ class IHCOverlayConfig(BaseConfig):
         Display figures interactively.
     skip_existing : bool
         Skip requested figures already present.
+
+    Examples
+    --------
+    >>> cfg = OverlayConfig(
+    ...     markers={"he": MarkerProfile(color=(0, 0, 255)), "cd8": MarkerProfile(color=(255, 0, 0))},
+    ...     combinations=[OverlayCombo(base="he", overlays=["cd8"])],
+    ...     base_marker="he",
+    ... )
     """
 
     markers: Dict[str, MarkerProfile]
     combinations: List[OverlayCombo]
     base_marker: str
-    base_render_mode: str = "mask"
-    plot_mode: str = "composite"
+    base_render_mode: Literal["mask", "original"] = "mask"
+    plot_mode: Literal["composite", "grid", "both"] = "composite"
     show_plot: bool = False
-    save_dir: str = "./binary_plots"
     dpi: int = 300
     patches_per_case: int = 0
     skip_existing: bool = True
@@ -182,13 +193,12 @@ class IHCOverlayConfig(BaseConfig):
         for key, profile in self.markers.items():
             if not profile.label:
                 profile.label = key
-        os.makedirs(self.save_dir, exist_ok=True)
 
     @classmethod
     def from_dict(
         cls,
         values: Mapping[str, Any],
-    ) -> "IHCOverlayConfig":
+    ) -> "OverlayConfig":
         """Deserialize nested marker profiles and overlay combinations."""
         payload = dict(values)
         payload["markers"] = {
@@ -202,4 +212,82 @@ class IHCOverlayConfig(BaseConfig):
         return cls(**payload)
 
 
-__all__ = ["IHCOverlayConfig", "MarkerProfile", "OverlayCombo"]
+#: Named zoom levels mapped to square crop edges in source pixels.
+ZOOM_EDGES = {"40x": 512, "20x": 1000, "10x": 2000, "5x": 4000}
+#: Named anchors for fixed-position comparison crops.
+COMPARE_REGIONS = ("center", "top_left", "top_right", "bottom_left", "bottom_right")
+
+
+@dataclass
+class CompareConfig(BaseConfig):
+    """Settings for :func:`rocqipath.compare`.
+
+    Builds publication figures showing an H&E slide, its ground-truth IHC
+    and a predicted IHC side by side: one full view plus zoomed crops at
+    fixed anchors and, optionally, random tissue regions.
+
+    Parameters
+    ----------
+    title_reference : str
+        Title of the H&E panel.
+    title_truth : str
+        Title of the ground-truth IHC panel.
+    title_prediction : str
+        Title of the predicted IHC panel.
+    dpi : int
+        Figure resolution in dots per inch.
+    regions : list of str
+        Fixed crop anchors: any of ``center``, ``top_left``, ``top_right``,
+        ``bottom_left``, ``bottom_right``.
+    zooms : list of str
+        Crop sizes, as names (``40x`` = 512 px, ``20x`` = 1000 px,
+        ``10x`` = 2000 px, ``5x`` = 4000 px) or ``label:edge`` pairs such as
+        ``detail:256``.
+    random_rois : int
+        Random tissue crops per zoom level, 0 to 10. Zero disables them.
+    roi_seed : int
+        Seed for choosing random crops; saved next to the figures.
+    scale_bars : bool
+        Draw physically calibrated scale bars on crops.
+    mpp : float, optional
+        Micrometres per pixel for scale bars; a per-zoom table is used
+        when omitted.
+    figure_name : str
+        File name of the full-view figure. Crop names derive from it.
+    """
+
+    title_reference: str = "H&E"
+    title_truth: str = "Ground Truth IHC"
+    title_prediction: str = "Predicted IHC"
+    dpi: int = 600
+    regions: List[str] = field(default_factory=lambda: list(COMPARE_REGIONS))
+    zooms: List[str] = field(default_factory=lambda: list(ZOOM_EDGES))
+    random_rois: int = 0
+    roi_seed: int = field(default=42, metadata=ADVANCED)
+    scale_bars: bool = False
+    mpp: Optional[float] = field(default=None, metadata=ADVANCED)
+    figure_name: str = field(default="comparison.png", metadata=ADVANCED)
+
+    def __post_init__(self) -> None:
+        """Validate anchors, zoom names and the random-crop count."""
+        unknown = [region for region in self.regions if region not in COMPARE_REGIONS]
+        require(not unknown, f"Unknown region(s) {unknown}; choose from {list(COMPARE_REGIONS)}")
+        self.zoom_sizes()
+        require(0 <= self.random_rois <= 10, "random_rois must be between 0 and 10")
+        require(self.dpi > 0, f"dpi must be > 0; got {self.dpi}")
+
+    def zoom_sizes(self) -> List[Tuple[str, int]]:
+        """Return ``(label, edge)`` pairs for :attr:`zooms`."""
+        sizes = []
+        for zoom in self.zooms:
+            label, _, edge = str(zoom).partition(":")
+            if edge:
+                require(edge.isdigit() and int(edge) > 0, f"Invalid zoom {zoom!r}")
+                sizes.append((label, int(edge)))
+            else:
+                require(label in ZOOM_EDGES, f"Unknown zoom {zoom!r}; use {list(ZOOM_EDGES)} or label:edge")
+                sizes.append((label, ZOOM_EDGES[label]))
+        return sizes
+
+
+__all__ = ["COMPARE_REGIONS", "CompareConfig", "MarkerProfile", "OverlayCombo", "OverlayConfig", "ZOOM_EDGES"]

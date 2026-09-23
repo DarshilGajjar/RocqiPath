@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 from typing import List, Optional
 
-from rocqipath.extraction.config import PatchExtractionConfig
+from rocqipath.extraction.config import ExtractPatchesConfig
 from rocqipath._internal.logging import logger
 from rocqipath.extraction.patches import run_patch_extraction
 from rocqipath.extraction.reversible import ReversiblePatchExtractor
@@ -119,7 +119,7 @@ def extract_patches_single(
 
 
 __all__ = [
-    "PatchExtractionConfig",
+    "ExtractPatchesConfig",
     "ReversiblePatchExtractor",
     "extract_patches_single",
     "run_patch_extraction",

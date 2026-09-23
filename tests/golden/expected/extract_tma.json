@@ -120,6 +120,9 @@
         "semantic_weights_path": null,
         "skip_existing": true,
         "source_magnification": 20.0,
+        "stains": [
+          "all"
+        ],
         "target_magnification": 5.0,
         "tif_compression": "lzw",
         "tif_quality": 99
@@ -198,6 +201,9 @@
         "semantic_weights_path": null,
         "skip_existing": true,
         "source_magnification": 20.0,
+        "stains": [
+          "all"
+        ],
         "target_magnification": 5.0,
         "tif_compression": "lzw",
         "tif_quality": 99
@@ -276,6 +282,9 @@
         "semantic_weights_path": null,
         "skip_existing": true,
         "source_magnification": 20.0,
+        "stains": [
+          "all"
+        ],
         "target_magnification": 5.0,
         "tif_compression": "lzw",
         "tif_quality": 99
@@ -354,6 +363,9 @@
         "semantic_weights_path": null,
         "skip_existing": true,
         "source_magnification": 20.0,
+        "stains": [
+          "all"
+        ],
         "target_magnification": 5.0,
         "tif_compression": "lzw",
         "tif_quality": 99
@@ -512,6 +524,9 @@
         "semantic_weights_path": null,
         "skip_existing": true,
         "source_magnification": 20.0,
+        "stains": [
+          "all"
+        ],
         "target_magnification": 5.0,
         "tif_compression": "lzw",
         "tif_quality": 99
@@ -590,6 +605,9 @@
         "semantic_weights_path": null,
         "skip_existing": true,
         "source_magnification": 20.0,
+        "stains": [
+          "all"
+        ],
         "target_magnification": 5.0,
         "tif_compression": "lzw",
         "tif_quality": 99
@@ -668,6 +686,9 @@
         "semantic_weights_path": null,
         "skip_existing": true,
         "source_magnification": 20.0,
+        "stains": [
+          "all"
+        ],
         "target_magnification": 5.0,
         "tif_compression": "lzw",
         "tif_quality": 99
@@ -746,6 +767,9 @@
         "semantic_weights_path": null,
         "skip_existing": true,
         "source_magnification": 20.0,
+        "stains": [
+          "all"
+        ],
         "target_magnification": 5.0,
         "tif_compression": "lzw",
         "tif_quality": 99
