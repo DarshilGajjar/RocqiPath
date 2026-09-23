@@ -277,7 +277,7 @@ def _save_orb_streamed(self, level: int, output_path: str) -> str:
     tiles_x = (out_w + tile_size - 1) // tile_size
     tiles_y = (out_h + tile_size - 1) // tile_size
     logger.info(
-        "[ORB SAVE] Streaming {}x{} output in {} tiles (ref L{}, target L{})",
+        "[ORB SAVE] Streaming %dx%d output in %d tiles (ref L%d, target L%d)",
         out_w,
         out_h,
         tiles_x * tiles_y,

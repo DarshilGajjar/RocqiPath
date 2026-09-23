@@ -1,0 +1,16 @@
+{
+  "files": {
+    "visualization/case01/p0_he_cd8_composite.png": {
+      "figure": true
+    },
+    "visualization/case01/p1_he_cd8_composite.png": {
+      "figure": true
+    }
+  },
+  "returned": {
+    "result": {
+      "figures_saved": 2,
+      "patches_processed": 2
+    }
+  }
+}

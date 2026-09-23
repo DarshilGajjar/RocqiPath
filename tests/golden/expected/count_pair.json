@@ -1,0 +1,45 @@
+{
+  "files": {
+    "cell_counting/case_gt_vs_case_pred/case_gt_vs_case_pred_counts.xlsx": {},
+    "cell_counting/case_gt_vs_case_pred/case_gt_vs_case_pred_results.json": {
+      "diff_absolute": -5,
+      "diff_pct": -20.0,
+      "gt_density_per_mm2": 586.43,
+      "gt_positive": 25,
+      "gt_slide": "case_gt.tif",
+      "label": "CD8",
+      "plots_saved": 2,
+      "pred_density_per_mm2": 469.14,
+      "pred_positive": 20,
+      "pred_slide": "case_pred.tif",
+      "thresholding": "independent_otsu_per_image",
+      "tissue_area_method": "ground_truth_pixel_mask",
+      "tissue_area_mm2": 0.043,
+      "tissue_pixels": 667069
+    },
+    "cell_counting/case_gt_vs_case_pred/patch_0001_x0_y0.png": {
+      "figure": true
+    },
+    "cell_counting/case_gt_vs_case_pred/patch_0002_x256_y0.png": {
+      "figure": true
+    }
+  },
+  "returned": {
+    "result": {
+      "diff_absolute": -5,
+      "diff_pct": -20.0,
+      "gt_density_per_mm2": 586.43,
+      "gt_positive": 25,
+      "gt_slide": "case_gt.tif",
+      "label": "CD8",
+      "plots_saved": 2,
+      "pred_density_per_mm2": 469.14,
+      "pred_positive": 20,
+      "pred_slide": "case_pred.tif",
+      "thresholding": "independent_otsu_per_image",
+      "tissue_area_method": "ground_truth_pixel_mask",
+      "tissue_area_mm2": 0.043,
+      "tissue_pixels": 667069
+    }
+  }
+}

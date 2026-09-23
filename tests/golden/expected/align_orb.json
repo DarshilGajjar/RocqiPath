@@ -1,0 +1,55 @@
+{
+  "files": {
+    "alignment/case01_cd8/case01_cd8_aligned_moving.ome.tiff": {
+      "mean": [
+        229.5,
+        206.5,
+        221.0
+      ],
+      "size": [
+        1024,
+        1024
+      ]
+    },
+    "alignment/case01_cd8/case01_cd8_aligned_moving_manifest.json": {
+      "aligned_path": "<ROOT>/out/alignment/case01_cd8/case01_cd8_aligned_moving.ome.tiff",
+      "aligned_wsi_level": 0,
+      "alignment_target_magnification": 20.0,
+      "output_magnification": 20.0,
+      "reference_base_magnification": 20.0,
+      "reference_level_downsample": 1.0,
+      "reference_path": "<ROOT>/align_in/CD8/he/case01_HE.tif"
+    },
+    "alignment/case01_cd8/case01_cd8_center_qc.png": {
+      "figure": true
+    },
+    "alignment/case01_cd8/orb_registration_overlay.png": {
+      "mean": [
+        214.6,
+        202.9,
+        0.4
+      ],
+      "size": [
+        1024,
+        1024
+      ]
+    }
+  },
+  "returned": {
+    "cases": [
+      {
+        "aligned": "case01_cd8_aligned_moving.ome.tiff",
+        "case_id": "case01_cd8",
+        "pair_name": "CD8",
+        "residual_shift_px": [
+          0,
+          0
+        ],
+        "sample_id": "case01",
+        "valid_grids": [
+          0
+        ]
+      }
+    ]
+  }
+}

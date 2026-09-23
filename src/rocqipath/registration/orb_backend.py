@@ -76,7 +76,7 @@ def _register_orb(self) -> None:
     self.orb_tgt_scale_y = target_full_h / ref_h
     self.orb_scale = self.orb_ref_scale_x  # compatibility attribute
     logger.info(
-        "[ORB] Thumbnail {}x{} | ref scale=({:.3f},{:.3f}) target scale=({:.3f},{:.3f})",
+        "[ORB] Thumbnail %dx%d | ref scale=(%.3f,%.3f) target scale=(%.3f,%.3f)",
         ref_w,
         ref_h,
         self.orb_ref_scale_x,

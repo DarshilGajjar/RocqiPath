@@ -472,6 +472,9 @@ class WSIRegistrar:
         Always call this method when the registrar is no longer needed,
         ideally inside a ``try/finally`` block or via a context manager.
         """
+        if getattr(self, "_closed", False):
+            return
+        self._closed = True
         self.slide_ref.close()
         if self.slide_tgt:
             self.slide_tgt.close()

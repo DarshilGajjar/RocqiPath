@@ -1,0 +1,471 @@
+{
+  "files": {
+    "patch_extraction/Sample_0001_CD8/Sample_0001_CD8_cd8_patch_000001.png": {
+      "mean": [
+        202.8,
+        208.8,
+        227.1
+      ],
+      "size": [
+        64,
+        64
+      ]
+    },
+    "patch_extraction/Sample_0001_CD8/Sample_0001_CD8_cd8_patch_000002.png": {
+      "mean": [
+        202.4,
+        208.6,
+        226.8
+      ],
+      "size": [
+        64,
+        64
+      ]
+    },
+    "patch_extraction/Sample_0001_CD8/Sample_0001_CD8_cd8_patch_000003.png": {
+      "mean": [
+        202.8,
+        208.6,
+        226.8
+      ],
+      "size": [
+        64,
+        64
+      ]
+    },
+    "patch_extraction/Sample_0001_CD8/Sample_0001_CD8_cd8_patch_000004.png": {
+      "mean": [
+        175.2,
+        184.9,
+        214.9
+      ],
+      "size": [
+        64,
+        64
+      ]
+    },
+    "patch_extraction/Sample_0001_CD8/Sample_0001_CD8_cd8_patch_000005.png": {
+      "mean": [
+        175.0,
+        184.9,
+        215.1
+      ],
+      "size": [
+        64,
+        64
+      ]
+    },
+    "patch_extraction/Sample_0001_CD8/Sample_0001_CD8_cd8_patch_000006.png": {
+      "mean": [
+        201.5,
+        207.8,
+        226.2
+      ],
+      "size": [
+        64,
+        64
+      ]
+    },
+    "patch_extraction/Sample_0001_CD8/Sample_0001_CD8_cd8_patch_000007.png": {
+      "mean": [
+        202.3,
+        208.4,
+        226.8
+      ],
+      "size": [
+        64,
+        64
+      ]
+    },
+    "patch_extraction/Sample_0001_CD8/Sample_0001_CD8_cd8_patch_000008.png": {
+      "mean": [
+        174.9,
+        184.9,
+        215.1
+      ],
+      "size": [
+        64,
+        64
+      ]
+    },
+    "patch_extraction/Sample_0001_CD8/Sample_0001_CD8_cd8_patch_000009.png": {
+      "mean": [
+        174.9,
+        185.2,
+        215.0
+      ],
+      "size": [
+        64,
+        64
+      ]
+    },
+    "patch_extraction/Sample_0001_CD8/Sample_0001_CD8_cd8_patch_000010.png": {
+      "mean": [
+        201.4,
+        207.5,
+        226.1
+      ],
+      "size": [
+        64,
+        64
+      ]
+    },
+    "patch_extraction/Sample_0001_CD8/Sample_0001_CD8_cd8_patch_000011.png": {
+      "mean": [
+        201.5,
+        207.9,
+        226.3
+      ],
+      "size": [
+        64,
+        64
+      ]
+    },
+    "patch_extraction/Sample_0001_CD8/Sample_0001_CD8_cd8_patch_000012.png": {
+      "mean": [
+        201.3,
+        207.6,
+        226.2
+      ],
+      "size": [
+        64,
+        64
+      ]
+    },
+    "patch_extraction/Sample_0001_CD8/Sample_0001_CD8_he_patch_000001.png": {
+      "mean": [
+        211.8,
+        163.4,
+        193.4
+      ],
+      "size": [
+        64,
+        64
+      ]
+    },
+    "patch_extraction/Sample_0001_CD8/Sample_0001_CD8_he_patch_000002.png": {
+      "mean": [
+        211.4,
+        162.8,
+        193.2
+      ],
+      "size": [
+        64,
+        64
+      ]
+    },
+    "patch_extraction/Sample_0001_CD8/Sample_0001_CD8_he_patch_000003.png": {
+      "mean": [
+        211.8,
+        163.5,
+        193.7
+      ],
+      "size": [
+        64,
+        64
+      ]
+    },
+    "patch_extraction/Sample_0001_CD8/Sample_0001_CD8_he_patch_000004.png": {
+      "mean": [
+        190.1,
+        110.1,
+        160.0
+      ],
+      "size": [
+        64,
+        64
+      ]
+    },
+    "patch_extraction/Sample_0001_CD8/Sample_0001_CD8_he_patch_000005.png": {
+      "mean": [
+        190.0,
+        110.1,
+        160.0
+      ],
+      "size": [
+        64,
+        64
+      ]
+    },
+    "patch_extraction/Sample_0001_CD8/Sample_0001_CD8_he_patch_000006.png": {
+      "mean": [
+        211.0,
+        161.3,
+        192.3
+      ],
+      "size": [
+        64,
+        64
+      ]
+    },
+    "patch_extraction/Sample_0001_CD8/Sample_0001_CD8_he_patch_000007.png": {
+      "mean": [
+        211.4,
+        162.6,
+        193.2
+      ],
+      "size": [
+        64,
+        64
+      ]
+    },
+    "patch_extraction/Sample_0001_CD8/Sample_0001_CD8_he_patch_000008.png": {
+      "mean": [
+        190.0,
+        110.1,
+        159.9
+      ],
+      "size": [
+        64,
+        64
+      ]
+    },
+    "patch_extraction/Sample_0001_CD8/Sample_0001_CD8_he_patch_000009.png": {
+      "mean": [
+        190.0,
+        110.0,
+        160.2
+      ],
+      "size": [
+        64,
+        64
+      ]
+    },
+    "patch_extraction/Sample_0001_CD8/Sample_0001_CD8_he_patch_000010.png": {
+      "mean": [
+        210.5,
+        160.5,
+        191.8
+      ],
+      "size": [
+        64,
+        64
+      ]
+    },
+    "patch_extraction/Sample_0001_CD8/Sample_0001_CD8_he_patch_000011.png": {
+      "mean": [
+        210.8,
+        161.3,
+        192.2
+      ],
+      "size": [
+        64,
+        64
+      ]
+    },
+    "patch_extraction/Sample_0001_CD8/Sample_0001_CD8_he_patch_000012.png": {
+      "mean": [
+        210.6,
+        160.6,
+        192.0
+      ],
+      "size": [
+        64,
+        64
+      ]
+    },
+    "patch_extraction/Sample_0001_CD8/Sample_0001_CD8_metadata.json": {
+      "case_id": "Sample_0001_CD8",
+      "dimensions": [
+        256,
+        256
+      ],
+      "extraction_mode": "sliding",
+      "patch_size": 64,
+      "patches": [
+        {
+          "cd8_path": "<ROOT>/out/patch_extraction/Sample_0001_CD8/Sample_0001_CD8_cd8_patch_000001.png",
+          "coordinates": [
+            64,
+            0
+          ],
+          "he_path": "<ROOT>/out/patch_extraction/Sample_0001_CD8/Sample_0001_CD8_he_patch_000001.png",
+          "id": "000001",
+          "size": [
+            64,
+            64
+          ]
+        },
+        {
+          "cd8_path": "<ROOT>/out/patch_extraction/Sample_0001_CD8/Sample_0001_CD8_cd8_patch_000002.png",
+          "coordinates": [
+            128,
+            0
+          ],
+          "he_path": "<ROOT>/out/patch_extraction/Sample_0001_CD8/Sample_0001_CD8_he_patch_000002.png",
+          "id": "000002",
+          "size": [
+            64,
+            64
+          ]
+        },
+        {
+          "cd8_path": "<ROOT>/out/patch_extraction/Sample_0001_CD8/Sample_0001_CD8_cd8_patch_000003.png",
+          "coordinates": [
+            0,
+            64
+          ],
+          "he_path": "<ROOT>/out/patch_extraction/Sample_0001_CD8/Sample_0001_CD8_he_patch_000003.png",
+          "id": "000003",
+          "size": [
+            64,
+            64
+          ]
+        },
+        {
+          "cd8_path": "<ROOT>/out/patch_extraction/Sample_0001_CD8/Sample_0001_CD8_cd8_patch_000004.png",
+          "coordinates": [
+            64,
+            64
+          ],
+          "he_path": "<ROOT>/out/patch_extraction/Sample_0001_CD8/Sample_0001_CD8_he_patch_000004.png",
+          "id": "000004",
+          "size": [
+            64,
+            64
+          ]
+        },
+        {
+          "cd8_path": "<ROOT>/out/patch_extraction/Sample_0001_CD8/Sample_0001_CD8_cd8_patch_000005.png",
+          "coordinates": [
+            128,
+            64
+          ],
+          "he_path": "<ROOT>/out/patch_extraction/Sample_0001_CD8/Sample_0001_CD8_he_patch_000005.png",
+          "id": "000005",
+          "size": [
+            64,
+            64
+          ]
+        },
+        {
+          "cd8_path": "<ROOT>/out/patch_extraction/Sample_0001_CD8/Sample_0001_CD8_cd8_patch_000006.png",
+          "coordinates": [
+            192,
+            64
+          ],
+          "he_path": "<ROOT>/out/patch_extraction/Sample_0001_CD8/Sample_0001_CD8_he_patch_000006.png",
+          "id": "000006",
+          "size": [
+            64,
+            64
+          ]
+        },
+        {
+          "cd8_path": "<ROOT>/out/patch_extraction/Sample_0001_CD8/Sample_0001_CD8_cd8_patch_000007.png",
+          "coordinates": [
+            0,
+            128
+          ],
+          "he_path": "<ROOT>/out/patch_extraction/Sample_0001_CD8/Sample_0001_CD8_he_patch_000007.png",
+          "id": "000007",
+          "size": [
+            64,
+            64
+          ]
+        },
+        {
+          "cd8_path": "<ROOT>/out/patch_extraction/Sample_0001_CD8/Sample_0001_CD8_cd8_patch_000008.png",
+          "coordinates": [
+            64,
+            128
+          ],
+          "he_path": "<ROOT>/out/patch_extraction/Sample_0001_CD8/Sample_0001_CD8_he_patch_000008.png",
+          "id": "000008",
+          "size": [
+            64,
+            64
+          ]
+        },
+        {
+          "cd8_path": "<ROOT>/out/patch_extraction/Sample_0001_CD8/Sample_0001_CD8_cd8_patch_000009.png",
+          "coordinates": [
+            128,
+            128
+          ],
+          "he_path": "<ROOT>/out/patch_extraction/Sample_0001_CD8/Sample_0001_CD8_he_patch_000009.png",
+          "id": "000009",
+          "size": [
+            64,
+            64
+          ]
+        },
+        {
+          "cd8_path": "<ROOT>/out/patch_extraction/Sample_0001_CD8/Sample_0001_CD8_cd8_patch_000010.png",
+          "coordinates": [
+            192,
+            128
+          ],
+          "he_path": "<ROOT>/out/patch_extraction/Sample_0001_CD8/Sample_0001_CD8_he_patch_000010.png",
+          "id": "000010",
+          "size": [
+            64,
+            64
+          ]
+        },
+        {
+          "cd8_path": "<ROOT>/out/patch_extraction/Sample_0001_CD8/Sample_0001_CD8_cd8_patch_000011.png",
+          "coordinates": [
+            64,
+            192
+          ],
+          "he_path": "<ROOT>/out/patch_extraction/Sample_0001_CD8/Sample_0001_CD8_he_patch_000011.png",
+          "id": "000011",
+          "size": [
+            64,
+            64
+          ]
+        },
+        {
+          "cd8_path": "<ROOT>/out/patch_extraction/Sample_0001_CD8/Sample_0001_CD8_cd8_patch_000012.png",
+          "coordinates": [
+            128,
+            192
+          ],
+          "he_path": "<ROOT>/out/patch_extraction/Sample_0001_CD8/Sample_0001_CD8_he_patch_000012.png",
+          "id": "000012",
+          "size": [
+            64,
+            64
+          ]
+        }
+      ],
+      "stride": 64,
+      "target_magnification": 20.0
+    },
+    "reconstructed_wsi/Sample_0001_CD8_he_pyramid.tif": {
+      "mean": [
+        214.2,
+        185.6,
+        209.9
+      ],
+      "size": [
+        256,
+        256
+      ]
+    },
+    "reconstructed_wsi/Sample_0001_CD8_ihc_pyramid.tif": {
+      "mean": [
+        214.2,
+        185.6,
+        209.9
+      ],
+      "size": [
+        256,
+        256
+      ]
+    }
+  },
+  "returned": {
+    "reconstruct": {
+      "he": {
+        "missing": 0,
+        "placed": 12
+      },
+      "ihc": {
+        "missing": 0,
+        "placed": 12
+      }
+    }
+  }
+}
