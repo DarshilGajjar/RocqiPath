@@ -83,5 +83,3 @@ nav:
       - Adding a workflow: contributing/adding-a-workflow.md
       - Testing: contributing/testing.md
   - Migrating to 2.0: migration.md
-  - History:
-      - Reliability review (1.x): history/reliability-review.md
