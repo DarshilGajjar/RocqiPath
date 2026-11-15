@@ -24,7 +24,7 @@ from rocqipath._internal.console import (
 )
 from rocqipath.errors import ExtractionError
 from rocqipath.io.output import OutputLayout
-from rocqipath.stain.normalizers import ReinhardNormalizer, _od_tissue_fraction, get_normalizer
+from rocqipath.stain.normalizers import ReinhardNormalizer, od_tissue_fraction, get_normalizer
 from rocqipath.io.discovery import discover_files
 from rocqipath.io.images import imread_rgb, imwrite_rgb
 
@@ -128,12 +128,12 @@ def run_stain_normalization_train(
         title="Train Config",
     )
 
-    # ── Phase 1: collect tissue patches ────────────────────────────────────
+    # ── Collect tissue patches ────────────────────────────────────
     print_step("SCAN", f"Sampling tissue patches (min tissue ≥ {cfg.fit_min_tissue:.0%}) …")
     picked: List[np.ndarray] = []
     for fp in track(files, "Scanning patches"):
         img = imread_rgb(fp)
-        if img is not None and _od_tissue_fraction(img) >= cfg.fit_min_tissue:
+        if img is not None and od_tissue_fraction(img) >= cfg.fit_min_tissue:
             picked.append(cv.resize(img, (256, 256)))
 
     if not picked:
@@ -142,7 +142,7 @@ def run_stain_normalization_train(
 
     print_info(f"Collected {len(picked)} tissue patches from {len(files)} files.")
 
-    # ── Phase 2: fit ────────────────────────────────────────────────────────
+    # ── Fit ────────────────────────────────────────────────────────
     print_step("FIT", f"Fitting {cfg.method.upper()} normaliser …")
 
     if is_reinhard:
@@ -164,7 +164,7 @@ def run_stain_normalization_train(
         normalizer.fit(canvas)
         del canvas
 
-    # ── Phase 3: save ─────────────────────────────────────────────────────
+    # ── Save ─────────────────────────────────────────────────────
     print_step("SAVE", f"Writing weights → {weights}")
     normalizer.save_weights(weights)
     print_done(f"Weights saved → {weights}")

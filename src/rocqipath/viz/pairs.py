@@ -19,7 +19,7 @@ def view_pairs(grid_folder, num_to_show="all"):
     Parameters
     ----------
     grid_folder : str
-        Flat per-case output directory or a legacy directory containing
+        Flat per-case output directory or a directory containing
         ``HnE`` and ``IHC`` subfolders.
     num_to_show : int or {"all"}, optional
         Number of pairs to display. Integer selection uses random
@@ -69,7 +69,7 @@ def view_pairs(grid_folder, num_to_show="all"):
             plt.tight_layout()
             plt.show()
         except Exception as e:
-            print(f"Error showing pair {f_name}: {e}")
+            logger.info(f"Error showing pair {f_name}: {e}")
 
 
 def visualize_patch_pairs(

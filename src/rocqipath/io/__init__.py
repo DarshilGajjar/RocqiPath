@@ -1,49 +1,28 @@
 """Slide reading, magnification, file discovery, naming and output layout.
 
-Imaging backends used by `SlideReader` are loaded lazily, so importing
-this package needs no optional dependencies.
+Nothing is imported until a name is first used, so importing this package
+needs no optional dependencies.
 """
 
-from .slide import (
-    SlideReader,
-)
-from .magnification import (
-    DEFAULT_TARGET_MAGNIFICATION,
-    MagnificationPlan,
-    build_magnification_plan,
-    objective_magnification_from_properties,
-)
-from .output import (
-    OutputLayout,
-    safe_name,
-)
-from .discovery import (
-    detect_wsi_format,
-    discover_matching_files,
-    discover_patch_pairs,
-    find_aligned_wsi,
-    find_hne_ihc_pairs_by_suffix,
-    is_wsi_file,
-    list_wsi_files,
-)
-from .naming import (
-    natural_sort_key,
-)
+from rocqipath._internal.lazy import lazy_exports
 
-__all__ = [
-    "DEFAULT_TARGET_MAGNIFICATION",
-    "MagnificationPlan",
-    "OutputLayout",
-    "SlideReader",
-    "build_magnification_plan",
-    "detect_wsi_format",
-    "discover_matching_files",
-    "discover_patch_pairs",
-    "find_aligned_wsi",
-    "find_hne_ihc_pairs_by_suffix",
-    "is_wsi_file",
-    "list_wsi_files",
-    "natural_sort_key",
-    "objective_magnification_from_properties",
-    "safe_name",
-]
+__getattr__, __dir__, __all__ = lazy_exports(
+    __name__,
+    {
+        "DEFAULT_TARGET_MAGNIFICATION": ".magnification",
+        "MagnificationPlan": ".magnification",
+        "OutputLayout": ".output",
+        "SlideReader": ".slide",
+        "build_magnification_plan": ".magnification",
+        "detect_wsi_format": ".discovery",
+        "discover_matching_files": ".discovery",
+        "discover_patch_pairs": ".discovery",
+        "find_aligned_wsi": ".discovery",
+        "find_hne_ihc_pairs_by_suffix": ".discovery",
+        "is_wsi_file": ".discovery",
+        "list_wsi_files": ".discovery",
+        "natural_sort_key": ".naming",
+        "objective_magnification_from_properties": ".magnification",
+        "safe_name": ".output",
+    },
+)

@@ -38,34 +38,7 @@ __all__ = [
 ]
 
 
-try:
-    from tqdm.auto import tqdm
-except ImportError:
-
-    def tqdm(iterable, *args, **kwargs):  # type: ignore[misc]
-        """No-op fallback for `tqdm.auto.tqdm` when tqdm isn't installed.
-
-        Returns ``iterable`` unchanged, so any code written as
-        ``for x in tqdm(items):`` continues to work identically — just
-        without a progress bar — when the optional ``tqdm`` dependency
-        is absent.
-
-        Parameters
-        ----------
-        iterable : Iterable
-            The iterable that would normally be wrapped with a progress
-            bar.
-        *args, **kwargs
-            Accepted and ignored, matching tqdm's permissive signature
-            (e.g. ``desc=``, ``total=``) so call sites don't need to
-            special-case the fallback.
-
-        Returns
-        -------
-        Iterable
-            ``iterable``, unmodified.
-        """
-        return iterable
+from tqdm.auto import tqdm
 
 
 DEFAULT_REFERENCE_NAME: str = "reference"
@@ -75,18 +48,6 @@ DEFAULT_MOVING_NAME: str = "moving"
 
 
 DEFAULT_FILENAME_PATTERN: str = build_filename_pattern()
-
-
-def _aligned_manifest_base_name(path: Path) -> str:
-    """Remove ordinary or compound OME-TIFF suffixes."""
-    name = path.name
-    lowered = name.lower()
-
-    for suffix in (".ome.tiff", ".ome.tif"):
-        if lowered.endswith(suffix):
-            return name[: -len(suffix)]
-
-    return path.stem
 
 
 def _write_aligned_wsi_manifest(
@@ -122,7 +83,7 @@ def _write_aligned_wsi_manifest(
     pathlib.Path
         Path to the written JSON sidecar.
     """
-    from rocqipath.io.slide import SlideReader
+    from rocqipath.io.slide import SlideReader, image_base_name
 
     aligned = Path(aligned_path)
     reference_reader = SlideReader(str(reference_path))
@@ -157,17 +118,8 @@ def _write_aligned_wsi_manifest(
             "aligned_path": str(aligned),
         }
 
-        # This naming matches SlideReader._manifest_magnification().
-        #
-        # For:
-        # sample_0001_cd8_aligned_moving.ome.tiff
-        #
-        # Path.stem is:
-        # sample_0001_cd8_aligned_moving.ome
-        #
-        # Therefore the sidecar becomes:
-        # sample_0001_cd8_aligned_moving_manifest.json
-        base_name = _aligned_manifest_base_name(aligned)
+        # SlideReader looks for the sidecar under this name.
+        base_name = image_base_name(aligned)
 
         manifest_path = aligned.with_name(f"{base_name}_manifest.json")
 

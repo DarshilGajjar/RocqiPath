@@ -188,7 +188,7 @@ class ExtractTMAConfig(_RegionExtractionConfig):
     box_scale : float
         Multiplicative expansion around each detected bounding box.
     ihc_enhance : bool
-        Apply the historical CLAHE/DAB enhancement.
+        Apply CLAHE/DAB enhancement.
     clahe_clip_limit : float
         OpenCV CLAHE contrast limit.
     clahe_tile_size : tuple of int
@@ -289,7 +289,7 @@ class ExtractPatchesConfig(BaseConfig):
     dimension_tolerance: float = field(default=0.01, metadata=ADVANCED)
 
     def __post_init__(self) -> None:
-        """Resolve stride and preserve all historical validation messages."""
+        """Resolve stride and validate the settings."""
         validate_positive(
             self.patch_size,
             name="patch_size",

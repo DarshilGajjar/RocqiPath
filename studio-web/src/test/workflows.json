@@ -470,8 +470,8 @@
     "choices": null,
     "advanced": false,
     "local_only": false,
-    "help": "Apply the historical CLAHE/DAB enhancement.",
-    "doc": "Apply the historical CLAHE/DAB enhancement."
+    "help": "Apply CLAHE/DAB enhancement.",
+    "doc": "Apply CLAHE/DAB enhancement."
    },
    {
     "name": "clahe_clip_limit",

@@ -16,7 +16,7 @@ def tissue_mask(
     intensity_threshold: float = 235,
     optical_density_threshold: float = 0.15,
 ) -> Any:
-    """Return a boolean tissue mask using a named historical method.
+    """Return a boolean tissue mask using a named method.
 
     Parameters
     ----------
@@ -25,7 +25,7 @@ def tissue_mask(
         intensity space. Coordinates are pixels in the supplied image,
         independent of slide pyramid level.
     method : {"mean_intensity", "optical_density_sum"}, optional
-        Historical detector to apply.
+        Detector to apply.
     intensity_threshold : float, optional
         Pixels whose mean RGB intensity is strictly below this value are
         tissue for ``"mean_intensity"``.
@@ -47,7 +47,7 @@ def tissue_mask(
     Notes
     -----
     The strict comparison directions and the ``+1``/``1e-6`` optical-density
-    offsets preserve the formerly separate feature implementations.
+    offsets are deliberate; changing them shifts which pixels count as tissue.
     """
     import numpy as np
 
@@ -148,7 +148,7 @@ def is_tissue(
 
 
 def pil_intensity_fraction(image: Any, *, intensity_threshold: int = 235) -> float:
-    """Return the historical grayscale tissue fraction for a PIL patch.
+    """Return the grayscale tissue fraction for a PIL patch.
 
     Parameters
     ----------
@@ -252,7 +252,7 @@ def brightness_saturation_is_tissue(
     brightness_threshold: int = 220,
     saturation_threshold: float = 0.05,
 ) -> bool:
-    """Apply the historical mean brightness and saturation crop gate.
+    """Apply the mean brightness and saturation crop gate.
 
     Parameters
     ----------

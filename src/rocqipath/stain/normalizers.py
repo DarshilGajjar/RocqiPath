@@ -51,7 +51,7 @@ except ImportError:
     _TIAVahadaneNormalizer = _TIAReinhardNormalizer
 
 
-def _od_tissue_fraction(rgb: np.ndarray, thresh: float = 0.15) -> float:
+def od_tissue_fraction(rgb: np.ndarray, thresh: float = 0.15) -> float:
     """Estimate the fraction of tissue pixels using optical-density thresholding."""
     return _shared_tissue_fraction(
         rgb,

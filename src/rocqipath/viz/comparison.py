@@ -47,7 +47,7 @@ REGION_SEARCH_STEP_FRAC = 0.02
 
 
 def _tissue_fraction(image: Image.Image, bbox: Tuple[int, int, int, int]) -> float:
-    """Delegate the historical comparison tissue-coverage calculation."""
+    """Return the tissue coverage used to pick comparison crops."""
     return _tissue_fraction_impl(image, bbox)
 
 
@@ -58,7 +58,7 @@ def _region_bbox(
     region: str,
     image: Optional[Image.Image] = None,
 ) -> Tuple[int, int, int, int]:
-    """Resolve a named crop using the historical tissue-search settings."""
+    """Resolve a named crop using the tissue-search settings."""
     return _region_bbox_impl(
         width,
         height,
@@ -191,7 +191,7 @@ def _save_random_crops(
     add_scale_bars: bool,
     mpp: Optional[float],
 ) -> None:
-    """Save missing random-ROI crops and retain historical resume logging."""
+    """Save missing random-ROI crops and log which were resumed."""
     already_saved = sum(os.path.isfile(path) for path, *_rest in outputs)
     if already_saved:
         logger.info(
@@ -341,7 +341,7 @@ def visualize_side_by_side(
     add_scale_bars : bool, optional
         Add physically calibrated bars to crop panels.
     mpp : float, optional
-        Micrometres per crop pixel. When omitted, the historical zoom
+        Micrometres per crop pixel. When omitted, the zoom
         lookup table supplies calibration.
 
     Returns

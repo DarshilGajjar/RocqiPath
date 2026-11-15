@@ -5,10 +5,7 @@ from __future__ import annotations
 import os
 from typing import List, Optional
 
-from rocqipath.extraction.config import ExtractPatchesConfig
 from rocqipath._internal.logging import logger
-from rocqipath.extraction.patches import run_patch_extraction
-from rocqipath.extraction.reversible import ReversiblePatchExtractor
 from rocqipath.io.discovery import list_wsi_files
 
 try:
@@ -118,9 +115,4 @@ def extract_patches_single(
                 pass
 
 
-__all__ = [
-    "ExtractPatchesConfig",
-    "ReversiblePatchExtractor",
-    "extract_patches_single",
-    "run_patch_extraction",
-]
+__all__ = ["extract_patches_single"]

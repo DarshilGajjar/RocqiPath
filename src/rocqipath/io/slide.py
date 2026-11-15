@@ -17,7 +17,7 @@ if TYPE_CHECKING:
     from PIL.Image import Image as PILImage
 
 
-def _image_base_name(path: Path) -> str:
+def image_base_name(path: Path) -> str:
     """Return a filename without ordinary or compound image suffixes."""
     name = path.name
     lowered = name.lower()
@@ -106,7 +106,7 @@ class SlideReader:
     def _manifest_magnification(self) -> Optional[float]:
         """Read output magnification recorded beside a generated image."""
         source = Path(self.path)
-        base_name = _image_base_name(source)
+        base_name = image_base_name(source)
 
         candidates = [
             # Preferred sidecar:
@@ -115,7 +115,7 @@ class SlideReader:
                 f"{base_name}_manifest.json"
             ),
 
-            # Backward compatibility:
+            # Sidecar named after the full stem:
             # sample_aligned_moving.ome_manifest.json
             source.with_name(
                 f"{source.stem}_manifest.json"

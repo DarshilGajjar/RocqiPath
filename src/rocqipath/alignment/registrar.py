@@ -83,7 +83,6 @@ from rocqipath.alignment.quality import (
 from rocqipath.alignment.valis import (
     HAS_VALIS,
     _register_valis,
-    build_matcher,  # noqa: F401 - compatibility for prior internal imports
 )
 from rocqipath._internal.geometry import transform_coords
 
@@ -425,10 +424,7 @@ class WSIRegistrar:
     def _check_physical_field_ratio(self, max_ratio) -> None:
         """Compare the reference and moving physical canvases at target zoom.
 
-        Previously this config key was written by ``alignment.py`` and never
-        read here, so the documented guard did not exist.
-
-        Note the limitation: when neither slide states an objective power and
+        Limitation: when neither slide states an objective power and
         neither has usable ``mpp``, both fall back to the same constant and
         this degenerates into a pixel-count comparison.  That case is logged
         explicitly rather than presented as a physical check.
@@ -509,13 +505,6 @@ class WSIRegistrar:
         # Remove VALIS scratch files only when diagnostics were not requested.
         if not getattr(self, "keep_valis_diagnostics", False) and os.path.isdir(self.temp_dir):
             shutil.rmtree(self.temp_dir, ignore_errors=True)
-
-        # VALIS starts a JVM for BioFormats; kill it cleanly.
-        # if HAS_VALIS:
-        #     try:
-        #         registration.kill_jvm()
-        #     except Exception:
-        #         pass
 
     # ══════════════════════════════════════════════════════════════════════════
     # VALIS registration

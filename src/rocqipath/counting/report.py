@@ -6,6 +6,8 @@ from typing import Tuple
 
 import numpy as np
 
+from rocqipath._internal.logging import logger
+
 
 def _write_excel(results: list, output_path: str) -> None:
     """Write per-patch results and summary statistics to an Excel workbook.
@@ -190,7 +192,7 @@ def _write_excel(results: list, output_path: str) -> None:
         _cell(ws2, row, 3, round(pv, 2) if pv is not None else "N/A", fill=fill)
 
     wb.save(str(output_path))
-    print(f"[INFO]  Excel saved → {output_path}")
+    logger.info(f"Excel saved → {output_path}")
 
 
 def _save_comparison_plot(

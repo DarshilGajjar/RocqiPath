@@ -1,7 +1,8 @@
-"""Legacy reversible sliding-window patch extractor."""
+"""Dict-configured sliding-window patch extractor with slide reconstruction."""
 
 from __future__ import annotations
 
+import contextlib
 import json
 import os
 import re
@@ -10,17 +11,18 @@ from typing import Dict, List, Optional, Tuple
 
 from tqdm.auto import tqdm
 
+from rocqipath._internal.logging import logger
 from rocqipath.io.magnification import DEFAULT_TARGET_MAGNIFICATION
 from rocqipath.io.output import OutputLayout
 from rocqipath.io.slide import SlideReader as _SlideReader
 from rocqipath.tissue.masks import pil_is_tissue as _pil_is_tissue
 from rocqipath.extraction.reconstruct import (
-    _assemble_canvas,
-    _finalize_canvas,
-    _index_patch_files,
-    _load_metadata,
-    _patch_directory,
-    _save_pyramid,
+    assemble_canvas,
+    finalize_canvas,
+    index_patch_files,
+    load_metadata,
+    patch_directory,
+    save_pyramid,
 )
 from rocqipath.io.discovery import find_aligned_wsi
 
@@ -35,9 +37,8 @@ class ReversiblePatchExtractor:
     keeping only tissue-containing patches (per `_is_tissue`), and
     saves matching H&E and IHC patches side by side with a JSON metadata
     manifest recording each patch's coordinates. "Reversible" refers to
-    the companion re-assembly capability (see ``reassemble_from_patches``
-    further down in this module — not covered by this class) that can
-    stitch extracted patches back into a full pyramidal OME-TIFF.
+    `reconstruct_wsi`, which stitches extracted patches back into a
+    pyramidal TIFF.
 
     See Also
     --------
@@ -71,8 +72,8 @@ class ReversiblePatchExtractor:
             - ``"stride"`` (int) — sliding-window step size in pixels.
               Defaults to ``patch_size`` (i.e. non-overlapping patches).
             - ``"target_magnification"`` (float) — exact physical zoom for
-              both channels. Defaults to ``20.0``. Legacy ``"magnification"``
-              is accepted as a physical-value alias.
+              both channels. Defaults to ``20.0``. ``"magnification"``
+              is accepted as an alias.
             - ``"tissue_threshold"`` (float) — minimum fraction of
               non-background pixels (see `_is_tissue`) for a patch
               to be kept. Defaults to ``0.9``.
@@ -105,8 +106,6 @@ class ReversiblePatchExtractor:
         self.output_dir = os.path.abspath(cfg.get("output_dir", "./output"))
         self.he_root = os.path.abspath(cfg["he_root"])
         self.aligned_root = os.path.abspath(cfg["aligned_root"])
-        # ``magnification`` historically meant a pyramid index. It now means
-        # physical objective magnification; use ``target_magnification`` in new code.
         self.target_magnification = float(
             cfg.get("target_magnification", cfg.get("magnification", DEFAULT_TARGET_MAGNIFICATION))
         )
@@ -122,14 +121,14 @@ class ReversiblePatchExtractor:
         self.biomarker_folders = cfg["biomarker_folders"]
 
         os.makedirs(self.output_dir, exist_ok=True)
-        print("[INFO] Initialized Patch Extraction Module...")
-        print(f"       HE root          : {self.he_root}")
-        print(f"       Aligned root     : {self.aligned_root}")
-        print(f"       Output           : {self.output_dir}")
-        print(f"       Patch Size       : {self.patch_size}")
-        print(f"       Stride           : {self.stride}")
-        print(f"       Magnification    : {self.target_magnification:g}x")
-        print(f"       Tissue Threshold : {int(self.tissue_threshold * 100)}%")
+        logger.info("Initialized Patch Extraction Module...")
+        logger.info(f"       HE root          : {self.he_root}")
+        logger.info(f"       Aligned root     : {self.aligned_root}")
+        logger.info(f"       Output           : {self.output_dir}")
+        logger.info(f"       Patch Size       : {self.patch_size}")
+        logger.info(f"       Stride           : {self.stride}")
+        logger.info(f"       Magnification    : {self.target_magnification:g}x")
+        logger.info(f"       Tissue Threshold : {int(self.tissue_threshold * 100)}%")
         self._debug_folders()
 
     # ── Debug ─────────────────────────────────────────────────────────────────
@@ -144,13 +143,13 @@ class ReversiblePatchExtractor:
         at startup rather than discovered later as "0 cases found".
         """
         if os.path.isdir(self.he_root):
-            print(
-                f"[DEBUG] HE biomarker folders: "
+            logger.debug(
+                f"HE biomarker folders: "
                 f"{[d for d in os.listdir(self.he_root) if os.path.isdir(os.path.join(self.he_root, d))]}"
             )
         if os.path.isdir(self.aligned_root):
-            print(
-                f"[DEBUG] Aligned biomarker folders: "
+            logger.debug(
+                f"Aligned biomarker folders: "
                 f"{[d for d in os.listdir(self.aligned_root) if os.path.isdir(os.path.join(self.aligned_root, d))]}"
             )
 
@@ -214,7 +213,7 @@ class ReversiblePatchExtractor:
         for biomarker in self.biomarker_folders:
             bio_he_dir = os.path.join(self.he_root, biomarker, "he")
             if not os.path.isdir(bio_he_dir):
-                print(f"[WARN] HE subfolder missing: {bio_he_dir}")
+                logger.warning(f"HE subfolder missing: {bio_he_dir}")
                 continue
             for fn in os.listdir(bio_he_dir):
                 m = self._HE_PAT.match(fn)
@@ -260,11 +259,11 @@ class ReversiblePatchExtractor:
 
         def _report(event: str, case_dir: Path, hits: list[Path]) -> None:
             if event == "missing_directory":
-                print(f"[DEBUG] Case folder not found: {case_dir}")
+                logger.debug(f"Case folder not found: {case_dir}")
             elif event == "no_matches":
-                print(f"[DEBUG] No .ome.tif* in: {case_dir}  |  contents: {os.listdir(case_dir)}")
+                logger.debug(f"No .ome.tif* in: {case_dir}  |  contents: {os.listdir(case_dir)}")
             elif event == "ambiguous_fallback":
-                print(f"[WARN] Multiple OME-TIFFs; using: {hits[0].name}")
+                logger.warning(f"Multiple OME-TIFFs; using: {hits[0].name}")
 
         return find_aligned_wsi(
             self.aligned_root,
@@ -280,65 +279,64 @@ class ReversiblePatchExtractor:
     # ── Patch extraction ───────────────────────────────────────────────────────
     def extract_from_case(self, case_id: str, hne_path: str, marker_files: Dict[str, str]):
         """Sliding-window extraction across the whole slide."""
-        os_hne = _SlideReader(hne_path)
-        os_markers = {m: _SlideReader(p) for m, p in marker_files.items()}
-        os_hne.configure_magnification(
-            self.target_magnification, self.reference_source_magnification
-        )
-        for reader in os_markers.values():
-            reader.configure_magnification(
-                self.target_magnification, self.target_source_magnification
+        with contextlib.ExitStack() as readers:  # close every slide even if a read fails
+            os_hne = readers.enter_context(_SlideReader(hne_path))
+            os_markers = {
+                m: readers.enter_context(_SlideReader(p)) for m, p in marker_files.items()
+            }
+            os_hne.configure_magnification(
+                self.target_magnification, self.reference_source_magnification
             )
-        w, h = os_hne.target_dimensions
-        case_dir = OutputLayout(self.output_dir).item_dir("patch_extraction", case_id)
+            for reader in os_markers.values():
+                reader.configure_magnification(
+                    self.target_magnification, self.target_source_magnification
+                )
+            w, h = os_hne.target_dimensions
+            case_dir = OutputLayout(self.output_dir).item_dir("patch_extraction", case_id)
 
-        metadata = {
-            "case_id": case_id,
-            "dimensions": (w, h),
-            "patch_size": self.patch_size,
-            "stride": self.stride,
-            "target_magnification": self.target_magnification,
-            "extraction_mode": "sliding",
-            "patches": [],
-        }
-        idx = 1
-        tiles_x = (w + self.stride - 1) // self.stride
-        tiles_y = (h + self.stride - 1) // self.stride
+            metadata = {
+                "case_id": case_id,
+                "dimensions": (w, h),
+                "patch_size": self.patch_size,
+                "stride": self.stride,
+                "target_magnification": self.target_magnification,
+                "extraction_mode": "sliding",
+                "patches": [],
+            }
+            idx = 1
+            tiles_x = (w + self.stride - 1) // self.stride
+            tiles_y = (h + self.stride - 1) // self.stride
 
-        with tqdm(
-            total=tiles_x * tiles_y, desc=f"   -> {case_id}", leave=False, unit="patch"
-        ) as pbar:
-            for y in range(0, h, self.stride):
-                for x in range(0, w, self.stride):
-                    tw = min(self.patch_size, w - x)
-                    th = min(self.patch_size, h - y)
-                    hne_p = os_hne.read_at_magnification((x, y), (tw, th)).convert("RGB")
+            with tqdm(
+                total=tiles_x * tiles_y, desc=f"   -> {case_id}", leave=False, unit="patch"
+            ) as pbar:
+                for y in range(0, h, self.stride):
+                    for x in range(0, w, self.stride):
+                        tw = min(self.patch_size, w - x)
+                        th = min(self.patch_size, h - y)
+                        hne_p = os_hne.read_at_magnification((x, y), (tw, th)).convert("RGB")
 
-                    if self._is_tissue(hne_p):
-                        pid = f"{idx:06d}"
-                        hp = case_dir / f"{case_id}_he_patch_{pid}.png"
-                        hne_p.save(hp, compression=None)
-                        info = {
-                            "id": pid,
-                            "coordinates": (int(x), int(y)),
-                            "size": (int(tw), int(th)),
-                            "he_path": str(hp),
-                        }
-                        for mn, os_m in os_markers.items():
-                            mp = os_m.read_at_magnification((x, y), (tw, th)).convert("RGB")
-                            mp_path = case_dir / f"{case_id}_{mn}_patch_{pid}.png"
-                            mp.save(mp_path, compression=None)
-                            mp.close()
-                            info[f"{mn}_path"] = str(mp_path)
-                        metadata["patches"].append(info)
-                        idx += 1
+                        if self._is_tissue(hne_p):
+                            pid = f"{idx:06d}"
+                            hp = case_dir / f"{case_id}_he_patch_{pid}.png"
+                            hne_p.save(hp, compression=None)
+                            info = {
+                                "id": pid,
+                                "coordinates": (int(x), int(y)),
+                                "size": (int(tw), int(th)),
+                                "he_path": str(hp),
+                            }
+                            for mn, os_m in os_markers.items():
+                                mp = os_m.read_at_magnification((x, y), (tw, th)).convert("RGB")
+                                mp_path = case_dir / f"{case_id}_{mn}_patch_{pid}.png"
+                                mp.save(mp_path, compression=None)
+                                mp.close()
+                                info[f"{mn}_path"] = str(mp_path)
+                            metadata["patches"].append(info)
+                            idx += 1
 
-                    hne_p.close()
-                    pbar.update(1)
-
-        os_hne.close()
-        for os_m in os_markers.values():
-            os_m.close()
+                        hne_p.close()
+                        pbar.update(1)
 
         meta_path = case_dir / f"{case_id}_metadata.json"
         with open(meta_path, "w") as f:
@@ -361,35 +359,35 @@ class ReversiblePatchExtractor:
         os.makedirs(save_dir, exist_ok=True)
         final_save_path = os.path.join(save_dir, f"{case_id}_{mode}_pyramid.tif")
 
-        metadata = _load_metadata(self, case_id)
+        metadata = load_metadata(self, case_id)
         width, height = metadata.get("dimensions", (0, 0))
         patches = metadata.get("patches", [])
         stride = metadata.get("stride", self.patch_size)
         overlapping = stride < self.patch_size
-        print(f"[INFO] Canvas     : {width} × {height} px")
-        print(f"[INFO] Stride     : {stride}  |  Overlap: {overlapping}")
-        print(f"[INFO] Patches    : {len(patches)}")
+        logger.info(f"Canvas     : {width} × {height} px")
+        logger.info(f"Stride     : {stride}  |  Overlap: {overlapping}")
+        logger.info(f"Patches    : {len(patches)}")
 
-        patch_dir = _patch_directory(self, case_id, mode)
+        patch_dir = patch_directory(self, case_id, mode)
         if not os.path.isdir(patch_dir):
-            print(f"[ERROR] Patch directory not found: {patch_dir}")
+            logger.error(f"Patch directory not found: {patch_dir}")
             return {"placed": 0, "missing": len(patches)}
 
         tag = "he" if mode.lower() in ("he", "predicted_ihc") else biomarker.lower()
-        canvas, counts, placed, missing = _assemble_canvas(
+        canvas, counts, placed, missing = assemble_canvas(
             (width, height),
             patches,
             patch_dir,
-            _index_patch_files(patch_dir),
+            index_patch_files(patch_dir),
             case_id=case_id,
             tag=tag,
             mode=mode,
             overlapping=overlapping,
         )
-        final_array = _finalize_canvas(canvas, counts, overlapping)
-        print(f"[INFO] Writing pyramidal TIFF → {final_save_path}")
-        _save_pyramid(final_array, final_save_path)
-        print(f"[OK] Saved: {final_save_path}  (placed={placed}, missing={missing})")
+        final_array = finalize_canvas(canvas, counts, overlapping)
+        logger.info(f"Writing pyramidal TIFF → {final_save_path}")
+        save_pyramid(final_array, final_save_path)
+        logger.info(f"[OK] Saved: {final_save_path}  (placed={placed}, missing={missing})")
         return {"placed": placed, "missing": missing}
 
     # ── Batch run ──────────────────────────────────────────────────────────────
@@ -422,9 +420,9 @@ class ReversiblePatchExtractor:
         """
         he_cases = self._scan_he_cases()
         if not he_cases:
-            print("[ERROR] No HE files found. Check he_root and biomarker_folders.")
+            logger.error("No HE files found. Check he_root and biomarker_folders.")
             return
-        print(f"[INFO] Found {len(he_cases)} HE case(s) across {self.biomarker_folders}\n")
+        logger.info(f"Found {len(he_cases)} HE case(s) across {self.biomarker_folders}\n")
         skipped = processed = 0
         for sample_id, biomarker, he_path in tqdm(he_cases, desc="Processing Cases", unit="case"):
             aligned_ihc = self._find_aligned_ihc(sample_id, biomarker)
@@ -440,4 +438,4 @@ class ReversiblePatchExtractor:
                 marker_files={biomarker.lower(): aligned_ihc},
             )
             processed += 1
-        print(f"\n[DONE] Processed: {processed}  |  Skipped: {skipped}")
+        logger.info(f"[DONE] Processed: {processed}  |  Skipped: {skipped}")

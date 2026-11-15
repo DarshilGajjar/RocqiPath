@@ -24,7 +24,7 @@ def _save(path: Path, rgb: np.ndarray) -> Path:
     return path
 
 
-def _save_pyramid(path: Path, rgb: np.ndarray) -> Path:
+def save_pyramid(path: Path, rgb: np.ndarray) -> Path:
     """Save a tiled pyramidal TIFF that OpenSlide opens as a generic TIFF."""
     import pyvips
 
@@ -165,6 +165,6 @@ def make_alignment_pair(root: Path) -> Path:
     base = np.clip(base, 0, 255).astype(np.uint8)
     moving = np.full_like(base, 245)
     moving[20:, 30:] = base[:-20, :-30]
-    _save_pyramid(src / "CD8" / "he" / "case01_HE.tif", base)
-    _save_pyramid(src / "CD8" / "cd8" / "case01_CD8.tif", moving)
+    save_pyramid(src / "CD8" / "he" / "case01_HE.tif", base)
+    save_pyramid(src / "CD8" / "cd8" / "case01_CD8.tif", moving)
     return src

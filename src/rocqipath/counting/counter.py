@@ -38,6 +38,7 @@ import cv2
 import numpy as np
 from skimage import filters, measure, morphology
 from tqdm.auto import tqdm
+from rocqipath._internal.logging import logger
 from rocqipath.counting.config import CountCellsConfig
 from rocqipath.errors import ExtractionError
 from rocqipath.io.output import OutputLayout
@@ -133,11 +134,11 @@ class PositiveCellCounter:
         self.layout = OutputLayout(self.output_dir)
         self.layout.module_dir("cell_counting")
         _max_str = f"{self.max_cell_area}" if self.max_cell_area else "∞"
-        print("[INFO] Positive Cell Counter (HSV brown gate + OTSU)")
-        print(f"       Patch size       : {self.patch_size} px at {self.target_magnification:g}x")
-        print(f"       Tissue threshold : {int(self.tissue_threshold * 100)}%")
-        print(f"       Cell area range  : {self.min_cell_area} – {_max_str} px²")
-        print("       Thresholding     : OTSU computed separately per image")
+        logger.info("Positive Cell Counter (HSV brown gate + OTSU)")
+        logger.info(f"       Patch size       : {self.patch_size} px at {self.target_magnification:g}x")
+        logger.info(f"       Tissue threshold : {int(self.tissue_threshold * 100)}%")
+        logger.info(f"       Cell area range  : {self.min_cell_area} – {_max_str} px²")
+        logger.info("       Thresholding     : OTSU computed separately per image")
 
     # ── Tissue gate ───────────────────────────────────────────────────────────
     def _is_tissue(self, rgb: np.ndarray) -> bool:
@@ -287,7 +288,7 @@ class PositiveCellCounter:
         -----
         Each tissue patch receives an independent Otsu threshold. Tissue
         area uses target-grid pixels and physical MPP metadata, falling
-        back to the historical Aperio value when metadata is absent.
+        back to a typical Aperio 20x value when metadata is absent.
         """
         slide = _SlideReader(wsi_path)
         plan = slide.configure_magnification(self.target_magnification, self.source_magnification)
@@ -295,16 +296,16 @@ class PositiveCellCounter:
         mpp_x, mpp_y = self._get_mpp(slide)
         slide_name = Path(wsi_path).stem
 
-        print(f"[INFO] Slide       : {Path(wsi_path).name}")
-        print(f"[INFO] Dimensions  : {w} × {h} px")
+        logger.info(f"Slide       : {Path(wsi_path).name}")
+        logger.info(f"Dimensions  : {w} × {h} px")
         if mpp_x:
-            print(f"[INFO] Resolution  : {mpp_x:.4f} µm/px  (from metadata)")
+            logger.info(f"Resolution  : {mpp_x:.4f} µm/px  (from metadata)")
             mpp_x *= plan.level0_per_target_pixel
             mpp_y *= plan.level0_per_target_pixel
         else:
             level0_mpp = _APERIO_MPP
             mpp_x = mpp_y = level0_mpp * plan.level0_per_target_pixel
-            print(f"[WARN] MPP not in metadata — using {mpp_x:.4f} µm/px at target zoom")
+            logger.warning(f"MPP not in metadata — using {mpp_x:.4f} µm/px at target zoom")
 
         total_pos = tissue_px = 0
         tiles_x = (w + self.patch_size - 1) // self.patch_size
@@ -331,11 +332,11 @@ class PositiveCellCounter:
         tissue_area_mm2 = tissue_px * px_mm2
         density_per_mm2 = total_pos / tissue_area_mm2 if tissue_area_mm2 > 0 else 0.0
 
-        print("\n[RESULT] ══════════════════════════════════")
-        print(f"[RESULT]  DAB+ cells    : {total_pos:,}")
-        print(f"[RESULT]  Tissue area   : {tissue_area_mm2:.3f} mm²")
-        print(f"[RESULT]  Density       : {density_per_mm2:.1f} cells/mm²")
-        print("[RESULT] ══════════════════════════════════")
+        logger.info("[RESULT] ══════════════════════════════════")
+        logger.info(f"[RESULT]  DAB+ cells    : {total_pos:,}")
+        logger.info(f"[RESULT]  Tissue area   : {tissue_area_mm2:.3f} mm²")
+        logger.info(f"[RESULT]  Density       : {density_per_mm2:.1f} cells/mm²")
+        logger.info("[RESULT] ══════════════════════════════════")
 
         results = {
             "slide": Path(wsi_path).name,
@@ -352,7 +353,7 @@ class PositiveCellCounter:
         json_path = out_dir / f"{slide_name}_cell_count_results.json"
         with open(json_path, "w") as f:
             json.dump(results, f, indent=2)
-        print(f"[INFO]  Saved → {json_path}")
+        logger.info(f"Saved → {json_path}")
         return results
 
     # ── GT vs Prediction pair ─────────────────────────────────────────────────
@@ -388,16 +389,16 @@ class PositiveCellCounter:
             )
         mpp_x, mpp_y = self._get_mpp(gt_slide)
 
-        print(f"[INFO] GT slide    : {Path(gt_path).name}")
-        print(f"[INFO] Pred slide  : {Path(pred_path).name}")
-        print(f"[INFO] Dimensions  : {width} × {height} px")
+        logger.info(f"GT slide    : {Path(gt_path).name}")
+        logger.info(f"Pred slide  : {Path(pred_path).name}")
+        logger.info(f"Dimensions  : {width} × {height} px")
         if mpp_x:
-            print(f"[INFO] Resolution  : {mpp_x:.4f} µm/px  (from metadata)")
+            logger.info(f"Resolution  : {mpp_x:.4f} µm/px  (from metadata)")
             mpp_x *= gt_plan.level0_per_target_pixel
             mpp_y *= gt_plan.level0_per_target_pixel
         else:
             mpp_x = mpp_y = _APERIO_MPP * gt_plan.level0_per_target_pixel
-            print(f"[WARN] MPP not in metadata — using {mpp_x:.4f} µm/px at target zoom")
+            logger.warning(f"MPP not in metadata — using {mpp_x:.4f} µm/px at target zoom")
 
         item_name = f"{Path(gt_path).stem}_vs_{Path(pred_path).stem}"
         out_dir = self.layout.item_dir("cell_counting", item_name)
@@ -475,19 +476,19 @@ class PositiveCellCounter:
         difference = pred_total - gt_total
         difference_percent = difference / gt_total * 100 if gt_total > 0 else float("nan")
 
-        print("\n[RESULT] ══════════════════════════════════════════════")
-        print(f"[RESULT]  Tissue patches    : {patch_idx}")
-        print(f"[RESULT]  GT  DAB+ cells    : {gt_total:,}")
-        print(f"[RESULT]  Pred DAB+ cells   : {pred_total:,}")
-        print(f"[RESULT]  Δ absolute        : {difference:+,}")
+        logger.info("[RESULT] ══════════════════════════════════════════════")
+        logger.info(f"[RESULT]  Tissue patches    : {patch_idx}")
+        logger.info(f"[RESULT]  GT  DAB+ cells    : {gt_total:,}")
+        logger.info(f"[RESULT]  Pred DAB+ cells   : {pred_total:,}")
+        logger.info(f"[RESULT]  Δ absolute        : {difference:+,}")
         if gt_total > 0:
-            print(f"[RESULT]  Δ relative        : {difference_percent:+.1f}%")
-        print(f"[RESULT]  Tissue area       : {tissue_area_mm2:.3f} mm²")
-        print(f"[RESULT]  GT  density       : {density_gt:.1f} cells/mm²")
-        print(f"[RESULT]  Pred density      : {density_pred:.1f} cells/mm²")
+            logger.info(f"[RESULT]  Δ relative        : {difference_percent:+.1f}%")
+        logger.info(f"[RESULT]  Tissue area       : {tissue_area_mm2:.3f} mm²")
+        logger.info(f"[RESULT]  GT  density       : {density_gt:.1f} cells/mm²")
+        logger.info(f"[RESULT]  Pred density      : {density_pred:.1f} cells/mm²")
         if save_plots:
-            print(f"[RESULT]  Plots saved       : {plots_saved}  →  {out_dir}")
-        print("[RESULT] ══════════════════════════════════════════════")
+            logger.info(f"[RESULT]  Plots saved       : {plots_saved}  →  {out_dir}")
+        logger.info("[RESULT] ══════════════════════════════════════════════")
 
         summary = {
             "gt_slide": Path(gt_path).name,
@@ -508,7 +509,7 @@ class PositiveCellCounter:
         json_path = out_dir / f"{Path(gt_path).stem}_vs_{Path(pred_path).stem}_results.json"
         with open(json_path, "w") as stream:
             json.dump(summary, stream, indent=2)
-        print(f"[INFO]  JSON  → {json_path}")
+        logger.info(f"JSON  → {json_path}")
         excel_path = out_dir / f"{Path(gt_path).stem}_vs_{Path(pred_path).stem}_counts.xlsx"
         _write_excel(patch_results, str(excel_path))
         return summary
@@ -523,28 +524,28 @@ class PositiveCellCounter:
             if any(str(path).lower().endswith(extension) for extension in WSI_EXTENSIONS)
         )
         if not slides:
-            print(f"[ERROR] No WSI files found in: {input_dir}")
+            logger.error(f"No WSI files found in: {input_dir}")
             return []
 
-        print(f"[INFO] Found {len(slides)} slide(s)")
+        logger.info(f"Found {len(slides)} slide(s)")
         all_results = []
         failures = []
         for slide_path in slides:
-            print(f"\n{'─' * 50}")
+            logger.info(f"{'─' * 50}")
             try:
                 all_results.append(self.count_slide(str(slide_path), label=label))
             except Exception as exc:
-                print(f"[ERROR] {slide_path.name}: {exc}")
+                logger.error(f"{slide_path.name}: {exc}")
                 failures.append(f"{slide_path.name}: {exc}")
         if failures and not all_results:
             raise ExtractionError(f"Cell counting failed for every slide ({'; '.join(failures)})")
 
         if all_results:
             total = sum(result["total_positive"] for result in all_results)
-            print("\n[BATCH] ══════════════════════════════════")
-            print(f"[BATCH]  Slides  : {len(all_results)}")
-            print(f"[BATCH]  Total   : {total:,} DAB+ cells")
-            print("[BATCH] ══════════════════════════════════")
+            logger.info("[BATCH] ══════════════════════════════════")
+            logger.info(f"[BATCH]  Slides  : {len(all_results)}")
+            logger.info(f"[BATCH]  Total   : {total:,} DAB+ cells")
+            logger.info("[BATCH] ══════════════════════════════════")
             output_dir = self.layout.module_dir("cell_counting")
             with open(output_dir / "batch_cell_count_results.json", "w") as stream:
                 json.dump(all_results, stream, indent=2)

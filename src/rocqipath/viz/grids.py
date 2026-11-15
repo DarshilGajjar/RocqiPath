@@ -62,7 +62,7 @@ def plot_selector_map(thumb_img, valid_ids, rows, cols, output_path=None, *, sho
     Notes
     -----
     Grid spans are floating-point thumbnail pixels: ``width / cols`` and
-    ``height / rows``. Highlighted cells keep the historical green fill,
+    ``height / rows``. Highlighted cells keep a green fill,
     red index labels, and one-second interactive pause.
 
     Examples
@@ -107,7 +107,7 @@ def _build_registrar_config(
     patch_size: int = 512,
     grid_density: int = 20,
 ) -> dict:
-    """Construct the historical WSIRegistrar configuration mapping."""
+    """Construct the WSIRegistrar configuration mapping."""
     return {
         "base_output_dir": output_dir,
         "patch_size": patch_size,

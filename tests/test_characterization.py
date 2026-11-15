@@ -16,7 +16,7 @@ from rocqipath.counting.counter import PositiveCellCounter
 from rocqipath.tissue.masks import optical_density_otsu_mask
 from rocqipath.extraction.patches import _find_aligned_target, _patch_is_tissue
 from rocqipath.extraction.reversible import ReversiblePatchExtractor
-from rocqipath.stain.normalizers import _od_tissue_fraction as stain_tissue_fraction
+from rocqipath.stain.normalizers import od_tissue_fraction as stain_tissue_fraction
 
 
 def _half_tissue_image() -> Image.Image:

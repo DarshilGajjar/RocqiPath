@@ -45,7 +45,7 @@ class StainConfig(BaseConfig):
     resume: bool = False
 
     def __post_init__(self) -> None:
-        """Normalize names and preserve historical validation messages."""
+        """Normalize names and validate the settings."""
         require(
             self.method.lower() in NORMALIZER_TYPES,
             f"method must be one of {sorted(NORMALIZER_TYPES)}; got '{self.method}'",

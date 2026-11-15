@@ -1317,7 +1317,6 @@ class ValisOptions(BaseConfig):
     # ------------------------------------------------------------------
     feature_detector: Optional[str] = "disk"
 
-    # Existing convenience options retained for backward compatibility.
     num_features: int = 2000
     rgb_features: bool = False
 

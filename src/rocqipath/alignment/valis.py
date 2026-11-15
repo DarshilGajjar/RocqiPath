@@ -91,24 +91,17 @@ def valis_default_warper():
 
 
 def __getattr__(name):
-    """Resolve the legacy module-level names without importing VALIS eagerly.
+    """Resolve module-level VALIS names without importing VALIS eagerly.
 
-    Keeps ``from rocqipath.alignment.valis import HAS_VALIS`` (and
-    ``registration``) working for existing callers.
+    ``HAS_VALIS`` is computed on first use.
     """
     if name == "HAS_VALIS":
         return _module_available("valis")
-    if name == "HAS_VALIS_FEATURES":
-        return _module_available("valis.feature_detectors")
-    if name == "registration":
-        return _load_valis()[0]
-    if name == "_VALIS_DEFAULT_WARPER":
-        return _load_valis()[1]
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
 def __dir__():
-    return sorted(set(globals()) | set(__all__) | {"registration"})
+    return sorted(set(globals()) | set(__all__))
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Feature detector / matcher construction

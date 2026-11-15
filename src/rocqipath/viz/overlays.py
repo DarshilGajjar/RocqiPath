@@ -10,6 +10,7 @@ from typing import Any, Dict, List, Optional, Union
 import numpy as np
 from PIL import Image
 
+from rocqipath._internal.logging import logger
 from rocqipath.viz.config import OverlayConfig
 from rocqipath.errors import ExtractionError
 from rocqipath.io.output import OutputLayout
@@ -126,7 +127,7 @@ def _process_single_case(
     for mk in needed_markers:
         d = _resolve_marker_dir(case_dir, mk)
         if d is None:
-            print(f"[WARN] {case_id}: marker folder for '{mk}' not found — skipping case.")
+            logger.warning(f"{case_id}: marker folder for '{mk}' not found — skipping case.")
             return {"patches_processed": 0, "figures_saved": 0}
         marker_dirs[mk] = d
 
@@ -137,7 +138,7 @@ def _process_single_case(
     common = sorted(set.intersection(*file_sets)) if file_sets else []
 
     if not common:
-        print(f"[WARN] {case_id}: no matching patch filenames across marker folders.")
+        logger.warning(f"{case_id}: no matching patch filenames across marker folders.")
         return {"patches_processed": 0, "figures_saved": 0}
 
     if cfg.patches_per_case and cfg.patches_per_case < len(common):

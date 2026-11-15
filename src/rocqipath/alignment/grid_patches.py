@@ -75,7 +75,6 @@ def generate_grid_map(self) -> Tuple[Image.Image, list]:
         if tissue_fraction > 0.05:
             self.valid_grids.append(idx)
 
-    # self.map_thumb.save(os.path.join(self.output_dir, "grid_map.png"))
     logger.info(f"[GRID] {len(self.valid_grids)} tissue grids out of {rows * cols} total.")
     return self.map_thumb, self.valid_grids
 

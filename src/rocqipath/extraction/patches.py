@@ -11,6 +11,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from PIL import Image
 from tqdm.auto import tqdm
 
+from rocqipath._internal.logging import logger
 from rocqipath.errors import ExtractionError
 from rocqipath.extraction.config import ExtractPatchesConfig
 from rocqipath.io.output import OutputLayout
@@ -51,12 +52,6 @@ def _find_aligned_target(
     aligned_dir: str, biomarker: str, sample_id: str, reference_name: str
 ) -> Optional[str]:
     """Locate the aligned target-channel OME-TIFF for a sample and biomarker.
-
-    Parameterised counterpart of
-    `ReversiblePatchExtractor._find_aligned_ihc` — identical
-    directory-search and disambiguation logic, just with
-    ``reference_name`` substituted for the hardcoded ``"he"`` suffix
-    used there.
 
     Parameters
     ----------
@@ -100,12 +95,6 @@ def _find_aligned_target(
 def _patch_is_tissue(image_pil: "Image.Image", tissue_threshold: float) -> bool:
     """Decide whether a patch contains enough tissue to keep.
 
-    Same brightness-based heuristic as
-    `ReversiblePatchExtractor._is_tissue`, factored out as a
-    module-level function so it can be used by both the sequential and
-    thread-pool code paths in `run_patch_extraction` without
-    depending on a class instance.
-
     Parameters
     ----------
     image_pil : PIL.Image.Image
@@ -148,8 +137,8 @@ def _extract_case_patches(
     target_path : str
         Path to the aligned target-channel whole-slide file.
     biomarker : str
-        Biomarker label for this case, used to build the output
-        directory path.
+        Biomarker label for this case (unused; the output folder is
+        named after ``case_id``).
     cfg : ExtractPatchesConfig
         Supplies ``patch_size``, ``stride``, ``tissue_threshold``,
         ``reference_name`` and ``moving_name``.
@@ -163,14 +152,11 @@ def _extract_case_patches(
 
     Notes
     -----
-    Mirrors `ReversiblePatchExtractor.extract_from_case`'s sliding
-    window / tissue-gate / save-and-record-metadata logic, generalized
-    to use ``cfg.reference_name``/``cfg.moving_name`` as both the
-    output subdirectory names and the metadata keys, instead of the
-    hardcoded ``"he"``/``"ihc"``. Reads patches at pyramid level 0 (full
-    resolution). Writes one PNG per kept patch for each of the two
-    channels, plus a single ``{case_id}_metadata.json`` recording every
-    kept patch's coordinates, size, and output paths.
+    Patches are read at ``cfg.target_magnification``. One PNG is written
+    per kept patch for each of the two channels, named with
+    ``cfg.reference_name``/``cfg.moving_name``, plus a single
+    ``{case_id}_metadata.json`` recording every kept patch's coordinates,
+    size, and output paths.
 
     This function is called both from a sequential loop and from worker
     threads in a `concurrent.futures.ThreadPoolExecutor` (see
@@ -217,7 +203,7 @@ def _extract_case_patches(
                 ref_plan.base_magnification * canvas_scale
             )
 
-            print(
+            logger.info(
                 f"[MAG] {case_id}: inferred aligned-image "
                 f"base magnification="
                 f"{target_source_magnification:.4f}x "
@@ -229,7 +215,7 @@ def _extract_case_patches(
             target_source_magnification,
         )
 
-        print(
+        logger.info(
             f"[MAG] {case_id}: "
             f"reference={ref_plan.base_magnification:g}x "
             f"-> {ref_plan.target_magnification:g}x "
@@ -380,14 +366,14 @@ def run_patch_extraction(
     )
 
     if not reference_files:
-        print(
-            f"[ERROR] No reference-channel files found under {reference_dir} "
+        logger.error(
+            f"No reference-channel files found under {reference_dir} "
             f"matching pattern: {cfg.reference_pattern}"
         )
         return {"processed": 0, "skipped": 0, "failed": 0, "cases": []}
 
-    print(
-        f"[INFO] Found {len(reference_files)} reference file(s); "
+    logger.info(
+        f"Found {len(reference_files)} reference file(s); "
         f"checking {len(biomarkers)} biomarker(s) each.\n"
     )
 
@@ -401,7 +387,7 @@ def run_patch_extraction(
                 aligned_dir, biomarker, sample_id, cfg.reference_name
             )
             if target_path is None:
-                print(f"[SKIP] {case_id}: aligned target not found")
+                logger.info(f"[SKIP] {case_id}: aligned target not found")
                 results.append(
                     {"case_id": case_id, "status": "skipped", "reason": "aligned target not found"}
                 )
@@ -460,10 +446,10 @@ def extract_case_patches(
                 case_id = futures[future]
                 try:
                     result = future.result()
-                    print(f"[OK] {result['case_id']}: {result['n_patches']} patches saved")
+                    logger.info(f"[OK] {result['case_id']}: {result['n_patches']} patches saved")
                     results.append(result)
                 except Exception as e:
-                    print(f"[ERROR] {case_id}: {e}")
+                    logger.error(f"{case_id}: {e}")
                     results.append({"case_id": case_id, "status": "failed", "reason": str(e)})
     else:
         for case_id, ref_path, target_path, biomarker in tqdm(
@@ -482,7 +468,7 @@ def extract_case_patches(
     processed = sum(1 for r in results if r["status"] == "processed")
     skipped = sum(1 for r in results if r["status"] == "skipped")
     failed = [r for r in results if r["status"] == "failed"]
-    print(f"\n[DONE] Processed: {processed}  |  Skipped: {skipped}  |  Failed: {len(failed)}")
+    logger.info(f"[DONE] Processed: {processed}  |  Skipped: {skipped}  |  Failed: {len(failed)}")
     if failed and not processed:
         details = "; ".join(f"{r['case_id']}: {r['reason']}" for r in failed)
         raise ExtractionError(f"Patch extraction failed for every case ({details})")

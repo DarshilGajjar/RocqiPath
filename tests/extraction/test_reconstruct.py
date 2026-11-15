@@ -2,7 +2,7 @@
 
 import numpy as np
 
-from rocqipath.extraction.reconstruct import _finalize_canvas
+from rocqipath.extraction.reconstruct import finalize_canvas
 
 
 def test_overlap_averaging_keeps_uncovered_pixels_white():
@@ -10,7 +10,7 @@ def test_overlap_averaging_keeps_uncovered_pixels_white():
     counts = np.zeros((2, 2, 1), dtype=np.float32)
     canvas[0, 0] = (200, 100, 50)
     counts[0, 0] = 2
-    result = _finalize_canvas(canvas, counts, overlapping=True)
+    result = finalize_canvas(canvas, counts, overlapping=True)
     np.testing.assert_array_equal(result[0, 0], (100, 50, 25))
     assert np.all(result[1] == 255)
     assert np.all(result[0, 1] == 255)

@@ -51,7 +51,7 @@ def list_wsi_files(
     recursive: bool = False,
     sort_mode: Literal["natural", "casefold"] = "natural",
 ) -> list[str]:
-    """List recognized WSI filenames using the requested historical ordering."""
+    """List recognized WSI filenames in the requested ordering."""
     root = Path(directory)
     if not root.is_dir():
         return []
@@ -178,7 +178,7 @@ def find_aligned_wsi(
     1. Current alignment layout:
        <aligned_dir>/<sample_id>_<biomarker>/*.ome.tif*
 
-    2. Legacy patch-extraction layout:
+    2. Per-biomarker layout:
        <aligned_dir>/<biomarker>/<sample_id>_<reference_channel>/*.ome.tif*
     """
     root = Path(aligned_dir)
@@ -191,7 +191,7 @@ def find_aligned_wsi(
         # Preserve biomarker case if folder names were not normalized.
         root / f"{sample_id}_{biomarker}",
 
-        # Legacy layout:
+        # Per-biomarker layout:
         # alignment/cd8/sample_0001_he/
         root / biomarker / f"{sample_id}_{reference_channel}",
     ]

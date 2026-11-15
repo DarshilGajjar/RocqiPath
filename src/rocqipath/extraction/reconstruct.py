@@ -15,7 +15,7 @@ from tqdm.auto import tqdm
 _PATCH_EXTENSIONS = (".png", ".tif", ".tiff", ".jpg", ".jpeg")
 
 
-def _load_metadata(extractor: Any, case_id: str) -> Dict[str, Any]:
+def load_metadata(extractor: Any, case_id: str) -> Dict[str, Any]:
     """Load a reversible extraction manifest for one case."""
     meta_path = os.path.join(
         extractor.output_dir,
@@ -27,7 +27,7 @@ def _load_metadata(extractor: Any, case_id: str) -> Dict[str, Any]:
         return json.load(file)
 
 
-def _patch_directory(extractor: Any, case_id: str, mode: str) -> str:
+def patch_directory(extractor: Any, case_id: str, mode: str) -> str:
     """Resolve the directory that contains patches for a reconstruction mode."""
     base_folder = os.path.join(extractor.output_dir, "patch_extraction", case_id)
     if mode.lower() == "predicted_ihc":
@@ -35,7 +35,7 @@ def _patch_directory(extractor: Any, case_id: str, mode: str) -> str:
     return base_folder
 
 
-def _index_patch_files(patch_dir: str) -> Dict[str, List[str]]:
+def index_patch_files(patch_dir: str) -> Dict[str, List[str]]:
     """Index image paths by every six-digit identifier in their filenames."""
     file_index: Dict[str, List[str]] = {}
     for filename in os.listdir(patch_dir):
@@ -51,7 +51,7 @@ def _patch_candidates(
     patch_dir: str,
     file_index: Dict[str, List[str]],
 ) -> List[str]:
-    """Return indexed candidates or the historical glob fallback."""
+    """Return indexed candidates, falling back to a glob."""
     candidates = file_index.get(patch_id, [])
     if candidates:
         return candidates
@@ -63,7 +63,7 @@ def _patch_candidates(
 
 
 def _select_patch(candidates: List[str], case_id: str, tag: str) -> str:
-    """Resolve ambiguous patch filenames using the historical keyword rule."""
+    """Resolve ambiguous patch filenames by keyword."""
     if len(candidates) == 1:
         return candidates[0]
     # Flat layouts name patches ``<case>_<stain>_patch_<id>``; every candidate
@@ -83,7 +83,7 @@ def _select_patch(candidates: List[str], case_id: str, tag: str) -> str:
     )
 
 
-def _assemble_canvas(
+def assemble_canvas(
     dimensions: Tuple[int, int],
     patches: List[Dict[str, Any]],
     patch_dir: str,
@@ -131,7 +131,7 @@ def _assemble_canvas(
     return canvas, counts, placed, missing
 
 
-def _finalize_canvas(
+def finalize_canvas(
     canvas: np.ndarray,
     counts: Optional[np.ndarray],
     overlapping: bool,
@@ -144,7 +144,7 @@ def _finalize_canvas(
     return (canvas / counts).clip(0, 255).astype(np.uint8)
 
 
-def _save_pyramid(array: np.ndarray, output_path: str) -> None:
+def save_pyramid(array: np.ndarray, output_path: str) -> None:
     """Write an RGB array as a tiled pyramidal LZW TIFF."""
     import pyvips
 

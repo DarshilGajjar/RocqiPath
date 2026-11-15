@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-from typing import Any, Iterable, Type
+from typing import Type
 
 
 def require(
@@ -15,14 +14,6 @@ def require(
     """Raise ``exception_type`` with ``message`` unless ``condition`` holds."""
     if not condition:
         raise exception_type(message)
-
-
-def validate_directory(value: str | Path, *, name: str, must_exist: bool = False) -> Path:
-    """Resolve and validate a directory configuration value."""
-    path = Path(value).expanduser().resolve()
-    if must_exist and not path.is_dir():
-        raise FileNotFoundError(f"{name} does not exist: {path}")
-    return path
 
 
 def validate_positive(
@@ -57,17 +48,7 @@ def validate_fraction(
     return value
 
 
-def validate_choice(value: Any, *, name: str, choices: Iterable[Any]) -> Any:
-    """Return a member of ``choices`` or raise ``ValueError``."""
-    allowed = tuple(choices)
-    if value not in allowed:
-        raise ValueError(f"{name} must be one of {allowed}; got {value!r}")
-    return value
-
-
 __all__ = [
-    "validate_choice",
-    "validate_directory",
     "validate_fraction",
     "validate_positive",
     "require",
