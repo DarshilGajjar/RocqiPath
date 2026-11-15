@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections import Counter
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
@@ -42,6 +43,35 @@ def _collect_images(inputs, stains) -> List[Tuple[Path, Path]]:
         else:
             collected.append((source, source.parent))
     return collected
+
+
+def output_paths(inputs, stains, output_dir) -> List[Tuple[Path, Path]]:
+    """Pair each input image with the file its normalized copy is written to.
+
+    The output folder is named after the image's path relative to the folder
+    it was found in. Images that would share a name (the same file name
+    passed from different folders) are prefixed with their parent folder.
+
+    Raises
+    ------
+    ValueError
+        If two inputs still map to the same output file.
+    """
+    collected = _collect_images(inputs, stains)
+    names = ["__".join(path.relative_to(root).with_suffix("").parts) for path, root in collected]
+    counts = Counter(names)
+    names = [
+        f"{path.parent.name}__{name}" if counts[name] > 1 else name
+        for (path, _root), name in zip(collected, names)
+    ]
+    repeated = sorted(name for name, count in Counter(names).items() if count > 1)
+    if repeated:
+        raise ValueError(f"Several inputs would be written to the same output: {', '.join(repeated)}")
+    layout = OutputLayout(output_dir)
+    return [
+        (path, layout.item_dir("stain_normalization", name, create=False) / path.name)
+        for (path, _root), name in zip(collected, names)
+    ]
 
 
 def run_stain_normalization_train(
@@ -168,11 +198,10 @@ def run_stain_normalization_apply(
     if cfg is None:
         cfg = StainConfig()
 
-    collected = _collect_images(input_dir, cfg.stains)
-    files = [path for path, _root in collected]
+    outputs = output_paths(input_dir, cfg.stains, output_dir)
+    files = [path for path, _out in outputs]
     normalizer = get_normalizer(cfg.method)
-    layout = OutputLayout(output_dir)
-    out_root = layout.module_dir("stain_normalization")
+    out_root = OutputLayout(output_dir).module_dir("stain_normalization")
     weights = Path(weights) if weights is not None else out_root / f"{cfg.method}_weights.npz"
 
     print_banner()
@@ -204,11 +233,8 @@ def run_stain_normalization_apply(
     processed = skipped = failed = 0
 
     print_step("NORM", "Normalising patches …")
-    roots = dict(collected)
-    for fp in track(files, "Normalising"):
-        relative = fp.relative_to(roots[fp])
-        item_name = "__".join(relative.with_suffix("").parts)
-        out_path = layout.item_dir("stain_normalization", item_name) / fp.name
+    for fp, out_path in track(outputs, "Normalising"):
+        out_path.parent.mkdir(parents=True, exist_ok=True)
 
         if cfg.resume and out_path.exists():
             skipped += 1
@@ -225,6 +251,8 @@ def run_stain_normalization_apply(
             print_warn(f"Failed [{fp.name}]: {exc}")
 
     print_counts(ok=processed, fail=failed, label="Normalisation")
+    if failed and not processed and not skipped:
+        raise ExtractionError(f"Stain normalization failed for all {failed} image(s)")
     print_summary_table(
         [
             ("Total", len(files)),

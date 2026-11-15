@@ -855,6 +855,7 @@
                 "status": "processed"
               }
             ],
+            "failed": 0,
             "processed": 1,
             "skipped": 0
           }
@@ -872,6 +873,7 @@
           "status": "processed"
         }
       ],
+      "failed": 0,
       "processed": 1,
       "skipped": 0
     }

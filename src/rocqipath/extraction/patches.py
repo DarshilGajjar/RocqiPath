@@ -11,6 +11,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from PIL import Image
 from tqdm.auto import tqdm
 
+from rocqipath.errors import ExtractionError
 from rocqipath.extraction.config import ExtractPatchesConfig
 from rocqipath.io.output import OutputLayout
 from rocqipath.io.slide import SlideReader as _SlideReader
@@ -348,7 +349,7 @@ def run_patch_extraction(
     Returns
     -------
     dict
-        ``{"processed": int, "skipped": int, "cases": list of dict}``
+        ``{"processed": int, "skipped": int, "failed": int, "cases": list of dict}``
         where ``"cases"`` contains one entry per attempted case — either
         ``{"case_id", "status": "processed", "n_patches"}`` or
         ``{"case_id", "status": "skipped"|"failed", "reason"}``.
@@ -383,7 +384,7 @@ def run_patch_extraction(
             f"[ERROR] No reference-channel files found under {reference_dir} "
             f"matching pattern: {cfg.reference_pattern}"
         )
-        return {"processed": 0, "skipped": 0, "cases": []}
+        return {"processed": 0, "skipped": 0, "failed": 0, "cases": []}
 
     print(
         f"[INFO] Found {len(reference_files)} reference file(s); "
@@ -432,7 +433,12 @@ def extract_case_patches(
     Returns
     -------
     dict
-        ``{"processed": int, "skipped": int, "cases": list of dict}``.
+        ``{"processed": int, "skipped": int, "failed": int, "cases": list of dict}``.
+
+    Raises
+    ------
+    rocqipath.errors.ExtractionError
+        If cases failed and none was processed.
     """
     results = list(results or [])
     to_process = cases
@@ -474,7 +480,11 @@ def extract_case_patches(
                 results.append({"case_id": case_id, "status": "failed", "reason": str(e)})
 
     processed = sum(1 for r in results if r["status"] == "processed")
-    skipped = sum(1 for r in results if r["status"] in ("skipped", "failed"))
-    print(f"\n[DONE] Processed: {processed}  |  Skipped/Failed: {skipped}")
+    skipped = sum(1 for r in results if r["status"] == "skipped")
+    failed = [r for r in results if r["status"] == "failed"]
+    print(f"\n[DONE] Processed: {processed}  |  Skipped: {skipped}  |  Failed: {len(failed)}")
+    if failed and not processed:
+        details = "; ".join(f"{r['case_id']}: {r['reason']}" for r in failed)
+        raise ExtractionError(f"Patch extraction failed for every case ({details})")
 
-    return {"processed": processed, "skipped": skipped, "cases": results}
+    return {"processed": processed, "skipped": skipped, "failed": len(failed), "cases": results}

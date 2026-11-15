@@ -165,6 +165,12 @@ class BaseConfig:
         if recorded is None:  # e.g. unpickled: fall back to current values
             recorded = {f.name: getattr(self, f.name) for f in fields(self) if f.init}
         values = dict(recorded)
+        # Fields assigned after construction differ from a rebuild of the
+        # recorded arguments; keep them so `replace` does not undo the edit.
+        baseline = type(self).from_dict(recorded)
+        for f in fields(self):
+            if f.init and getattr(self, f.name) != getattr(baseline, f.name):
+                values[f.name] = getattr(self, f.name)
         values.update(direct)
         return type(self).from_dict(values)
 

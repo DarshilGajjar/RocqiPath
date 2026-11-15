@@ -99,3 +99,11 @@ def test_patches_feed_stain_normalization(aligned, tmp_path):
     normalized = rp.normalize_stain(patches, tmp_path / "stain", normalizer=weights, stains=["he"])
     he_patches = [item for item in patches if item.meta["stain"] == "he"]
     assert normalized.summary["processed"] == len(he_patches) > 0
+
+
+def test_result_lists_only_the_current_run(aligned, tmp_path):
+    settings = {"source_magnification": D.SOURCE_MAG, "patch_size": 256}
+    rp.count_cells(aligned, tmp_path, **settings)
+    reference = aligned.by_role("reference")[0].path
+    second = rp.count_cells(reference, tmp_path, **settings)
+    assert {item.sample_id for item in second} == {reference.stem}

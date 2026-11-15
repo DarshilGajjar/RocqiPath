@@ -39,6 +39,7 @@ import numpy as np
 from skimage import filters, measure, morphology
 from tqdm.auto import tqdm
 from rocqipath.counting.config import CountCellsConfig
+from rocqipath.errors import ExtractionError
 from rocqipath.io.output import OutputLayout
 from rocqipath.io.slide import SlideReader as _SlideReader
 from rocqipath.tissue.masks import is_tissue as _shared_is_tissue
@@ -527,12 +528,16 @@ class PositiveCellCounter:
 
         print(f"[INFO] Found {len(slides)} slide(s)")
         all_results = []
+        failures = []
         for slide_path in slides:
             print(f"\n{'─' * 50}")
             try:
                 all_results.append(self.count_slide(str(slide_path), label=label))
             except Exception as exc:
                 print(f"[ERROR] {slide_path.name}: {exc}")
+                failures.append(f"{slide_path.name}: {exc}")
+        if failures and not all_results:
+            raise ExtractionError(f"Cell counting failed for every slide ({'; '.join(failures)})")
 
         if all_results:
             total = sum(result["total_positive"] for result in all_results)

@@ -54,12 +54,15 @@ def _matching_stains(inputs: Sequence[Item], stains: Sequence[str]) -> List[Item
     return [item for item in inputs if "stain" not in item.meta or str(item.meta["stain"]).lower() in wanted]
 
 
-def _files(folder: Path, suffixes: Iterable[str] = _IMAGE_SUFFIXES) -> List[Path]:
-    """Every file under ``folder`` with one of ``suffixes``, in a stable order."""
-    wanted = {suffix.lower() for suffix in suffixes}
+def _files(folder: Path, suffixes: Optional[Iterable[str]] = _IMAGE_SUFFIXES) -> List[Path]:
+    """Every file under ``folder`` with one of ``suffixes`` (any when ``None``), sorted."""
     if not folder.is_dir():
         return []
-    return sorted(p for p in folder.rglob("*") if p.is_file() and p.suffix.lower() in wanted)
+    wanted = None if suffixes is None else {suffix.lower() for suffix in suffixes}
+    return sorted(
+        p for p in folder.rglob("*")
+        if p.is_file() and (wanted is None or p.suffix.lower() in wanted)
+    )
 
 
 # ── Extraction ──────────────────────────────────────────────────────────────
@@ -503,7 +506,7 @@ def normalize_stain(
     >>> import rocqipath as rp
     >>> rp.normalize_stain("patches/", "results/", normalizer="weights/macenko_weights.npz")  # doctest: +SKIP
     """
-    from rocqipath.stain.batch import run_stain_normalization_apply
+    from rocqipath.stain.batch import output_paths, run_stain_normalization_apply
     from rocqipath.stain.config import NORMALIZER_TYPES
 
     if normalizer is None:
@@ -518,11 +521,10 @@ def normalize_stain(
             config = config.replace(method=prefix)
     images = _paths(_matching_stains(inputs, config.stains))
     summary = run_stain_normalization_apply(images, str(output_dir), config, weights)
-    root = output_dir / "stain_normalization"
     items = [
         Item(sample_id=path.parent.name, role="normalized", path=path)
-        for path in _files(root)
-        if path.parent != root
+        for _source, path in output_paths(images, config.stains, str(output_dir))
+        if path.exists()
     ]
     return items, summary
 
@@ -578,6 +580,7 @@ def count_cells(
     [1520, 877]
     """
     from rocqipath.counting.counter import PositiveCellCounter
+    from rocqipath.io.output import safe_name
 
     counter = PositiveCellCounter(config, output_dir=str(output_dir))
     paths = _paths(inputs)
@@ -593,17 +596,19 @@ def count_cells(
             dpi=config.dpi,
         )
         summary: Dict[str, Any] = {"result": result}
+        names = [f"{paths[0].stem}_vs_{Path(compare_to).stem}"]
     elif len(paths) == 1 and paths[0].is_dir():
         summary = {"results": counter.count_batch(str(paths[0]), label=config.label)}
     else:
         summary = {"results": [counter.count_slide(str(p), label=config.label) for p in paths]}
+    if compare_to is None:
+        names = [Path(result["slide"]).stem for result in summary["results"]]
     root = output_dir / "cell_counting"
     items: List[Item] = []
-    for path in sorted(p for p in root.rglob("*") if p.is_file()):
-        if path.parent == root:
-            continue
-        role = "figure" if path.suffix.lower() == ".png" else "count"
-        items.append(Item(sample_id=path.parent.name, role=role, path=path))
+    for name in names:  # only this run's folders; the root may hold earlier runs
+        for path in _files(root / safe_name(name), suffixes=None):
+            role = "figure" if path.suffix.lower() == ".png" else "count"
+            items.append(Item(sample_id=path.parent.name, role=role, path=path))
     return items, summary
 
 
@@ -718,15 +723,22 @@ def overlay_markers(inputs: List[Item], output_dir: Path, *, config: OverlayConf
     ...     base_marker="he",
     ... )
     """
+    from rocqipath.io.output import safe_name
     from rocqipath.viz.overlays import process_ihc_overlay
 
     summary: Dict[str, Any] = {}
+    cases: List[str] = []
     folders = _paths(inputs)
     for folder in folders:
         result = process_ihc_overlay(str(folder), config, str(output_dir))
+        cases.extend([folder.name] if "patches_processed" in result else result)
         summary.update(result if len(folders) == 1 else {folder.name: result})
     root = output_dir / "visualization"
-    items = [Item(sample_id=path.parent.name, role="figure", path=path) for path in _files(root)]
+    items = [
+        Item(sample_id=path.parent.name, role="figure", path=path)
+        for case in cases  # only this run's cases; the root may hold earlier runs
+        for path in _files(root / safe_name(case))
+    ]
     return items, summary
 
 
