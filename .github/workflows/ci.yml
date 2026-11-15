@@ -77,3 +77,6 @@ jobs:
 
       - name: Build
         run: pnpm build
+
+      - name: Check the packaged interface is up to date
+        run: git diff --exit-code -- ../src/rocqipath/studio/static
