@@ -33,12 +33,17 @@ def serve(port: int = 8765, workspace: Path = Path.home() / "RocqiPathStudio", s
     return 0
 
 
-def main() -> int:
-    """Parse Studio options and start the server."""
-    parser = argparse.ArgumentParser(description="RocqiPath Studio — local pathology workspace")
+def add_arguments(parser: argparse.ArgumentParser) -> None:
+    """Add the Studio options (shared with ``rocqipath studio``)."""
     parser.add_argument("--port", type=int, default=8765)
     parser.add_argument("--workspace", type=Path, default=Path.home() / "RocqiPathStudio")
     parser.add_argument("--static-dir", type=Path)
+
+
+def main() -> int:
+    """Parse Studio options and start the server."""
+    parser = argparse.ArgumentParser(description="RocqiPath Studio — local pathology workspace")
+    add_arguments(parser)
     args = parser.parse_args()
     return serve(args.port, args.workspace, args.static_dir)
 

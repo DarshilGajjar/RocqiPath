@@ -127,9 +127,9 @@ def build_parser(show_all: bool = False) -> argparse.ArgumentParser:
     info.add_argument("slide")
     info.set_defaults(_utility="info")
     studio = subparsers.add_parser("studio", help="Start the local browser workspace.")
-    studio.add_argument("--port", type=int, default=8765)
-    studio.add_argument("--workspace", type=Path, default=Path.home() / "RocqiPathStudio")
-    studio.add_argument("--static-dir", type=Path)
+    from rocqipath.studio.__main__ import add_arguments
+
+    add_arguments(studio)
     studio.set_defaults(_utility="studio")
     for workflow in list_workflows():
         _add_workflow(subparsers, workflow, show_all)

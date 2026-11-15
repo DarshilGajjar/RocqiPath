@@ -95,8 +95,8 @@ class Store:
                 queued.update(status="running", started=now())
                 self.save("job", queued)
                 self.active_id = job_id
+                log = (directory / "run.log").open("w", encoding="utf-8")
                 try:
-                    log = (directory / "run.log").open("w", encoding="utf-8")
                     env = {**os.environ, "PYTHONUNBUFFERED": "1", "MPLBACKEND": "Agg"}
                     self.process = subprocess.Popen(
                         [sys.executable, "-m", "rocqipath.studio.worker", str(directory)],
@@ -104,6 +104,7 @@ class Store:
                         creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
                     )
                 except Exception as exc:
+                    log.close()
                     queued.update(status="failed", error=str(exc), finished=now())
                     self.save("job", queued)
                     self.active_id = None
