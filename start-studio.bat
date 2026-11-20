@@ -75,7 +75,7 @@ echo   --------------------------------------------------------------
 echo.
 :: Open the browser a few seconds later, once the server is listening.
 start "" /b cmd /c "timeout /t 4 /nobreak >nul & start "" http://127.0.0.1:%PORT%"
-.venv\Scripts\rocqipath.exe studio --port %PORT% %*
+.venv\Scripts\python.exe -m rocqipath.studio --port %PORT% %*
 echo.
 echo   Studio stopped. Press any key to close.
 pause >nul
