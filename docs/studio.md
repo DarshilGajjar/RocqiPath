@@ -10,6 +10,10 @@ rocqipath studio                       # http://127.0.0.1:8765
 rocqipath studio --workspace D:/StudioWork --port 8800
 ```
 
+On Windows you can instead double-click `start-studio.bat` in the repository
+folder. The first run creates a `.venv` there and installs everything Studio
+needs, including the OpenSlide and libvips libraries; later runs start at once.
+
 The workspace folder (default `~/RocqiPathStudio`) holds Studio's catalog and
 every job's outputs. Slides are never copied or uploaded.
 
